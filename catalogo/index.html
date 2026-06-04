@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>CASA JRP — Catálogo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --dark: #1A120A;
+      --mid: #7A6248;
+      --gold: #C4A882;
+      --gold-light: #E8D9C4;
+      --bg: #F7F3EE;
+      --white: #FDFAF7;
+      --border: #E0D6CB;
+      --error: #C94040;
+      --success: #3D7A56;
+      --card-bg: #FDFAF7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      font-family: 'DM Sans', sans-serif;
+      color: var(--dark);
+      min-height: 100vh;
+    }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+
+    /* ── HEADER ── */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--dark);
+      padding: 0 20px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 58px;
+      border-bottom: 1px solid #2C1E12;
+    }
+    .header-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px; font-weight: 500; letter-spacing: 0.12em;
+      color: var(--gold); text-transform: uppercase;
+    }
+    .header-sub {
+      font-size: 10px; color: #5C3E28;
+      letter-spacing: 0.2em; text-transform: uppercase;
+    }
+    .header-right { text-align: right; }
+    .header-count {
+      font-size: 11px; color: var(--gold);
+      letter-spacing: 0.1em;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: var(--dark);
+      padding: 28px 20px 32px;
+      text-align: center;
+      border-bottom: 1px solid #2C1E12;
+    }
+    .hero h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(32px, 8vw, 52px);
+      font-weight: 300; color: var(--white);
+      letter-spacing: 0.06em; line-height: 1.1;
+      margin-bottom: 8px;
+    }
+    .hero h1 em { font-style: italic; color: var(--gold); }
+    .hero p {
+      font-size: 13px; color: #8B6E52;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero-badges {
+      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+    }
+    .hero-badge {
+      background: #2C1E12; color: var(--gold-light);
+      font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+      padding: 5px 14px; border-radius: 20px;
+      border: 1px solid #3C2A18;
+    }
+
+    /* ── FILTROS ── */
+    .filters-wrap {
+      position: sticky; top: 58px; z-index: 90;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+    }
+    .search-bar {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 0 14px; height: 42px;
+      margin-bottom: 10px; transition: border-color 0.2s;
+    }
+    .search-bar:focus-within { border-color: var(--gold); }
+    .search-bar svg { color: var(--gold); flex-shrink: 0; }
+    .search-bar input {
+      flex: 1; background: none; border: none; outline: none;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark);
+    }
+    .search-bar input::placeholder { color: #B0A090; }
+    .filter-row {
+      display: flex; gap: 8px; overflow-x: auto;
+      scrollbar-width: none; -ms-overflow-style: none;
+    }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      border: 1.5px solid var(--border); background: transparent;
+      color: var(--mid); transition: all 0.15s; white-space: nowrap;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .filter-chip.active {
+      background: var(--dark); color: var(--gold);
+      border-color: var(--dark);
+    }
+    .filter-chip:hover:not(.active) {
+      border-color: var(--gold); color: var(--dark);
+    }
+
+    /* ── STATS BAR ── */
+    .stats-bar {
+      padding: 10px 16px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .stats-text {
+      font-size: 12px; color: var(--mid); letter-spacing: 0.05em;
+    }
+    .stats-text strong { color: var(--dark); }
+    .sort-btn {
+      font-size: 11px; color: var(--mid); background: none; border: none;
+      cursor: pointer; font-family: 'DM Sans', sans-serif;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    /* ── GRID ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--border);
+      padding: 0;
+    }
+    @media (min-width: 600px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (min-width: 900px) {
+      .grid { grid-template-columns: repeat(4, 1fr); }
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card-bg);
+      position: relative; overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .card:active { transform: scale(0.98); }
+    .card.agotado { opacity: 0.75; }
+
+    .card-img {
+      width: 100%; aspect-ratio: 3/4;
+      background: var(--bg);
+      position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .card-img img {
+      width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.4s ease;
+    }
+    .card:hover .card-img img { transform: scale(1.04); }
+    .card-placeholder {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 8px;
+    }
+    .placeholder-icon { font-size: 32px; opacity: 0.4; }
+    .placeholder-tipo {
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--mid); opacity: 0.6;
+    }
+
+    .card-badge {
+      position: absolute; top: 10px; left: 10px;
+      font-size: 9px; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; padding: 3px 10px; border-radius: 20px;
+    }
+    .badge-agotado { background: rgba(26,18,10,0.75); color: #C4A882; }
+    .badge-nuevo { background: var(--gold); color: var(--dark); }
+
+    .card-body { padding: 12px 12px 14px; }
+    .card-tipo {
+      font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 4px;
+    }
+    .card-nombre {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 15px; font-weight: 400; color: var(--dark);
+      line-height: 1.3; margin-bottom: 6px;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-meta {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .card-color {
+      font-size: 11px; color: var(--mid);
+    }
+    .card-precio {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px; font-weight: 500; color: var(--dark);
+    }
+    .card-tallas {
+      display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px;
+    }
+    .talla-chip {
+      font-size: 9px; letter-spacing: 0.1em;
+      border: 1px solid var(--border); border-radius: 4px;
+      padding: 2px 7px; color: var(--mid);
+    }
+
+    .card-btn {
+      width: 100%; padding: 9px; border: none; border-radius: 8px;
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.08em; transition: all 0.15s;
+    }
+    .btn-quiero {
+      background: var(--dark); color: var(--gold);
+    }
+    .btn-quiero:hover { background: #2C1E12; }
+    .btn-avisar {
+      background: transparent; color: var(--mid);
+      border: 1.5px solid var(--border);
+    }
+    .btn-avisar:hover { border-color: var(--gold); color: var(--dark); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(26,18,10,0.7);
+      display: flex; align-items: flex-end; justify-content: center;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal {
+      background: var(--white); width: 100%; max-width: 480px;
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 36px;
+      animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      max-height: 90vh; overflow-y: auto;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal-handle {
+      width: 36px; height: 4px; background: var(--border);
+      border-radius: 2px; margin: 0 auto 20px;
+    }
+    .modal-tipo {
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 6px;
+    }
+    .modal-nombre {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px; font-weight: 400; color: var(--dark);
+      line-height: 1.2; margin-bottom: 4px;
+    }
+    .modal-color {
+      font-size: 13px; color: var(--mid); margin-bottom: 16px;
+    }
+    .modal-precio {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px; font-weight: 300; color: var(--dark);
+      margin-bottom: 20px;
+    }
+    .modal-precio span {
+      font-size: 14px; color: var(--mid); font-family: 'DM Sans', sans-serif;
+    }
+    .modal-section { margin-bottom: 16px; }
+    .modal-label {
+      font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--mid); margin-bottom: 8px;
+    }
+    .tallas-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+    .talla-opt {
+      padding: 8px 16px; border-radius: 8px;
+      border: 1.5px solid var(--border); background: transparent;
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      cursor: pointer; color: var(--dark); transition: all 0.15s;
+    }
+    .talla-opt.selected {
+      background: var(--dark); color: var(--gold); border-color: var(--dark);
+    }
+    .modal-cta {
+      width: 100%; padding: 14px; border: none; border-radius: 12px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.06em; margin-bottom: 10px;
+      transition: all 0.15s;
+    }
+    .cta-principal {
+      background: var(--dark); color: var(--gold);
+    }
+    .cta-principal:hover { background: #2C1E12; }
+    .cta-secundario {
+      background: transparent; color: var(--mid);
+      border: 1.5px solid var(--border);
+    }
+    .cta-secundario:hover { border-color: var(--gold); color: var(--dark); }
+    .modal-ref {
+      text-align: center; font-size: 11px; color: #C0B0A0;
+      margin-top: 8px; letter-spacing: 0.08em;
+    }
+
+    /* ── AVISO MODAL ── */
+    .aviso-icon { font-size: 36px; text-align: center; margin-bottom: 12px; }
+    .aviso-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px; text-align: center; margin-bottom: 6px;
+    }
+    .aviso-sub {
+      font-size: 13px; color: var(--mid); text-align: center;
+      margin-bottom: 20px; line-height: 1.5;
+    }
+
+    /* ── LOADING ── */
+    .loading {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 60vh; gap: 16px;
+    }
+    .loading-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--gold); display: inline-block;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    .loading-dots { display: flex; gap: 6px; }
+    .loading-text {
+      font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--mid);
+    }
+
+    /* ── EMPTY ── */
+    .empty {
+      text-align: center; padding: 60px 20px;
+    }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+    .empty-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px; margin-bottom: 8px; color: var(--dark);
+    }
+    .empty-sub { font-size: 13px; color: var(--mid); }
+
+    /* ── FOOTER ── */
+    .footer {
+      background: var(--dark); padding: 28px 20px;
+      text-align: center; margin-top: 1px;
+    }
+    .footer-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px; color: var(--gold); letter-spacing: 0.12em;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .footer-text {
+      font-size: 11px; color: #5C3E28;
+      letter-spacing: 0.12em; text-transform: uppercase;
+    }
+    .footer-wa {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 16px; background: #1B3A2A;
+      color: #5CCC7A; font-size: 13px; font-weight: 600;
+      padding: 10px 20px; border-radius: 24px;
+      text-decoration: none; letter-spacing: 0.06em;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--dark); color: var(--gold);
+      font-size: 13px; padding: 12px 20px; border-radius: 24px;
+      z-index: 300; animation: toastIn 0.3s ease;
+      white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbzEK4lndMPlEuYfWtoYZjBocqUaEmV2j9KKWLM5rk2VVyUbHYls00J0mlys6NS5OmjTwQ/exec";
+const WA_NUMBER  = "502XXXXXXXX"; // Reemplazar con número real de Nadia
+
+// Leer UTM del URL
+function getUTM() {
+  const p = new URLSearchParams(window.location.search);
+  return p.get("utm") || "directo";
+}
+
+const UTM = getUTM();
+
+// Íconos por tipo de prenda
+const TIPO_ICON = {
+  "Blusa":"👚","Top":"👕","Vestido":"👗","Set":"✨","Pantalon":"👖",
+  "Short":"🩳","Falda":"👗","Body":"🩱","Cardigan":"🧥","default":"🛍️"
+};
+
+// Color de fondo para placeholder
+const COLOR_BG = {
+  "Negro":"#2A2A2A","Blanco":"#F5F5F0","Rojo":"#8B2020","Azul":"#1A3A6B",
+  "Verde":"#1A4A2A","Beige":"#D4C4A8","Cafe":"#6B4423","Gris":"#8A8A8A",
+  "Rosado":"#D4607A","Morado":"#5A2882","Fucsia":"#C4208A","Mostaza":"#B8860B",
+  "Naranja":"#C86420","Amarillo":"#C8A820","Nude":"#C8A882","default":"#8B7355"
+};
+
+function colorBg(color) {
+  for (const [k,v] of Object.entries(COLOR_BG)) {
+    if (color.toLowerCase().includes(k.toLowerCase())) return v;
+  }
+  return COLOR_BG.default;
+}
+
+// Registrar clic en backend
+async function registrarClic(prod, accion) {
+  try {
+    await fetch(`${BACKEND_URL}?action=registrar_clic&idProducto=${prod.id}&nombreProducto=${encodeURIComponent(prod.nombre)}&utm=${UTM}&accion=${accion}`);
+  } catch(e) {}
+}
+
+// Registrar demanda potencial
+async function registrarDemanda(prod, talla) {
+  try {
+    await fetch(`${BACKEND_URL}?action=registrar_demanda&idProducto=${prod.id}&nombreProducto=${encodeURIComponent(prod.nombre)}&color=${encodeURIComponent(prod.color)}&talla=${encodeURIComponent(talla||"")}&utm=${UTM}`);
+  } catch(e) {}
+}
+
+// Abrir WhatsApp
+function abrirWhatsApp(mensaje) {
+  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(mensaje)}`, "_blank");
+}
+
+// ── APP STATE ──
+let catalogo    = [];
+let filtrados   = [];
+let tipActivo   = "Todos";
+let colorActivo = "Todos";
+let busqueda    = "";
+let modalProd   = null;
+let modalTalla  = "";
+let modalAviso  = null;
+let avisaTalla  = "";
+let toast       = null;
+let toastTimer  = null;
+let cargando    = true;
+let error       = null;
+
+// ── RENDER ──
+function render() {
+  document.getElementById("app").innerHTML = buildHTML();
+  bindEvents();
+}
+
+function buildHTML() {
+  if (cargando) return buildLoading();
+  if (error)    return buildError();
+
+  const tipos   = ["Todos", ...new Set(catalogo.map(p => p.tipo).filter(Boolean))].sort((a,b) => a === "Todos" ? -1 : b === "Todos" ? 1 : a.localeCompare(b));
+  const disponibles = filtrados.filter(p => !p.agotado).length;
+  const agotados    = filtrados.filter(p => p.agotado).length;
+
+  return `
+    ${buildHeader(disponibles)}
+    ${buildHero()}
+    ${buildFiltros(tipos)}
+    ${buildStatsBar(disponibles, agotados)}
+    ${buildGrid()}
+    ${buildFooter()}
+    ${modalProd   ? buildModal()      : ""}
+    ${modalAviso  ? buildAvisoModal() : ""}
+    ${toast       ? `<div class="toast">${toast}</div>` : ""}
+  `;
+}
+
+function buildLoading() {
+  return `
+    <div class="header">
+      <div><div class="header-brand">CASA JRP</div></div>
+    </div>
+    <div class="loading">
+      <div class="loading-dots">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+      </div>
+      <div class="loading-text">Cargando catálogo</div>
+    </div>
+  `;
+}
+
+function buildError() {
+  return `
+    <div class="header"><div><div class="header-brand">CASA JRP</div></div></div>
+    <div class="empty" style="margin-top:60px">
+      <div class="empty-icon">⚠️</div>
+      <div class="empty-title">No se pudo cargar el catálogo</div>
+      <div class="empty-sub">Revisa tu conexión e intenta de nuevo</div>
+      <button onclick="recargar()" style="margin-top:20px;padding:12px 24px;background:#1A120A;color:#C4A882;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif">Reintentar</button>
+    </div>
+  `;
+}
+
+function buildHeader(disponibles) {
+  return `
+    <div class="header">
+      <div>
+        <div class="header-brand">CASA JRP</div>
+        <div class="header-sub">Guatemala City</div>
+      </div>
+      <div class="header-right">
+        <div class="header-count">${disponibles} disponibles</div>
+      </div>
+    </div>
+  `;
+}
+
+function buildHero() {
+  return `
+    <div class="hero">
+      <h1>Ropa para <em>vos</em></h1>
+      <p>Colección actual · Guatemala City</p>
+      <div class="hero-badges">
+        <span class="hero-badge">Envío mismo día</span>
+        <span class="hero-badge">Pago fácil</span>
+        <span class="hero-badge">Zona 9 · 10 · 14 · 15</span>
+      </div>
+    </div>
+  `;
+}
+
+function buildFiltros(tipos) {
+  return `
+    <div class="filters-wrap">
+      <div class="search-bar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input id="buscador" type="text" placeholder="Buscar por nombre, color, referencia..." value="${busqueda}" oninput="onBuscar(this.value)"/>
+        ${busqueda ? `<button onclick="onBuscar('')" style="background:none;border:none;cursor:pointer;color:#B0A090;font-size:16px;padding:0">×</button>` : ""}
+      </div>
+      <div class="filter-row" id="filtros-tipo">
+        ${tipos.map(t => `
+          <button class="filter-chip ${tipActivo===t?"active":""}" onclick="onFiltroTipo('${t}')">${t}</button>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function buildStatsBar(disponibles, agotados) {
+  const total = disponibles + agotados;
+  const texto = busqueda || tipActivo !== "Todos"
+    ? `<strong>${total}</strong> resultado${total!==1?"s":""}`
+    : `<strong>${disponibles}</strong> disponibles · <strong>${agotados}</strong> agotados`;
+  return `
+    <div class="stats-bar">
+      <div class="stats-text">${texto}</div>
+    </div>
+  `;
+}
+
+function buildGrid() {
+  if (filtrados.length === 0) {
+    return `
+      <div class="empty">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">Sin resultados</div>
+        <div class="empty-sub">Intenta con otro filtro o búsqueda</div>
+      </div>
+    `;
+  }
+
+  // Disponibles primero, luego agotados
+  const ordenados = [
+    ...filtrados.filter(p => !p.agotado).sort((a,b) => b.stock - a.stock),
+    ...filtrados.filter(p => p.agotado),
+  ];
+
+  return `<div class="grid">${ordenados.map((p,i) => buildCard(p,i)).join("")}</div>`;
+}
+
+function buildCard(p, i) {
+  const icon = TIPO_ICON[p.tipo] || TIPO_ICON.default;
+  const bg   = colorBg(p.color);
+
+  const imgHTML = p.urlImg
+    ? `<img src="${p.urlImg}" alt="${p.nombre}" loading="lazy" onerror="this.parentElement.innerHTML='${buildPlaceholderInner(icon, p.tipo, bg)}'">`
+    : buildPlaceholderInner(icon, p.tipo, bg);
+
+  return `
+    <div class="card ${p.agotado?"agotado":""}" onclick="onCardClick('${p.id}')" data-id="${p.id}">
+      <div class="card-img" style="${!p.urlImg?`background:${bg}20`:``}">
+        ${imgHTML}
+        ${p.agotado ? `<div class="card-badge badge-agotado">Agotado</div>` : ""}
+      </div>
+      <div class="card-body">
+        <div class="card-tipo">${p.tipo}</div>
+        <div class="card-nombre">${p.nombre || p.tipo + " " + p.color}</div>
+        <div class="card-meta">
+          <div class="card-color">${p.color}</div>
+          <div class="card-precio">Q${p.precio}</div>
+        </div>
+        ${p.tallas.length > 1 ? `
+          <div class="card-tallas">
+            ${p.tallas.map(t => `<span class="talla-chip">${t}</span>`).join("")}
+          </div>
+        ` : ""}
+        <button class="card-btn ${p.agotado?"btn-avisar":"btn-quiero"}" onclick="event.stopPropagation();${p.agotado?`onAvisar('${p.id}')`:`onQuiero('${p.id}')`}">
+          ${p.agotado ? "✉ Avisarme cuando llegue" : "Lo quiero →"}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function buildPlaceholderInner(icon, tipo, bg) {
+  return `<div class="card-placeholder" style="background:${bg}18"><div class="placeholder-icon">${icon}</div><div class="placeholder-tipo">${tipo}</div></div>`;
+}
+
+function buildModal() {
+  const p    = modalProd;
+  const icon = TIPO_ICON[p.tipo] || TIPO_ICON.default;
+  const bg   = colorBg(p.color);
+
+  return `
+    <div class="modal-overlay" onclick="cerrarModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <div class="modal-tipo">${p.tipo}</div>
+        <div class="modal-nombre">${p.nombre || p.tipo + " " + p.color}</div>
+        <div class="modal-color">${p.color} · Ref. #${p.refProv}</div>
+        <div class="modal-precio">Q${p.precio} <span>GTQ · Envío no incluido</span></div>
+
+        ${p.tallas.length > 1 ? `
+          <div class="modal-section">
+            <div class="modal-label">Selecciona tu talla</div>
+            <div class="tallas-grid">
+              ${p.tallas.map(t => `
+                <button class="talla-opt ${modalTalla===t?"selected":""}" onclick="onTalla('${t}')">${t}</button>
+              `).join("")}
+            </div>
+          </div>
+        ` : ""}
+
+        <button class="modal-cta cta-principal" onclick="onConfirmarQuiero()" ${p.tallas.length>1&&!modalTalla?"disabled style='opacity:0.5;cursor:not-allowed'":""}>
+          💬 Escribir por WhatsApp
+        </button>
+        <button class="modal-cta cta-secundario" onclick="cerrarModal()">Seguir viendo</button>
+        <div class="modal-ref">Ref. ${p.id} · ${p.refProv}</div>
+      </div>
+    </div>
+  `;
+}
+
+function buildAvisoModal() {
+  const p = modalAviso;
+  return `
+    <div class="modal-overlay" onclick="cerrarAviso()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-handle"></div>
+        <div class="aviso-icon">🔔</div>
+        <div class="aviso-title">Te avisamos cuando llegue</div>
+        <div class="aviso-sub">
+          <strong>${p.nombre || p.tipo + " " + p.color}</strong> en ${p.color} está agotado por ahora. 
+          Al tocar el botón se abre WhatsApp y nosotras registramos tu interés.
+        </div>
+
+        ${p.tallas.length > 1 ? `
+          <div class="modal-section">
+            <div class="modal-label">¿Qué talla te interesa?</div>
+            <div class="tallas-grid">
+              ${p.tallas.map(t => `
+                <button class="talla-opt ${avisaTalla===t?"selected":""}" onclick="onAvisaTalla('${t}')">${t}</button>
+              `).join("")}
+            </div>
+          </div>
+        ` : ""}
+
+        <button class="modal-cta cta-principal" onclick="onConfirmarAviso()">
+          ✉ Avisarme por WhatsApp
+        </button>
+        <button class="modal-cta cta-secundario" onclick="cerrarAviso()">Cancelar</button>
+      </div>
+    </div>
+  `;
+}
+
+function buildFooter() {
+  return `
+    <div class="footer">
+      <div class="footer-brand">CASA JRP</div>
+      <div class="footer-text">Guatemala City · Envíos mismos día</div>
+      <a href="https://wa.me/${WA_NUMBER}" target="_blank" class="footer-wa">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Escribir al WhatsApp
+      </a>
+    </div>
+  `;
+}
+
+// ── EVENTOS ──
+function bindEvents() {
+  const input = document.getElementById("buscador");
+  if (input) {
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
+}
+
+function onFiltroTipo(tipo) {
+  tipActivo   = tipo;
+  colorActivo = "Todos";
+  aplicarFiltros();
+  render();
+}
+
+function onBuscar(val) {
+  busqueda = val;
+  aplicarFiltros();
+  render();
+}
+
+function aplicarFiltros() {
+  filtrados = catalogo.filter(p => {
+    const matchTipo  = tipActivo === "Todos" || p.tipo === tipActivo;
+    const matchBusq  = !busqueda || [p.nombre, p.color, p.tipo, p.refProv, String(p.id)]
+      .some(f => f && f.toLowerCase().includes(busqueda.toLowerCase()));
+    return matchTipo && matchBusq;
+  });
+}
+
+function onCardClick(id) {
+  const p = catalogo.find(x => x.id === id);
+  if (!p) return;
+  registrarClic(p, "VER");
+  if (p.agotado) { onAvisar(id); return; }
+  modalProd  = p;
+  modalTalla = p.tallas.length === 1 ? p.tallas[0] : "";
+  render();
+}
+
+function onQuiero(id) {
+  const p = catalogo.find(x => x.id === id);
+  if (!p) return;
+  registrarClic(p, "QUIERO_ESTE");
+  modalProd  = p;
+  modalTalla = p.tallas.length === 1 ? p.tallas[0] : "";
+  render();
+}
+
+function onAvisar(id) {
+  const p = catalogo.find(x => x.id === id);
+  if (!p) return;
+  registrarClic(p, "AVISARME");
+  modalAviso = p;
+  avisaTalla = p.tallas.length === 1 ? p.tallas[0] : "";
+  render();
+}
+
+function onTalla(t) {
+  modalTalla = t;
+  render();
+}
+
+function onAvisaTalla(t) {
+  avisaTalla = t;
+  render();
+}
+
+function onConfirmarQuiero() {
+  if (!modalProd) return;
+  const p   = modalProd;
+  const t   = modalTalla;
+  registrarClic(p, "QUIERO_ESTE");
+  const msg = `Hola CASA JRP 👋 Me interesa:\n\n*${p.nombre || p.tipo + " " + p.color}*\nColor: ${p.color}${t&&t!=="Única"?" · Talla: "+t:""}\nPrecio: Q${p.precio}\nRef: #${p.refProv}\n\n¿Está disponible?`;
+  abrirWhatsApp(msg);
+  cerrarModal();
+}
+
+function onConfirmarAviso() {
+  if (!modalAviso) return;
+  const p = modalAviso;
+  const t = avisaTalla;
+  registrarDemanda(p, t);
+  const msg = `Hola CASA JRP 👋 Me interesa que me avisen cuando llegue:\n\n*${p.nombre || p.tipo + " " + p.color}*\nColor: ${p.color}${t&&t!=="Única"?" · Talla: "+t:""}\nRef: #${p.refProv}\n\n¿Pueden avisarme?`;
+  abrirWhatsApp(msg);
+  cerrarAviso();
+  mostrarToast("✓ Registramos tu interés — te avisamos cuando llegue");
+}
+
+function cerrarModal() {
+  modalProd  = null;
+  modalTalla = "";
+  render();
+}
+
+function cerrarAviso() {
+  modalAviso = null;
+  avisaTalla = "";
+  render();
+}
+
+function mostrarToast(msg) {
+  toast = msg;
+  render();
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { toast = null; render(); }, 3500);
+}
+
+function recargar() {
+  cargando = true; error = null;
+  render();
+  cargarCatalogo();
+}
+
+// ── CARGA INICIAL ──
+async function cargarCatalogo() {
+  try {
+    const res  = await fetch(`${BACKEND_URL}?action=get_catalogo`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || "Error desconocido");
+    catalogo  = data.catalogo;
+    filtrados = [...catalogo];
+    // Ordenar: disponibles con más stock primero, agotados al final
+    filtrados.sort((a,b) => {
+      if (a.agotado !== b.agotado) return a.agotado ? 1 : -1;
+      return b.stock - a.stock;
+    });
+    cargando = false;
+  } catch(e) {
+    cargando = false;
+    error    = e.message;
+  }
+  render();
+}
+
+// ── INICIO ──
+render();
+cargarCatalogo();
+</script>
+</body>
+</html>
