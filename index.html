@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <title>Registro de Pedido - Nadia</title>
+  <title>Registro de Pedido — CASA JRP</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -19,411 +19,24 @@
 <body>
   <div id="root"></div>
   <script type="text/babel" data-presets="react">
-const { useState, useMemo } = React;
-
+const { useState, useMemo, useEffect } = React;
 
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEK4lndMPlEuYfWtoYZjBocqUaEmV2j9KKWLM5rk2VVyUbHYls00J0mlys6NS5OmjTwQ/exec";
+const COP_GTQ = 0.005;
 
-const PRODUCTOS_RAW = [
-  {id:10001,nombre:"Blusa Liso Larga Negro #2509",tipo:"Blusa",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10002,nombre:"Blusa Liso Larga Rojo #2509",tipo:"Blusa",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10003,nombre:"Blusa Liso Larga Rojo #2509",tipo:"Blusa",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10004,nombre:"Blusa Liso Larga Azul #2509",tipo:"Blusa",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10005,nombre:"Blusa Liso Larga Beige #2509",tipo:"Blusa",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10006,nombre:"Blusa Liso Larga Blanco #2509",tipo:"Blusa",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10007,nombre:"Top Canale Strapless Cafe #2418",tipo:"Top",color:"Cafe",precio:24000,tallas:["Unica"]},
-  {id:10008,nombre:"Top Canale Strapless Negro #2418",tipo:"Top",color:"Negro",precio:24000,tallas:["Unica"]},
-  {id:10009,nombre:"Top Canale Strapless Beige #2418",tipo:"Top",color:"Beige",precio:24000,tallas:["Unica"]},
-  {id:10010,nombre:"Top Canale Strapless Blanco #2418",tipo:"Top",color:"Blanco",precio:24000,tallas:["Unica"]},
-  {id:10011,nombre:"Top Liso Un Hombro Negro #2511",tipo:"Top",color:"Negro",precio:24000,tallas:["Unica"]},
-  {id:10012,nombre:"Top Liso Un Hombro Azul #2511",tipo:"Top",color:"Azul",precio:24000,tallas:["Unica"]},
-  {id:10013,nombre:"Top Liso Un Hombro Beige #2511",tipo:"Top",color:"Beige",precio:24000,tallas:["Unica"]},
-  {id:10014,nombre:"Top Liso Un Hombro Cafe #2511",tipo:"Top",color:"Cafe",precio:24000,tallas:["Unica"]},
-  {id:10015,nombre:"Top Liso Un Hombro Gris #2511",tipo:"Top",color:"Gris",precio:24000,tallas:["Unica"]},
-  {id:10016,nombre:"Blusa Liso Un Hombro Blanco #2404",tipo:"Blusa",color:"Blanco",precio:21000,tallas:["Unica"]},
-  {id:10017,nombre:"Blusa Liso Un Hombro Morado #2404",tipo:"Blusa",color:"Morado",precio:21000,tallas:["Unica"]},
-  {id:10018,nombre:"Blusa Liso Un Hombro Rosado #2404",tipo:"Blusa",color:"Rosado",precio:21000,tallas:["Unica"]},
-  {id:10019,nombre:"Blusa Liso Un Hombro Verde #2404",tipo:"Blusa",color:"Verde",precio:21000,tallas:["Unica"]},
-  {id:10020,nombre:"Blusa Liso Un Hombro Verde #2404",tipo:"Blusa",color:"Verde",precio:21000,tallas:["Unica"]},
-  {id:10021,nombre:"Blusa Liso Un Hombro Negro #2404",tipo:"Blusa",color:"Negro",precio:21000,tallas:["Unica"]},
-  {id:10022,nombre:"Blusa Liso Un Hombro Rojo #2404",tipo:"Blusa",color:"Rojo",precio:21000,tallas:["Unica"]},
-  {id:10023,nombre:"Top Canale Strapless Azul #2418",tipo:"Top",color:"Azul",precio:20000,tallas:["Unica"]},
-  {id:10024,nombre:"Top Canale Strapless Gris #2418",tipo:"Top",color:"Gris",precio:20000,tallas:["Unica"]},
-  {id:10025,nombre:"Top Canale Strapless Verde #2418",tipo:"Top",color:"Verde",precio:20000,tallas:["Unica"]},
-  {id:10026,nombre:"Blusa Texturizado Corta Mostaza #2454",tipo:"Blusa",color:"Mostaza",precio:25000,tallas:["Unica"]},
-  {id:10027,nombre:"Blusa Texturizado Corta Negro #2454",tipo:"Blusa",color:"Negro",precio:25000,tallas:["Unica"]},
-  {id:10028,nombre:"Blusa Texturizado Corta Beige #2454",tipo:"Blusa",color:"Beige",precio:25000,tallas:["Unica"]},
-  {id:10029,nombre:"Blusa Liso Sisa Blanco #2346",tipo:"Blusa",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10030,nombre:"Blusa Liso Sisa Morado #2346",tipo:"Blusa",color:"Morado",precio:26000,tallas:["Unica"]},
-  {id:10031,nombre:"Blusa Liso Sisa Rosado #2346",tipo:"Blusa",color:"Rosado",precio:26000,tallas:["Unica"]},
-  {id:10032,nombre:"Blusa Liso Sisa Rojo #2346",tipo:"Blusa",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10033,nombre:"Blusa Liso Sisa Negro #2346",tipo:"Blusa",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10034,nombre:"Blusa Liso Sisa Verde #2346",tipo:"Blusa",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10035,nombre:"Blusa Liso Larga Negro #246",tipo:"Blusa",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10036,nombre:"Blusa Liso Larga Amarillo #246",tipo:"Blusa",color:"Amarillo",precio:26000,tallas:["Unica"]},
-  {id:10037,nombre:"Blusa Liso Larga Beige #246",tipo:"Blusa",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10038,nombre:"Blusa Liso Larga Verde #246",tipo:"Blusa",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10039,nombre:"Blusa Liso 3/4 Blanco #2343",tipo:"Blusa",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10040,nombre:"Blusa Liso 3/4 Beige #2343",tipo:"Blusa",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10041,nombre:"Blusa Liso 3/4 Cafe #2343",tipo:"Blusa",color:"Cafe",precio:26000,tallas:["Unica"]},
-  {id:10042,nombre:"Blusa Liso 3/4 Palo Rosa #2343",tipo:"Blusa",color:"Palo Rosa",precio:26000,tallas:["Unica"]},
-  {id:10043,nombre:"Blusa Liso 3/4 Verde #2343",tipo:"Blusa",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10044,nombre:"Blusa Liso 3/4 Azul #2343",tipo:"Blusa",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10045,nombre:"Blusa Liso 3/4 Negro #2343",tipo:"Blusa",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10046,nombre:"Blusa Liso Larga Mostaza #2413",tipo:"Blusa",color:"Mostaza",precio:25000,tallas:["Unica"]},
-  {id:10047,nombre:"Blusa Liso Larga Beige #2413",tipo:"Blusa",color:"Beige",precio:25000,tallas:["Unica"]},
-  {id:10048,nombre:"Blusa Liso Larga Cafe #2413",tipo:"Blusa",color:"Cafe",precio:25000,tallas:["Unica"]},
-  {id:10049,nombre:"Blusa Liso Larga Verde #2413",tipo:"Blusa",color:"Verde",precio:25000,tallas:["Unica"]},
-  {id:10050,nombre:"Cardigan Liso Larga Beige #2347",tipo:"Cardigan",color:"Beige",precio:35000,tallas:["Unica"]},
-  {id:10051,nombre:"Blusa Liso Larga Azul #126",tipo:"Blusa",color:"Azul",precio:20000,tallas:["Unica"]},
-  {id:10052,nombre:"Blusa Liso Larga Fucsia #126",tipo:"Blusa",color:"Fucsia",precio:20000,tallas:["Unica"]},
-  {id:10053,nombre:"Blusa Liso 3/4 Negro #2242",tipo:"Blusa",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10054,nombre:"Blusa Liso 3/4 Azul #2242",tipo:"Blusa",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10055,nombre:"Blusa Liso 3/4 Verde #2242",tipo:"Blusa",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10056,nombre:"Blusa Liso 3/4 Palo Rosa #2242",tipo:"Blusa",color:"Palo Rosa",precio:26000,tallas:["Unica"]},
-  {id:10057,nombre:"Blusa Liso 3/4 Beige #2242",tipo:"Blusa",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10058,nombre:"Blusa Liso 3/4 Blanco #2242",tipo:"Blusa",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10059,nombre:"Blusa Liso 3/4 Gris #2242",tipo:"Blusa",color:"Gris",precio:26000,tallas:["Unica"]},
-  {id:10060,nombre:"Blusa Liso Larga Verde Claro #2253",tipo:"Blusa",color:"Verde Claro",precio:26000,tallas:["Unica"]},
-  {id:10061,nombre:"Blusa Liso Larga Rojo #2253",tipo:"Blusa",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10062,nombre:"Blusa Liso Larga Naranja #2253",tipo:"Blusa",color:"Naranja",precio:26000,tallas:["Unica"]},
-  {id:10063,nombre:"Blusa Liso Larga Rosado #2253",tipo:"Blusa",color:"Rosado",precio:26000,tallas:["Unica"]},
-  {id:10064,nombre:"Blusa Liso Larga Verde Oscuro #2253",tipo:"Blusa",color:"Verde Oscuro",precio:26000,tallas:["Unica"]},
-  {id:10065,nombre:"Blusa Liso Larga Nude #2253",tipo:"Blusa",color:"Nude",precio:26000,tallas:["Unica"]},
-  {id:10066,nombre:"Blusa Liso Larga Blanco #2253",tipo:"Blusa",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10067,nombre:"Blusa Liso Larga Negro #2253",tipo:"Blusa",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10068,nombre:"Blusa Liso Larga Beige #2306",tipo:"Blusa",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10069,nombre:"Blusa Liso Larga Blanco #2306",tipo:"Blusa",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10070,nombre:"Blusa Liso Larga Rosado #2306",tipo:"Blusa",color:"Rosado",precio:26000,tallas:["Unica"]},
-  {id:10071,nombre:"Blusa Liso Larga Fucsia #2306",tipo:"Blusa",color:"Fucsia",precio:26000,tallas:["Unica"]},
-  {id:10072,nombre:"Blusa Liso Larga Verde #2306",tipo:"Blusa",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10073,nombre:"Blusa Liso Larga Azul #2306",tipo:"Blusa",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10074,nombre:"Blusa Liso Larga Negro #2306",tipo:"Blusa",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10075,nombre:"Top Calado Sisa Verde #2440",tipo:"Top",color:"Verde",precio:25000,tallas:["Unica"]},
-  {id:10076,nombre:"Top Calado Sisa Rojo #2440",tipo:"Top",color:"Rojo",precio:25000,tallas:["Unica"]},
-  {id:10077,nombre:"Top Calado Larga Rojo #246",tipo:"Top",color:"Rojo",precio:25000,tallas:["Unica"]},
-  {id:10078,nombre:"Top Calado Larga Azul #246",tipo:"Top",color:"Azul",precio:25000,tallas:["Unica"]},
-  {id:10079,nombre:"Blusa Rayas Sisa Blanco #2313",tipo:"Blusa",color:"Blanco",precio:23000,tallas:["Unica"]},
-  {id:10080,nombre:"Blusa Rayas Sisa Rosado #2313",tipo:"Blusa",color:"Rosado",precio:23000,tallas:["Unica"]},
-  {id:10081,nombre:"Body Liso Sisa Blanco #2530",tipo:"Body",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10082,nombre:"Body Liso Sisa Negro #2530",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10083,nombre:"Body Liso Sisa Rojo #2530",tipo:"Body",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10084,nombre:"Body Liso Sisa Azul #2530",tipo:"Body",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10085,nombre:"Body Liso Sisa Verde #2530",tipo:"Body",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10086,nombre:"Body Liso Sisa Beige #2530",tipo:"Body",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10087,nombre:"Body Liso Sisa Cafe #2530",tipo:"Body",color:"Cafe",precio:26000,tallas:["Unica"]},
-  {id:10088,nombre:"Body Liso Sisa Rosado #2530",tipo:"Body",color:"Rosado",precio:26000,tallas:["Unica"]},
-  {id:10089,nombre:"Body Liso Sisa Morado #2530",tipo:"Body",color:"Morado",precio:26000,tallas:["Unica"]},
-  {id:10090,nombre:"Body Liso Sisa Beige #316",tipo:"Body",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10091,nombre:"Body Liso Sisa Rosado #316",tipo:"Body",color:"Rosado",precio:26000,tallas:["Unica"]},
-  {id:10092,nombre:"Body Liso Sisa Verde #316",tipo:"Body",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10093,nombre:"Body Liso Sisa Rojo #316",tipo:"Body",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10094,nombre:"Body Liso Sisa Blanco #316",tipo:"Body",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10095,nombre:"Body Liso Sisa Negro #316",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10096,nombre:"Body Liso Larga Cafe #324",tipo:"Body",color:"Cafe",precio:26000,tallas:["Unica"]},
-  {id:10097,nombre:"Body Liso Larga Blanco #324",tipo:"Body",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10098,nombre:"Body Liso Larga Negro #324",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10099,nombre:"Body Liso Larga Beige #324",tipo:"Body",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10100,nombre:"Body Liso Larga Gris #324",tipo:"Body",color:"Gris",precio:26000,tallas:["Unica"]},
-  {id:10101,nombre:"Body Liso Larga Azul #324",tipo:"Body",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10102,nombre:"Body Rayas Larga Blanco #2514",tipo:"Body",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10103,nombre:"Body Rayas Larga Negro #2514",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10104,nombre:"Body Rayas Larga Cafe #2514",tipo:"Body",color:"Cafe",precio:26000,tallas:["Unica"]},
-  {id:10105,nombre:"Body Rayas Larga Beige #2514",tipo:"Body",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10106,nombre:"Body Rayas Larga Azul #2514",tipo:"Body",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10107,nombre:"Body Liso Sisa Verde #2516",tipo:"Body",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10108,nombre:"Body Liso Sisa Rojo #2516",tipo:"Body",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10109,nombre:"Body Liso Sisa Negro #2516",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10110,nombre:"Body Liso Sisa Cafe #2516",tipo:"Body",color:"Cafe",precio:26000,tallas:["Unica"]},
-  {id:10111,nombre:"Body Liso Sisa Beige #2516",tipo:"Body",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10112,nombre:"Body Liso Sisa Azul #2516",tipo:"Body",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10113,nombre:"Body Liso Sisa Blanco #2516",tipo:"Body",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10114,nombre:"Body Liso Sisa Salmon #2516",tipo:"Body",color:"Salmon",precio:26000,tallas:["Unica"]},
-  {id:10115,nombre:"Body Liso Sisa Rosado #2516",tipo:"Body",color:"Rosado",precio:26000,tallas:["Unica"]},
-  {id:10116,nombre:"Body Liso Larga Verde #2517",tipo:"Body",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10117,nombre:"Body Liso Larga Rojo #2517",tipo:"Body",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10118,nombre:"Body Liso Larga Negro #2517",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10119,nombre:"Body Liso Larga Azul #2517",tipo:"Body",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10120,nombre:"Body Liso Larga Blanco #2517",tipo:"Body",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10121,nombre:"Body Liso Larga Beige #2517",tipo:"Body",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10122,nombre:"Body Liso Larga Rosado #2517",tipo:"Body",color:"Rosado",precio:26000,tallas:["Unica"]},
-  {id:10123,nombre:"Body Liso Larga Salmon #2517",tipo:"Body",color:"Salmon",precio:26000,tallas:["Unica"]},
-  {id:10124,nombre:"Body Liso Corta Verde #2518",tipo:"Body",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10125,nombre:"Body Liso Corta Rojo #2518",tipo:"Body",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10126,nombre:"Body Liso Corta Negro #2518",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10127,nombre:"Body Liso Corta Cafe #2518",tipo:"Body",color:"Cafe",precio:26000,tallas:["Unica"]},
-  {id:10128,nombre:"Body Liso Corta Azul #2518",tipo:"Body",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10129,nombre:"Body Liso Corta Blanco #2518",tipo:"Body",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10130,nombre:"Body Liso Corta Beige #2518",tipo:"Body",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10131,nombre:"Body Liso Corta Salmon #2518",tipo:"Body",color:"Salmon",precio:26000,tallas:["Unica"]},
-  {id:10132,nombre:"Body Liso Larga Verde #2514",tipo:"Body",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10133,nombre:"Body Liso Larga Rojo #2514",tipo:"Body",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10134,nombre:"Body Liso Larga Negro #2514",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10135,nombre:"Body Liso Larga Cafe #2514",tipo:"Body",color:"Cafe",precio:26000,tallas:["Unica"]},
-  {id:10136,nombre:"Body Liso Larga Azul #2514",tipo:"Body",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10137,nombre:"Body Liso Larga Blanco #2514",tipo:"Body",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10138,nombre:"Body Liso Larga Beige #2514",tipo:"Body",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10139,nombre:"Body Liso Larga Salmon #2514",tipo:"Body",color:"Salmon",precio:26000,tallas:["Unica"]},
-  {id:10140,nombre:"Body Calado Corta Blanco #2453",tipo:"Body",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10141,nombre:"Body Calado Corta Negro #2453",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10142,nombre:"Body Calado Corta Rosado #2453",tipo:"Body",color:"Rosado",precio:26000,tallas:["Unica"]},
-  {id:10143,nombre:"Body Calado Corta Azul #2453",tipo:"Body",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10144,nombre:"Body Calado Corta Beige #2453",tipo:"Body",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10145,nombre:"Blusa Liso Sisa Azul #2345",tipo:"Blusa",color:"Azul",precio:24000,tallas:["Unica"]},
-  {id:10146,nombre:"Blusa Liso Sisa Rosado #2345",tipo:"Blusa",color:"Rosado",precio:24000,tallas:["Unica"]},
-  {id:10147,nombre:"Blusa Liso Sisa Verde #2345",tipo:"Blusa",color:"Verde",precio:24000,tallas:["Unica"]},
-  {id:10148,nombre:"Blusa Liso Sisa Rojo #2345",tipo:"Blusa",color:"Rojo",precio:24000,tallas:["Unica"]},
-  {id:10149,nombre:"Blusa Liso Sisa Morado #2345",tipo:"Blusa",color:"Morado",precio:24000,tallas:["Unica"]},
-  {id:10150,nombre:"Body Liso Corta Blanco #2449",tipo:"Body",color:"Blanco",precio:24000,tallas:["Unica"]},
-  {id:10151,nombre:"Body Liso Corta Negro #2449",tipo:"Body",color:"Negro",precio:24000,tallas:["Unica"]},
-  {id:10152,nombre:"Body Liso Corta Beige #2449",tipo:"Body",color:"Beige",precio:24000,tallas:["Unica"]},
-  {id:10153,nombre:"Body Liso Larga Rojo #2327",tipo:"Body",color:"Rojo",precio:24000,tallas:["Unica"]},
-  {id:10154,nombre:"Body Liso Larga Negro #2327",tipo:"Body",color:"Negro",precio:24000,tallas:["Unica"]},
-  {id:10155,nombre:"Body Liso Larga Rosado #2327",tipo:"Body",color:"Rosado",precio:24000,tallas:["Unica"]},
-  {id:10156,nombre:"Body Liso Larga Morado #2327",tipo:"Body",color:"Morado",precio:24000,tallas:["Unica"]},
-  {id:10157,nombre:"Body Liso Larga Azul #2327",tipo:"Body",color:"Azul",precio:24000,tallas:["Unica"]},
-  {id:10158,nombre:"Body Liso Sin Manga Verde #2431",tipo:"Body",color:"Verde",precio:24000,tallas:["Unica"]},
-  {id:10159,nombre:"Body Liso Sin Manga Beige #2431",tipo:"Body",color:"Beige",precio:24000,tallas:["Unica"]},
-  {id:10160,nombre:"Body Liso Sin Manga Rosado #2431",tipo:"Body",color:"Rosado",precio:24000,tallas:["Unica"]},
-  {id:10161,nombre:"Body Liso Sin Manga Nude #2431",tipo:"Body",color:"Nude",precio:24000,tallas:["Unica"]},
-  {id:10162,nombre:"Body Liso Un Hombro Blanco #2277",tipo:"Body",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10163,nombre:"Body Liso Un Hombro Rosado #2277",tipo:"Body",color:"Rosado",precio:26000,tallas:["Unica"]},
-  {id:10164,nombre:"Body Liso Un Hombro Verde #2277",tipo:"Body",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10165,nombre:"Body Liso Un Hombro Nude #2277",tipo:"Body",color:"Nude",precio:26000,tallas:["Unica"]},
-  {id:10166,nombre:"Body Liso Un Hombro Negro #2277",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10167,nombre:"Body Liso Un Hombro Rojo #2277",tipo:"Body",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10168,nombre:"Body Liso Un Hombro Azul #2277",tipo:"Body",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10169,nombre:"Body Liso Un Hombro Fucsia #2277",tipo:"Body",color:"Fucsia",precio:26000,tallas:["Unica"]},
-  {id:10170,nombre:"Body Liso Sin Manga Negro #2432",tipo:"Body",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10171,nombre:"Body Liso Sin Manga Rojo #2432",tipo:"Body",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10172,nombre:"Body Liso Sin Manga Verde #2432",tipo:"Body",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10173,nombre:"Body Liso Sin Manga Morado #2432",tipo:"Body",color:"Morado",precio:26000,tallas:["Unica"]},
-  {id:10174,nombre:"Body Liso Sin Manga Azul #2432",tipo:"Body",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10175,nombre:"Top Liso Sisa Azul #2455",tipo:"Top",color:"Azul",precio:24000,tallas:["Unica"]},
-  {id:10176,nombre:"Top Liso Sisa Cafe #2455",tipo:"Top",color:"Cafe",precio:24000,tallas:["Unica"]},
-  {id:10177,nombre:"Top Rayas Larga Beige #2312",tipo:"Top",color:"Beige",precio:23000,tallas:["Unica"]},
-  {id:10178,nombre:"Top Liso Corta Azul #281",tipo:"Top",color:"Azul",precio:15000,tallas:["Unica"]},
-  {id:10179,nombre:"Top Liso Corta Verde #281",tipo:"Top",color:"Verde",precio:15000,tallas:["Unica"]},
-  {id:10180,nombre:"Top Liso Corta Rojo #281",tipo:"Top",color:"Rojo",precio:15000,tallas:["Unica"]},
-  {id:10181,nombre:"Top Liso Corta Vino #281",tipo:"Top",color:"Vino",precio:15000,tallas:["Unica"]},
-  {id:10182,nombre:"Top Liso Corta Negro #281",tipo:"Top",color:"Negro",precio:15000,tallas:["Unica"]},
-  {id:10183,nombre:"Top Liso Corta Rosado #281",tipo:"Top",color:"Rosado",precio:15000,tallas:["Unica"]},
-  {id:10184,nombre:"Top Liso Corta Verde #146",tipo:"Top",color:"Verde",precio:22000,tallas:["Unica"]},
-  {id:10185,nombre:"Top Liso Corta Vino #146",tipo:"Top",color:"Vino",precio:22000,tallas:["Unica"]},
-  {id:10186,nombre:"Top Rayas Larga Blanco #2320",tipo:"Top",color:"Blanco",precio:23000,tallas:["Unica"]},
-  {id:10187,nombre:"Top Rayas Larga Azul #2320",tipo:"Top",color:"Azul",precio:23000,tallas:["Unica"]},
-  {id:10188,nombre:"Top Rayas Corta Beige #1901",tipo:"Top",color:"Beige",precio:20000,tallas:["Unica"]},
-  {id:10189,nombre:"Top Estampado Corta Gris #2324",tipo:"Top",color:"Gris",precio:25000,tallas:["Unica"]},
-  {id:10190,nombre:"Top Liso 3/4 Negro #296",tipo:"Top",color:"Negro",precio:20000,tallas:["Unica"]},
-  {id:10191,nombre:"Top Liso 3/4 Rosado #296",tipo:"Top",color:"Rosado",precio:20000,tallas:["Unica"]},
-  {id:10192,nombre:"Top Liso 3/4 Verde #296",tipo:"Top",color:"Verde",precio:20000,tallas:["Unica"]},
-  {id:10193,nombre:"Top Liso Corta Beige #287",tipo:"Top",color:"Beige",precio:20000,tallas:["Unica"]},
-  {id:10194,nombre:"Top Liso Corta Rojo #287",tipo:"Top",color:"Rojo",precio:20000,tallas:["Unica"]},
-  {id:10195,nombre:"Top Liso Corta Azul #287",tipo:"Top",color:"Azul",precio:20000,tallas:["Unica"]},
-  {id:10196,nombre:"Top Liso Corta Verde #287",tipo:"Top",color:"Verde",precio:20000,tallas:["Unica"]},
-  {id:10197,nombre:"Top Liso Corta Negro #287",tipo:"Top",color:"Negro",precio:20000,tallas:["Unica"]},
-  {id:10198,nombre:"Top Rayas Corta Beige #281",tipo:"Top",color:"Beige",precio:20000,tallas:["Unica"]},
-  {id:10199,nombre:"Top Rayas Corta Blanco #281",tipo:"Top",color:"Blanco",precio:20000,tallas:["Unica"]},
-  {id:10200,nombre:"Top Rayas Corta Cafe #281",tipo:"Top",color:"Cafe",precio:20000,tallas:["Unica"]},
-  {id:10201,nombre:"Top Rayas Corta Negro #281",tipo:"Top",color:"Negro",precio:20000,tallas:["Unica"]},
-  {id:10202,nombre:"Top Liso Corta Negro #1091",tipo:"Top",color:"Negro",precio:20000,tallas:["Unica"]},
-  {id:10203,nombre:"Top Liso Corta Beige #1091",tipo:"Top",color:"Beige",precio:20000,tallas:["Unica"]},
-  {id:10204,nombre:"Top Rayas Larga Blanco #2340",tipo:"Top",color:"Blanco",precio:23000,tallas:["Unica"]},
-  {id:10205,nombre:"Top Rayas Larga Rosado #2340",tipo:"Top",color:"Rosado",precio:23000,tallas:["Unica"]},
-  {id:10206,nombre:"Top Rayas Larga Blanco #126",tipo:"Top",color:"Blanco",precio:23000,tallas:["Unica"]},
-  {id:10207,nombre:"Top Rayas Larga Cafe #126",tipo:"Top",color:"Cafe",precio:23000,tallas:["Unica"]},
-  {id:10208,nombre:"Top Rayas Larga Beige #126",tipo:"Top",color:"Beige",precio:23000,tallas:["Unica"]},
-  {id:10209,nombre:"Top Rayas Larga Azul #126",tipo:"Top",color:"Azul",precio:23000,tallas:["Unica"]},
-  {id:10210,nombre:"Vestido Liso Corta Cafe #2506",tipo:"Vestido",color:"Cafe",precio:45000,tallas:["Unica"]},
-  {id:10211,nombre:"Vestido Liso Corta Cafe #2506",tipo:"Vestido",color:"Cafe",precio:45000,tallas:["Unica"]},
-  {id:10212,nombre:"Vestido Liso Corta Verde #2506",tipo:"Vestido",color:"Verde",precio:45000,tallas:["Unica"]},
-  {id:10213,nombre:"Vestido Liso Corta Verde #2506",tipo:"Vestido",color:"Verde",precio:45000,tallas:["Unica"]},
-  {id:10214,nombre:"Vestido Liso Corta Beige #2506",tipo:"Vestido",color:"Beige",precio:45000,tallas:["Unica"]},
-  {id:10215,nombre:"Vestido Liso Corta Beige #2506",tipo:"Vestido",color:"Beige",precio:45000,tallas:["Unica"]},
-  {id:10216,nombre:"Vestido Liso Corta Gris #2506",tipo:"Vestido",color:"Gris",precio:45000,tallas:["Unica"]},
-  {id:10217,nombre:"Vestido Liso Corta Gris #2506",tipo:"Vestido",color:"Gris",precio:45000,tallas:["Unica"]},
-  {id:10218,nombre:"Vestido Liso Corta Azul #2506",tipo:"Vestido",color:"Azul",precio:45000,tallas:["Unica"]},
-  {id:10219,nombre:"Vestido Liso Corta Azul #2506",tipo:"Vestido",color:"Azul",precio:45000,tallas:["Unica"]},
-  {id:10220,nombre:"Vestido Liso Strapless Negro #2416",tipo:"Vestido",color:"Negro",precio:40000,tallas:["Unica"]},
-  {id:10221,nombre:"Vestido Liso Strapless Rojo #2416",tipo:"Vestido",color:"Rojo",precio:40000,tallas:["Unica"]},
-  {id:10222,nombre:"Vestido Liso Strapless Beige #2416",tipo:"Vestido",color:"Beige",precio:40000,tallas:["Unica"]},
-  {id:10223,nombre:"Vestido Liso Strapless Negro #2423",tipo:"Vestido",color:"Negro",precio:45000,tallas:["Unica"]},
-  {id:10224,nombre:"Vestido Liso Strapless Beige #2423",tipo:"Vestido",color:"Beige",precio:45000,tallas:["Unica"]},
-  {id:10225,nombre:"Vestido Liso Strapless Dorado #2423",tipo:"Vestido",color:"Dorado",precio:45000,tallas:["Unica"]},
-  {id:10226,nombre:"Vestido Liso Strapless Verde #2423",tipo:"Vestido",color:"Verde",precio:45000,tallas:["Unica"]},
-  {id:10227,nombre:"Vestido Liso Strapless Blanco #2526",tipo:"Vestido",color:"Blanco",precio:45000,tallas:["Unica"]},
-  {id:10228,nombre:"Vestido Liso Strapless Negro #2526",tipo:"Vestido",color:"Negro",precio:45000,tallas:["Unica"]},
-  {id:10229,nombre:"Vestido Liso Strapless Cafe #2526",tipo:"Vestido",color:"Cafe",precio:45000,tallas:["Unica"]},
-  {id:10230,nombre:"Vestido Liso Strapless Azul #2526",tipo:"Vestido",color:"Azul",precio:45000,tallas:["Unica"]},
-  {id:10231,nombre:"Vestido Liso Strapless Gris #2526",tipo:"Vestido",color:"Gris",precio:45000,tallas:["Unica"]},
-  {id:10232,nombre:"Vestido Liso Strapless Beige #2526",tipo:"Vestido",color:"Beige",precio:45000,tallas:["Unica"]},
-  {id:10233,nombre:"Vestido Liso Larga Negro #2505",tipo:"Vestido",color:"Negro",precio:40000,tallas:["Unica"]},
-  {id:10234,nombre:"Vestido Liso Larga Rojo #2505",tipo:"Vestido",color:"Rojo",precio:40000,tallas:["Unica"]},
-  {id:10235,nombre:"Vestido Liso Larga Verde #2505",tipo:"Vestido",color:"Verde",precio:40000,tallas:["Unica"]},
-  {id:10236,nombre:"Vestido Liso Larga Azul #2505",tipo:"Vestido",color:"Azul",precio:40000,tallas:["Unica"]},
-  {id:10237,nombre:"Vestido Panel Corta Verde #2425",tipo:"Vestido",color:"Verde",precio:40000,tallas:["Unica"]},
-  {id:10238,nombre:"Vestido Drapeado Larga Lila #2401",tipo:"Vestido",color:"Lila",precio:35000,tallas:["Unica"]},
-  {id:10239,nombre:"Vestido Liso Corta Blanco #2435",tipo:"Vestido",color:"Blanco",precio:40000,tallas:["Unica"]},
-  {id:10240,nombre:"Vestido Liso Corta Verde #2435",tipo:"Vestido",color:"Verde",precio:40000,tallas:["Unica"]},
-  {id:10241,nombre:"Vestido Liso Corta Turquesa #2435",tipo:"Vestido",color:"Turquesa",precio:40000,tallas:["Unica"]},
-  {id:10242,nombre:"Vestido Rayas Larga Blanco #414",tipo:"Vestido",color:"Blanco",precio:35000,tallas:["Unica"]},
-  {id:10243,nombre:"Vestido Rayas Larga Negro #414",tipo:"Vestido",color:"Negro",precio:35000,tallas:["Unica"]},
-  {id:10244,nombre:"Vestido Liso Corta Durazno #2421",tipo:"Vestido",color:"Durazno",precio:40000,tallas:["Unica"]},
-  {id:10245,nombre:"Vestido Liso Corta Beige #2421",tipo:"Vestido",color:"Beige",precio:40000,tallas:["Unica"]},
-  {id:10246,nombre:"Vestido Liso Corta Rosa #2421",tipo:"Vestido",color:"Rosa",precio:40000,tallas:["Unica"]},
-  {id:10247,nombre:"Vestido Liso Corta Blanco #2421",tipo:"Vestido",color:"Blanco",precio:40000,tallas:["Unica"]},
-  {id:10248,nombre:"Vestido Liso Corta Rojo #2421",tipo:"Vestido",color:"Rojo",precio:40000,tallas:["Unica"]},
-  {id:10249,nombre:"Vestido Liso Tiras Coral #418",tipo:"Vestido",color:"Coral",precio:30000,tallas:["Unica"]},
-  {id:10250,nombre:"Vestido Nudo Sin manga Rosa claro #2337",tipo:"Vestido",color:"Rosa claro",precio:40000,tallas:["Unica"]},
-  {id:10251,nombre:"Vestido Liso Corta Lila #256",tipo:"Vestido",color:"Lila",precio:30000,tallas:["Unica"]},
-  {id:10252,nombre:"Vestido Liso Corta Negro #256",tipo:"Vestido",color:"Negro",precio:30000,tallas:["Unica"]},
-  {id:10253,nombre:"Vestido Liso Corta Vainilla #256",tipo:"Vestido",color:"Vainilla",precio:30000,tallas:["Unica"]},
-  {id:10254,nombre:"Vestido Liso Corta Verde #256",tipo:"Vestido",color:"Verde",precio:30000,tallas:["Unica"]},
-  {id:10255,nombre:"Pantalon Calado Negro #2536",tipo:"Pantalon",color:"Negro",precio:50000,tallas:["Unica"]},
-  {id:10256,nombre:"Pantalon Calado Beige #2536",tipo:"Pantalon",color:"Beige",precio:50000,tallas:["Unica"]},
-  {id:10257,nombre:"Pantalon Liso Blanco #2535",tipo:"Pantalon",color:"Blanco",precio:60000,tallas:["Unica"]},
-  {id:10258,nombre:"Pantalon Liso Negro #2535",tipo:"Pantalon",color:"Negro",precio:60000,tallas:["Unica"]},
-  {id:10259,nombre:"Pantalon Liso Verde #2535",tipo:"Pantalon",color:"Verde",precio:60000,tallas:["Unica"]},
-  {id:10260,nombre:"Pantalon Liso Menta #2535",tipo:"Pantalon",color:"Menta",precio:60000,tallas:["Unica"]},
-  {id:10261,nombre:"Pantalon Liso Camel #2434",tipo:"Pantalon",color:"Camel",precio:50000,tallas:["Unica"]},
-  {id:10262,nombre:"Pantalon Liso Blanco #2434",tipo:"Pantalon",color:"Blanco",precio:50000,tallas:["Unica"]},
-  {id:10263,nombre:"Pantalon Liso Beige #2434",tipo:"Pantalon",color:"Beige",precio:50000,tallas:["Unica"]},
-  {id:10264,nombre:"Pantalon Liso Negro #2434",tipo:"Pantalon",color:"Negro",precio:50000,tallas:["Unica"]},
-  {id:10265,nombre:"Pantalon Con Linea Lateral Camel #2452",tipo:"Pantalon",color:"Camel",precio:42000,tallas:["Unica"]},
-  {id:10266,nombre:"Pantalon Con Linea Lateral Verde #2452",tipo:"Pantalon",color:"Verde",precio:42000,tallas:["Unica"]},
-  {id:10267,nombre:"Pantalon Con Linea Lateral Negro #2452",tipo:"Pantalon",color:"Negro",precio:42000,tallas:["Unica"]},
-  {id:10268,nombre:"Pantalon Liso Fucsia #2201",tipo:"Pantalon",color:"Fucsia",precio:38000,tallas:["Unica"]},
-  {id:10269,nombre:"Pantalon Liso Rojo #2201",tipo:"Pantalon",color:"Rojo",precio:38000,tallas:["Unica"]},
-  {id:10270,nombre:"Pantalon Liso Azul #2201",tipo:"Pantalon",color:"Azul",precio:38000,tallas:["Unica"]},
-  {id:10271,nombre:"Short Liso N/A Negro #Short",tipo:"Short",color:"Negro",precio:25000,tallas:["Unica"]},
-  {id:10272,nombre:"Short Liso N/A Rosa #Short",tipo:"Short",color:"Rosa",precio:25000,tallas:["Unica"]},
-  {id:10273,nombre:"Short Liso N/A Verde #Short",tipo:"Short",color:"Verde",precio:25000,tallas:["Unica"]},
-  {id:10274,nombre:"Falda Calado Corta Blanco #2510",tipo:"Falda",color:"Blanco",precio:36000,tallas:["Unica"]},
-  {id:10275,nombre:"Falda Liso Larga Azul jean #2502",tipo:"Falda",color:"Azul jean",precio:45000,tallas:["Unica"]},
-  {id:10276,nombre:"Falda Liso Larga Blanco #2502",tipo:"Falda",color:"Blanco",precio:45000,tallas:["Unica"]},
-  {id:10277,nombre:"Falda Liso Larga Cafe #2502",tipo:"Falda",color:"Cafe",precio:45000,tallas:["Unica"]},
-  {id:10278,nombre:"Falda Liso Larga Negro #2502",tipo:"Falda",color:"Negro",precio:45000,tallas:["Unica"]},
-  {id:10279,nombre:"Falda Encaje Larga Blanco #2503",tipo:"Falda",color:"Blanco",precio:45000,tallas:["Unica"]},
-  {id:10280,nombre:"Falda Encaje Larga Negro #2503",tipo:"Falda",color:"Negro",precio:45000,tallas:["Unica"]},
-  {id:10281,nombre:"Falda Liso Asimetrica Beige #2504",tipo:"Falda",color:"Beige",precio:45000,tallas:["Unica"]},
-  {id:10282,nombre:"Falda Liso Asimetrica Negro #2504",tipo:"Falda",color:"Negro",precio:45000,tallas:["Unica"]},
-  {id:10283,nombre:"Falda Liso Asimetrica Azul #2504",tipo:"Falda",color:"Azul",precio:45000,tallas:["Unica"]},
-  {id:10284,nombre:"Falda Liso Asimetrica Cafe #2504",tipo:"Falda",color:"Cafe",precio:45000,tallas:["Unica"]},
-  {id:10285,nombre:"Falda Liso Asimetrica Blanco #2504",tipo:"Falda",color:"Blanco",precio:45000,tallas:["Unica"]},
-  {id:10286,nombre:"Falda Con Linea Larga Beige #2427",tipo:"Falda",color:"Beige",precio:42000,tallas:["Unica"]},
-  {id:10287,nombre:"Falda Con Linea Larga Blanco #2427",tipo:"Falda",color:"Blanco",precio:42000,tallas:["Unica"]},
-  {id:10288,nombre:"Falda Con Linea Larga Cafe #2427",tipo:"Falda",color:"Cafe",precio:42000,tallas:["Unica"]},
-  {id:10289,nombre:"Falda Con Linea Larga Negro #2427",tipo:"Falda",color:"Negro",precio:42000,tallas:["Unica"]},
-  {id:10290,nombre:"Falda Con Linea Larga Verde #2427",tipo:"Falda",color:"Verde",precio:42000,tallas:["Unica"]},
-  {id:10291,nombre:"Falda Liso Larga Beige #2443",tipo:"Falda",color:"Beige",precio:35000,tallas:["Unica"]},
-  {id:10292,nombre:"Falda Liso Larga Blanco #2443",tipo:"Falda",color:"Blanco",precio:35000,tallas:["Unica"]},
-  {id:10293,nombre:"Falda Liso Larga Negro #2443",tipo:"Falda",color:"Negro",precio:35000,tallas:["Unica"]},
-  {id:10294,nombre:"Falda Animal Print Larga Beige/Marron #2443",tipo:"Falda",color:"Beige/Marron",precio:35000,tallas:["Unica"]},
-  {id:10295,nombre:"Set Liso Corto Verde #2353",tipo:"Set",color:"Verde",precio:25000,tallas:["Unica"]},
-  {id:10296,nombre:"Set Liso Corto Rosa #2353",tipo:"Set",color:"Rosa",precio:25000,tallas:["Unica"]},
-  {id:10297,nombre:"Set Liso Corto Lila #2353",tipo:"Set",color:"Lila",precio:25000,tallas:["Unica"]},
-  {id:10298,nombre:"Set Liso Corto Vino #2353",tipo:"Set",color:"Vino",precio:25000,tallas:["Unica"]},
-  {id:10299,nombre:"Blusa Encaje Larga Rosado #2450",tipo:"Blusa",color:"Rosado",precio:26000,tallas:["Unica"]},
-  {id:10300,nombre:"Blusa Encaje Larga Negro #2450",tipo:"Blusa",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10301,nombre:"Blusa Encaje Larga Azul #2450",tipo:"Blusa",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10302,nombre:"Blusa Encaje Larga Blanco #2450",tipo:"Blusa",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10303,nombre:"Blusa Liso Larga Azul #189",tipo:"Blusa",color:"Azul",precio:20000,tallas:["Unica"]},
-  {id:10304,nombre:"Blusa Liso Larga Rojo #189",tipo:"Blusa",color:"Rojo",precio:20000,tallas:["Unica"]},
-  {id:10305,nombre:"Blusa Liso Larga Negro #2515",tipo:"Blusa",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10306,nombre:"Blusa Liso Larga Rojo #2515",tipo:"Blusa",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10307,nombre:"Blusa Liso Larga Azul #2515",tipo:"Blusa",color:"Azul",precio:26000,tallas:["Unica"]},
-  {id:10308,nombre:"Blusa Liso Larga Blanco #2515",tipo:"Blusa",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10309,nombre:"Blusa Liso Larga Palo Rosa #2515",tipo:"Blusa",color:"Palo Rosa",precio:26000,tallas:["Unica"]},
-  {id:10310,nombre:"Top Liso Sin Manga Palo Rosa #2508",tipo:"Top",color:"Palo Rosa",precio:26000,tallas:["Unica"]},
-  {id:10311,nombre:"Top Liso Sin Manga Verde #2508",tipo:"Top",color:"Verde",precio:26000,tallas:["Unica"]},
-  {id:10312,nombre:"Top Liso Sin Manga Rojo #2508",tipo:"Top",color:"Rojo",precio:26000,tallas:["Unica"]},
-  {id:10313,nombre:"Top Liso Sin Manga Negro #2508",tipo:"Top",color:"Negro",precio:26000,tallas:["Unica"]},
-  {id:10314,nombre:"Top Liso Sin Manga Beige #2508",tipo:"Top",color:"Beige",precio:26000,tallas:["Unica"]},
-  {id:10315,nombre:"Top Liso Sin Manga Blanco #2508",tipo:"Top",color:"Blanco",precio:26000,tallas:["Unica"]},
-  {id:10316,nombre:"Blusa Canale Larga Negro #2405",tipo:"Blusa",color:"Negro",precio:35000,tallas:["Unica"]},
-  {id:10317,nombre:"Blusa Canale Larga Blanco #2405",tipo:"Blusa",color:"Blanco",precio:35000,tallas:["Unica"]},
-  {id:10318,nombre:"Blusa Liso Larga Verde Claro #2405",tipo:"Blusa",color:"Verde Claro",precio:35000,tallas:["Unica"]},
-  {id:10319,nombre:"Blusa Liso Larga Verde Oscuro #2405",tipo:"Blusa",color:"Verde Oscuro",precio:35000,tallas:["Unica"]},
-  {id:10320,nombre:"Blusa Liso Larga Gris #2405",tipo:"Blusa",color:"Gris",precio:35000,tallas:["Unica"]},
-  {id:10321,nombre:"Blusa Liso Larga Palo Rosa #2405",tipo:"Blusa",color:"Palo Rosa",precio:35000,tallas:["Unica"]},
-  {id:10322,nombre:"Blusa Canale Globo Cafe #292",tipo:"Blusa",color:"Cafe",precio:35000,tallas:["Unica"]},
-  {id:10323,nombre:"Blusa Canale Globo Negro #292",tipo:"Blusa",color:"Negro",precio:35000,tallas:["Unica"]},
-  {id:10324,nombre:"Blusa Canale Globo Marfil #292",tipo:"Blusa",color:"Marfil",precio:35000,tallas:["Unica"]},
-  {id:10325,nombre:"Blusa Canale Globo Gris #292",tipo:"Blusa",color:"Gris",precio:35000,tallas:["Unica"]},
-  {id:10326,nombre:"Blusa Canale Globo Blanco #292",tipo:"Blusa",color:"Blanco",precio:35000,tallas:["Unica"]},
-  {id:10327,nombre:"Blusa Canale Globo Vino #292",tipo:"Blusa",color:"Vino",precio:35000,tallas:["Unica"]},
-  {id:10328,nombre:"Blusa Canale Globo Verde #292",tipo:"Blusa",color:"Verde",precio:35000,tallas:["Unica"]},
-  {id:10329,nombre:"Blusa Canale Larga Verde Militar #2405",tipo:"Blusa",color:"Verde Militar",precio:35000,tallas:["Unica"]},
-  {id:11001,nombre:"Blusa Liso Larga Salmon #227",tipo:"Blusa",color:"Salmon",precio:32000,tallas:["Plus"]},
-  {id:11002,nombre:"Blusa Liso Larga Blanco #227",tipo:"Blusa",color:"Blanco",precio:32000,tallas:["Plus"]},
-  {id:11003,nombre:"Blusa Liso Larga Morado #227",tipo:"Blusa",color:"Morado",precio:32000,tallas:["Plus"]},
-  {id:11004,nombre:"Blusa Liso Larga Beige #227",tipo:"Blusa",color:"Beige",precio:32000,tallas:["Plus"]},
-  {id:11005,nombre:"Blusa Liso Corta Rojo #229",tipo:"Blusa",color:"Rojo",precio:32000,tallas:["Plus"]},
-  {id:11006,nombre:"Blusa Liso Corta Verde #229",tipo:"Blusa",color:"Verde",precio:32000,tallas:["Plus"]},
-  {id:11007,nombre:"Blusa Liso Corta Beige #229",tipo:"Blusa",color:"Beige",precio:32000,tallas:["Plus"]},
-  {id:11008,nombre:"Blusa Liso Corta Negro #229",tipo:"Blusa",color:"Negro",precio:32000,tallas:["Plus"]},
-  {id:11009,nombre:"Blusa Liso Corta Cafe #234",tipo:"Blusa",color:"Cafe",precio:32000,tallas:["Plus"]},
-  {id:11010,nombre:"Blusa Liso Corta Blanco #234",tipo:"Blusa",color:"Blanco",precio:32000,tallas:["Plus"]},
-  {id:11011,nombre:"Blusa Liso Corta Negro #234",tipo:"Blusa",color:"Negro",precio:32000,tallas:["Plus"]},
-  {id:11012,nombre:"Body Animal Print Larga Blanco/Negro #211",tipo:"Body",color:"Blanco/Negro",precio:28000,tallas:["Unica"]},
-  {id:11013,nombre:"Body Animal Print Larga Beige/Negro #211",tipo:"Body",color:"Beige/Negro",precio:28000,tallas:["Unica"]},
-  {id:11014,nombre:"Body Animal Print Larga Dorado/Negro #211",tipo:"Body",color:"Dorado/Negro",precio:28000,tallas:["Unica"]},
-  {id:11015,nombre:"Body Lisa Larga Verde #211",tipo:"Body",color:"Verde",precio:27000,tallas:["Unica"]},
-  {id:11016,nombre:"Body Lisa Larga Coral #211",tipo:"Body",color:"Coral",precio:27000,tallas:["Unica"]},
-  {id:11017,nombre:"Body Lisa Larga Negro #211",tipo:"Body",color:"Negro",precio:27000,tallas:["Unica"]},
-  {id:11018,nombre:"Body Lisa Larga Rosa #211",tipo:"Body",color:"Rosa",precio:27000,tallas:["Unica"]},
-  {id:11019,nombre:"Blusa Lisa Larga Rojo #199",tipo:"Blusa",color:"Rojo",precio:25000,tallas:["Unica"]},
-  {id:11020,nombre:"Blusa Lisa Larga Beige #199",tipo:"Blusa",color:"Beige",precio:25000,tallas:["Unica"]},
-  {id:11021,nombre:"Blusa Lisa Larga Rosado #46",tipo:"Blusa",color:"Rosado",precio:25000,tallas:["Unica"]},
-  {id:11022,nombre:"Blusa Lisa Larga Blanco #46",tipo:"Blusa",color:"Blanco",precio:25000,tallas:["Unica"]},
-  {id:11023,nombre:"Blusa Lisa Larga Negro #46",tipo:"Blusa",color:"Negro",precio:25000,tallas:["Unica"]},
-  {id:11024,nombre:"Blusa Lisa Larga Verde #46",tipo:"Blusa",color:"Verde",precio:25000,tallas:["Unica"]},
-  {id:11025,nombre:"Blusa Lisa Larga Beige #46",tipo:"Blusa",color:"Beige",precio:25000,tallas:["Unica"]},
-  {id:11026,nombre:"Blusa Liso Corta Rosa #234",tipo:"Blusa",color:"Rosa",precio:32000,tallas:["Plus"]},
-  {id:11027,nombre:"Blusa Animal print 2025-04-03 00:00:00 Marron con Beige #4",tipo:"Blusa",color:"Marron con Beige",precio:32000,tallas:["Unica"]},
-  {id:11028,nombre:"Blusa Animal print 2025-04-03 00:00:00 Negra con Beige #4",tipo:"Blusa",color:"Negra con Beige",precio:32000,tallas:["Unica"]},
-  {id:11029,nombre:"Set Lino Sin Manga Azul #17",tipo:"Set",color:"Azul",precio:32000,tallas:["Unica"]},
-  {id:11030,nombre:"Set Lino Sin Manga Negro #17",tipo:"Set",color:"Negro",precio:32000,tallas:["Unica"]},
-  {id:11031,nombre:"Set Lino Sin Manga Beige #17",tipo:"Set",color:"Beige",precio:32000,tallas:["Unica"]},
-  {id:11032,nombre:"Blusa Rib Corta Blanco #22",tipo:"Blusa",color:"Blanco",precio:32000,tallas:["Unica"]},
-  {id:11033,nombre:"Blusa Rib Corta Terracota #22",tipo:"Blusa",color:"Terracota",precio:32000,tallas:["Unica"]},
-  {id:11034,nombre:"Blusa Ojalillo Corta Blanco #22",tipo:"Blusa",color:"Blanco",precio:32000,tallas:["Unica"]},
-  {id:11035,nombre:"Blusa Ojalillo Corta Beige #22",tipo:"Blusa",color:"Beige",precio:32000,tallas:["Unica"]},
-  {id:11036,nombre:"Set Rib Manga larga Azul #10",tipo:"Set",color:"Azul",precio:32000,tallas:["Unica"]},
-  {id:11037,nombre:"Set Rib Manga larga Negro #10",tipo:"Set",color:"Negro",precio:32000,tallas:["Unica"]},
-  {id:11038,nombre:"Set Rib Manga larga Verde #10",tipo:"Set",color:"Verde",precio:28000,tallas:["Unica"]},
-  {id:11039,nombre:"Set Ojalillo Sin mangas Negro #6",tipo:"Set",color:"Negro",precio:28000,tallas:["Unica"]},
-  {id:11040,nombre:"Set Ojalillo Sin mangas Cafe claro #6",tipo:"Set",color:"Cafe claro",precio:28000,tallas:["Unica"]},
-  {id:11041,nombre:"Set Rib Sin mangas Camel #14",tipo:"Set",color:"Camel",precio:27000,tallas:["Unica"]},
-  {id:11042,nombre:"Set Rib Sin mangas Negro #14",tipo:"Set",color:"Negro",precio:27000,tallas:["Unica"]},
-  {id:11043,nombre:"Set Liso Sin mangas Negro #16",tipo:"Set",color:"Negro",precio:27000,tallas:["L"]},
-  {id:11044,nombre:"Set Liso Sin mangas Gris #16",tipo:"Set",color:"Gris",precio:27000,tallas:["M"]},
-  {id:11045,nombre:"Set Rib Manga corta Verde #21",tipo:"Set",color:"Verde",precio:25000,tallas:["Unica"]},
-  {id:11046,nombre:"Set Rib Manga corta Terracota #21",tipo:"Set",color:"Terracota",precio:25000,tallas:["Unica"]},
-  {id:11047,nombre:"Pantalon Liso N/A Verde claro #15",tipo:"Pantalon",color:"Verde claro",precio:25000,tallas:["8.0"]},
-  {id:11048,nombre:"Pantalon Liso N/A Verde oscuro #15",tipo:"Pantalon",color:"Verde oscuro",precio:25000,tallas:["2025-08-06 00:00:00"]},
-  {id:11049,nombre:"Pantalon Liso N/A Negro #15",tipo:"Pantalon",color:"Negro",precio:25000,tallas:["2025-08-06 00:00:00"]},
-  {id:11050,nombre:"Pantalon Rib N/A Verde claro #28",tipo:"Pantalon",color:"Verde claro",precio:25000,tallas:["Unica"]},
-  {id:11051,nombre:"Pantalon Rib N/A Negro #28",tipo:"Pantalon",color:"Negro",precio:25000,tallas:["Unica"]},
-  {id:11052,nombre:"Set Rib Manga larga Verde #13",tipo:"Set",color:"Verde",precio:32000,tallas:["Unica"]},
-  {id:11053,nombre:"Set Rib Manga larga Beige #13",tipo:"Set",color:"Beige",precio:32000,tallas:["Unica"]},
-  {id:11054,nombre:"Set Rib Manga corta Beige #37",tipo:"Set",color:"Beige",precio:32000,tallas:["Unica"]},
-  {id:11055,nombre:"Top Rib Sin mangas Negro #5",tipo:"Top",color:"Negro",precio:32000,tallas:["Unica"]},
-  {id:11056,nombre:"Top Rib Sin mangas Verde #5",tipo:"Top",color:"Verde",precio:25000,tallas:["Unica"]},
-  {id:11057,nombre:"Top Acanalado Sin mangas Gris #5",tipo:"Top",color:"Gris",precio:25000,tallas:["Unica"]},
-  {id:11058,nombre:"Top Acanalado Sin mangas Blanco #5",tipo:"Top",color:"Blanco",precio:25000,tallas:["Unica"]},
-];
-
-const TIPOS   = ["Todos", "Blusa", "Body", "Cardigan", "Falda", "Pantalon", "Set", "Short", "Top", "Vestido"];
-const COLORES_LIST = ["Todos", "Amarillo", "Azul", "Azul jean", "Beige", "Beige/Marron", "Beige/Negro", "Blanco", "Blanco/Negro", "Cafe", "Cafe claro", "Camel", "Coral", "Dorado", "Dorado/Negro", "Durazno", "Fucsia", "Gris", "Lila", "Marfil", "Marron con Beige", "Menta", "Morado", "Mostaza", "Naranja", "Negra con Beige", "Negro", "Nude", "Palo Rosa", "Rojo", "Rosa", "Rosa claro", "Rosado", "Salmon", "Terracota", "Turquesa", "Vainilla", "Verde", "Verde Claro", "Verde Militar", "Verde Oscuro", "Verde claro", "Verde oscuro", "Vino"];
+// Paleta por marca
+const TEMA = {
+  orkia: { bg:"#FAF7F2", dark:"#1A120A", mid:"#8B7355", gold:"#C4A882", border:"#E2D9CE", light:"#FFF8F0", accent:"#C4A882", nombre:"Orkia" },
+  nudo:  { bg:"#F5F4FA", dark:"#0D0D1A", mid:"#6B6490", gold:"#7B6FE8", border:"#DDD9F0", light:"#EEEDFB", accent:"#7B6FE8", nombre:"Nudo" },
+};
 
 const ZONAS = [
-  { id:"Z1", nombre:"Centro",   barrios:"Zona 1, 4, 9, 10",          gtq:35 },
-  { id:"Z2", nombre:"Norte",    barrios:"Zona 2, 6, 17, 18, Mixco",  gtq:50 },
-  { id:"Z3", nombre:"Sur",      barrios:"Zona 11, 12, 13, 14",       gtq:50 },
-  { id:"Z4", nombre:"Este",     barrios:"Zona 5, 7, 15, 16",         gtq:60 },
-  { id:"Z5", nombre:"Oeste",    barrios:"Mixco Sur, San Lucas",       gtq:70 },
-  { id:"Z6", nombre:"Interior", barrios:"Fuera de Guatemala City",    gtq:120 },
+  { id:"Z1", nombre:"Centro",   barrios:"Zona 1, 4, 9, 10",         gtq:35  },
+  { id:"Z2", nombre:"Norte",    barrios:"Zona 2, 6, 17, 18, Mixco", gtq:50  },
+  { id:"Z3", nombre:"Sur",      barrios:"Zona 11, 12, 13, 14",      gtq:50  },
+  { id:"Z4", nombre:"Este",     barrios:"Zona 5, 7, 15, 16",        gtq:60  },
+  { id:"Z5", nombre:"Oeste",    barrios:"Mixco Sur, San Lucas",      gtq:70  },
+  { id:"Z6", nombre:"Interior", barrios:"Fuera de Guatemala City",   gtq:120 },
 ];
 const NSE_POR_ZONA = {
   "Zona 9":"Alto","Zona 10":"Alto","Zona 14":"Alto","Zona 15":"Alto",
@@ -438,144 +51,163 @@ const COSTO_POR_ZONA = {
   "Zona 13":50,"Zona 14":50,"Zona 17":50,"Zona 18":50,
   "Zona 5":60,"Zona 7":60,"Zona 15":60,"Zona 16":60,
 };
-const CIUDADES = ["Guatemala City","Mixco","Villa Nueva","San Miguel Petapa","Amatitlan","Chinautla","Santa Catarina Pinula","Antigua Guatemala","Escuintla","Quetzaltenango","Otro departamento"];
-const ZONAS_GT = ["Zona 1","Zona 2","Zona 3","Zona 4","Zona 5","Zona 6","Zona 7","Zona 8","Zona 9","Zona 10","Zona 11","Zona 12","Zona 13","Zona 14","Zona 15","Zona 16","Zona 17","Zona 18","Zona 19","Zona 21","No aplica (municipio fuera de Guatemala City)"];
-const CANALES  = ["Instagram","TikTok","Referido","WhatsApp directo","Otro"];
-const PAGOS    = ["Transferencia bancaria","Link de pago","Efectivo contra entrega"];
-const BANCOS   = ["BAC Credomatic","Banco Industrial (BI)","G&T Continental","Promerica","Agromercantil","Ficohsa","Citibank","Vivibanco","Credito Hipotecario Nacional","Bantrab","Banmundo","Banrural","Bancoex","Otro banco","No aplica (link de pago)"];
-const EDADES   = ["Joven (aprox 18-24)","Adulta (aprox 25-35)","Madura (aprox 36+)"];
-const MESES    = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-const DECISION = ["Sabia exactamente que queria","Pregunto opciones antes de decidir","Pidio recomendacion a Nadia","Dudo mucho, casi no compra"];
-const COP_GTQ  = 0.037;
-const fmt = (n) => `$${n.toLocaleString("es-CO")}`;
+const CIUDADES  = ["Guatemala City","Mixco","Villa Nueva","San Miguel Petapa","Amatitlan","Chinautla","Santa Catarina Pinula","Antigua Guatemala","Escuintla","Quetzaltenango","Otro departamento"];
+const ZONAS_GT  = ["Zona 1","Zona 2","Zona 3","Zona 4","Zona 5","Zona 6","Zona 7","Zona 8","Zona 9","Zona 10","Zona 11","Zona 12","Zona 13","Zona 14","Zona 15","Zona 16","Zona 17","Zona 18","Zona 19","Zona 21","No aplica (municipio fuera de Guatemala City)"];
+const CANALES   = ["Instagram","TikTok","Referido","WhatsApp directo","Otro"];
+const PAGOS     = ["Transferencia bancaria","Link de pago","Efectivo contra entrega"];
+const BANCOS    = ["BAC Credomatic","Banco Industrial (BI)","G&T Continental","Promerica","Agromercantil","Ficohsa","Citibank","Vivibanco","Credito Hipotecario Nacional","Bantrab","Banmundo","Banrural","Bancoex","Otro banco","No aplica (link de pago)"];
+const EDADES    = ["Joven (aprox 18-24)","Adulta (aprox 25-35)","Madura (aprox 36+)"];
+const MESES     = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DECISION  = ["Sabia exactamente que queria","Pregunto opciones antes de decidir","Pidio recomendacion a Nadia","Dudo mucho, casi no compra"];
+const fmt = (n) => `$${Number(n).toLocaleString("es-CO")}`;
 
-// Estilos
-const C = { bg:"#FAF7F2",dark:"#1E1208",mid:"#8B7355",gold:"#C4A882",border:"#E2D9CE",light:"#FFF8F0",error:"#E8614A",success:"#4A9E6B",info:"#2E75B6" };
-const base = { fontFamily:"'DM Sans',sans-serif",width:"100%",padding:"13px 16px",border:`1.5px solid ${C.border}`,borderRadius:12,fontSize:15,background:"#FFFDF9",color:C.dark,outline:"none",boxSizing:"border-box",transition:"border-color 0.2s",minHeight:50 };
-const selSt  = (v,d) => ({...base,border:`1.5px solid ${v?C.gold:C.border}`,color:v?C.dark:"#B0A090",background:d?"#F5F0EA":"#FFFDF9",WebkitAppearance:"none",appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23C4A882' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 16px center",paddingRight:40,cursor:d?"not-allowed":"pointer"});
-const inpSt  = (v) => ({...base,border:`1.5px solid ${v?C.gold:C.border}`});
-const btnSt  = (ok,acc) => ({width:"100%",padding:"16px",minHeight:54,background:ok?(acc?C.gold:C.dark):C.border,color:ok?(acc?C.dark:"#FAF7F2"):"#B0A090",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:ok?"pointer":"not-allowed",fontFamily:"'DM Sans',sans-serif",transition:"all 0.2s"});
-const btnSec = {width:"100%",padding:"16px",minHeight:54,background:"transparent",color:C.mid,border:`1.5px solid ${C.gold}`,borderRadius:14,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"};
+// ── Estilos dinámicos por tema ──────────────────────────────
+function makeStyles(T) {
+  const base = { fontFamily:"'DM Sans',sans-serif",width:"100%",padding:"13px 16px",border:`1.5px solid ${T.border}`,borderRadius:12,fontSize:15,background:"#FFFDF9",color:T.dark,outline:"none",boxSizing:"border-box",transition:"border-color 0.2s",minHeight:50 };
+  return {
+    selSt: (v,d) => ({...base,border:`1.5px solid ${v?T.gold:T.border}`,color:v?T.dark:"#B0A090",background:d?"#F5F0EA":"#FFFDF9",WebkitAppearance:"none",appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='${encodeURIComponent(T.gold)}' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 16px center",paddingRight:40,cursor:d?"not-allowed":"pointer"}),
+    inpSt: (v) => ({...base,border:`1.5px solid ${v?T.gold:T.border}`}),
+    btnPrimary: (ok) => ({width:"100%",padding:"16px",minHeight:54,background:ok?T.dark:T.border,color:ok?"#FAF7F2":"#B0A090",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:ok?"pointer":"not-allowed",fontFamily:"'DM Sans',sans-serif",transition:"all 0.2s"}),
+    btnAccent:  (ok) => ({width:"100%",padding:"16px",minHeight:54,background:ok?T.gold:T.border,color:ok?T.dark:"#B0A090",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:ok?"pointer":"not-allowed",fontFamily:"'DM Sans',sans-serif",transition:"all 0.2s"}),
+    btnSec: {width:"100%",padding:"16px",minHeight:54,background:"transparent",color:T.mid,border:`1.5px solid ${T.gold}`,borderRadius:14,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"},
+  };
+}
 
-const Sel = ({value,onChange,opts,placeholder,disabled}) => (
-  <select value={value} onChange={e=>onChange(e.target.value)} disabled={disabled} style={selSt(!!value,disabled)}>
-    <option value="">{placeholder}</option>
-    {opts.map(o=><option key={o.v??o} value={o.v??o}>{o.l??o}</option>)}
-  </select>
-);
-const Field = ({label,children,optional,hint,muted}) => (
+// ── Componentes base ────────────────────────────────────────
+const Sel = ({value,onChange,opts,placeholder,disabled,T}) => {
+  const S = makeStyles(T);
+  return (
+    <select value={value} onChange={e=>onChange(e.target.value)} disabled={disabled} style={S.selSt(!!value,disabled)}>
+      <option value="">{placeholder}</option>
+      {opts.map(o=><option key={o.v??o} value={o.v??o}>{o.l??o}</option>)}
+    </select>
+  );
+};
+
+const Field = ({label,children,optional,hint,muted,T}) => (
   <div style={{marginBottom:14}}>
-    <label style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:muted?C.gold:C.mid,marginBottom:6,display:"block"}}>
-      {label}{optional?<span style={{fontWeight:400,textTransform:"none",letterSpacing:0,color:C.gold}}> (opcional)</span>:<span style={{color:C.error,marginLeft:3}}>*</span>}
+    <label style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:muted?T.gold:T.mid,marginBottom:6,display:"block"}}>
+      {label}
+      {optional
+        ? <span style={{fontWeight:400,textTransform:"none",letterSpacing:0,color:T.gold}}> (opcional)</span>
+        : <span style={{color:"#E8614A",marginLeft:3}}>*</span>}
     </label>
     {children}
     {hint&&<p style={{margin:"5px 0 0",fontSize:11,color:"#B0A090",fontStyle:"italic"}}>{hint}</p>}
   </div>
 );
-const Dot = ({n,active,done}) => (
+
+const Dot = ({n,active,done,T}) => (
   <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-    <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,background:done?C.gold:active?"#FAF7F2":"#3D2518",color:done?"#FFF":active?C.dark:"#6B4C33",transition:"all 0.3s"}}>{done?"✓":n}</div>
-    <span style={{fontSize:9,letterSpacing:"0.06em",fontWeight:active?700:400,color:active?"#FAF7F2":done?C.gold:"#6B4C33"}}>{["CLIENTE","PRODUCTO","PAGO"][n-1]}</span>
+    <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,background:done?T.gold:active?"#FAF7F2":"#3D2518",color:done?"#FFF":active?T.dark:"#6B4C33",transition:"all 0.3s"}}>{done?"✓":n}</div>
+    <span style={{fontSize:9,letterSpacing:"0.06em",fontWeight:active?700:400,color:active?"#FAF7F2":done?T.gold:"#6B4C33"}}>{["CLIENTE","PRODUCTO","PAGO"][n-1]}</span>
   </div>
 );
-const Divider = ({label}) => (
+
+const Divider = ({label,T}) => (
   <div style={{display:"flex",alignItems:"center",gap:10,margin:"18px 0 14px"}}>
-    <div style={{flex:1,height:1,background:C.border}}/>
-    <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",color:C.gold,textTransform:"uppercase",whiteSpace:"nowrap"}}>{label}</span>
-    <div style={{flex:1,height:1,background:C.border}}/>
+    <div style={{flex:1,height:1,background:T.border}}/>
+    <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",color:T.gold,textTransform:"uppercase",whiteSpace:"nowrap"}}>{label}</span>
+    <div style={{flex:1,height:1,background:T.border}}/>
   </div>
 );
-const SummaryRow = ({k,v,bold}) => (
+
+const SummaryRow = ({k,v,bold,T}) => (
   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"5px 0",borderBottom:"1px solid #2C1A0E"}}>
     <span style={{fontSize:11,color:"#6B4C33",flexShrink:0}}>{k}</span>
     <span style={{fontSize:bold?14:12,color:"#FAF7F2",textAlign:"right",marginLeft:8,fontWeight:bold?700:400}}>{v}</span>
   </div>
 );
 
-// Selector de producto con busqueda y filtros
-function ProductoSelector({value, onChange}) {
+// ── Selector de producto dinámico ───────────────────────────
+function ProductoSelector({value, onChange, productos, T}) {
+  const S = makeStyles(T);
   const [busqueda, setBusqueda] = useState("");
   const [filtroTipo, setFiltroTipo] = useState("Todos");
   const [filtroColor, setFiltroColor] = useState("Todos");
   const [abierto, setAbierto] = useState(false);
 
+  const tipos  = useMemo(() => ["Todos", ...new Set(productos.map(p=>p.tipo_prenda||p.tipo).filter(Boolean))].sort(), [productos]);
+  const colores = useMemo(() => ["Todos", ...new Set(productos.map(p=>p.color).filter(Boolean))].sort(), [productos]);
+
   const filtrados = useMemo(() => {
-    return PRODUCTOS_RAW.filter(p => {
-      const matchTipo  = filtroTipo === "Todos" || p.tipo === filtroTipo;
+    return productos.filter(p => {
+      const tipo  = p.tipo_prenda || p.tipo || "";
+      const matchTipo  = filtroTipo === "Todos" || tipo === filtroTipo;
       const matchColor = filtroColor === "Todos" || p.color === filtroColor;
-      const matchBusq  = !busqueda || p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || String(p.id).includes(busqueda);
+      const nombre = p.descripcion || p.nombre || "";
+      const matchBusq  = !busqueda || nombre.toLowerCase().includes(busqueda.toLowerCase()) || String(p.id_producto||p.id).includes(busqueda);
       return matchTipo && matchColor && matchBusq;
     });
-  }, [busqueda, filtroTipo, filtroColor]);
+  }, [busqueda, filtroTipo, filtroColor, productos]);
 
-  const seleccionado = value ? PRODUCTOS_RAW.find(p => p.id === value) : null;
+  const seleccionado = value ? productos.find(p => (p.id_producto||p.id) === value) : null;
+  const nombreProd = p => p.descripcion || p.nombre || "";
+  const idProd     = p => p.id_producto || p.id;
+  const precioProd = p => p.precio_cop || p.precio || 0;
 
   return (
     <div style={{position:"relative"}}>
-      {/* Trigger */}
       <div onClick={() => setAbierto(!abierto)}
-        style={{...inpSt(!!value), cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", userSelect:"none"}}>
-        <span style={{color: seleccionado ? C.dark : "#B0A090", fontSize:15}}>
-          {seleccionado ? `#${seleccionado.id} — ${seleccionado.nombre}` : "Busca o filtra el producto..."}
+        style={{...S.inpSt(!!value), cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", userSelect:"none"}}>
+        <span style={{color: seleccionado ? T.dark : "#B0A090", fontSize:15}}>
+          {seleccionado ? `#${idProd(seleccionado)} — ${nombreProd(seleccionado)}` : "Busca o filtra el producto..."}
         </span>
-        <span style={{color:C.gold, fontSize:12}}>{abierto ? "▲" : "▼"}</span>
+        <span style={{color:T.gold, fontSize:12}}>{abierto ? "▲" : "▼"}</span>
       </div>
 
-      {/* Panel desplegable */}
       {abierto && (
-        <div style={{position:"absolute", top:"calc(100% + 4px)", left:0, right:0, zIndex:100,
-          background:"#FFF", borderRadius:14, border:`1.5px solid ${C.gold}`,
-          boxShadow:"0 8px 32px rgba(0,0,0,0.12)", overflow:"hidden"}}>
+        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,zIndex:100,
+          background:"#FFF",borderRadius:14,border:`1.5px solid ${T.gold}`,
+          boxShadow:"0 8px 32px rgba(0,0,0,0.12)",overflow:"hidden"}}>
 
-          {/* Busqueda */}
           <div style={{padding:"12px 12px 8px"}}>
             <input value={busqueda} onChange={e=>setBusqueda(e.target.value)}
               placeholder="Buscar por nombre o codigo..."
-              style={{...inpSt(!!busqueda), fontSize:14, padding:"10px 14px"}}
+              style={{...S.inpSt(!!busqueda), fontSize:14, padding:"10px 14px"}}
               autoFocus />
           </div>
 
-          {/* Filtros */}
-          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, padding:"0 12px 8px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,padding:"0 12px 8px"}}>
             <select value={filtroTipo} onChange={e=>setFiltroTipo(e.target.value)}
-              style={{...selSt(filtroTipo!=="Todos",false), fontSize:13, padding:"8px 32px 8px 12px", minHeight:38}}>
-              {TIPOS.map(t=><option key={t} value={t}>{t}</option>)}
+              style={{...S.selSt(filtroTipo!=="Todos",false),fontSize:13,padding:"8px 32px 8px 12px",minHeight:38}}>
+              {tipos.map(t=><option key={t} value={t}>{t}</option>)}
             </select>
             <select value={filtroColor} onChange={e=>setFiltroColor(e.target.value)}
-              style={{...selSt(filtroColor!=="Todos",false), fontSize:13, padding:"8px 32px 8px 12px", minHeight:38}}>
-              {COLORES_LIST.map(c=><option key={c} value={c}>{c}</option>)}
+              style={{...S.selSt(filtroColor!=="Todos",false),fontSize:13,padding:"8px 32px 8px 12px",minHeight:38}}>
+              {colores.map(c=><option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 
-          {/* Contador */}
-          <div style={{padding:"4px 12px 6px", fontSize:11, color:C.mid}}>
+          <div style={{padding:"4px 12px 6px",fontSize:11,color:T.mid}}>
             {filtrados.length} producto{filtrados.length!==1?"s":""} encontrado{filtrados.length!==1?"s":""}
           </div>
 
-          {/* Lista */}
-          <div style={{maxHeight:240, overflowY:"auto", borderTop:`1px solid ${C.border}`}}>
+          <div style={{maxHeight:240,overflowY:"auto",borderTop:`1px solid ${T.border}`}}>
             {filtrados.length === 0 ? (
-              <div style={{padding:"20px 16px", textAlign:"center", color:C.mid, fontSize:14}}>
+              <div style={{padding:"20px 16px",textAlign:"center",color:T.mid,fontSize:14}}>
                 Sin resultados. Cambia los filtros.
               </div>
             ) : filtrados.map(p => (
-              <div key={p.id} onClick={() => { onChange(p.id); setAbierto(false); setBusqueda(""); }}
-                style={{padding:"10px 16px", cursor:"pointer", borderBottom:`1px solid ${C.border}`,
-                  background: value===p.id ? C.light : "transparent",
-                  display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+              <div key={idProd(p)} onClick={() => { onChange(idProd(p)); setAbierto(false); setBusqueda(""); }}
+                style={{padding:"10px 16px",cursor:"pointer",borderBottom:`1px solid ${T.border}`,
+                  background: value===idProd(p) ? T.light : "transparent",
+                  display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div>
-                  <span style={{fontSize:13, fontWeight:600, color:C.dark}}>{p.nombre}</span>
-                  <span style={{fontSize:11, color:C.mid, marginLeft:8}}>#{p.id}</span>
+                  <span style={{fontSize:13,fontWeight:600,color:T.dark}}>{nombreProd(p)}</span>
+                  <span style={{fontSize:11,color:T.mid,marginLeft:8}}>#{idProd(p)}</span>
+                  {p.agotado && <span style={{fontSize:10,color:"#E8614A",marginLeft:6,fontWeight:700}}>AGOTADO</span>}
                 </div>
-                <span style={{fontSize:12, color:C.gold, fontWeight:600, flexShrink:0, marginLeft:8}}>{fmt(p.precio)}</span>
+                <span style={{fontSize:12,color:T.gold,fontWeight:600,flexShrink:0,marginLeft:8}}>
+                  {fmt(precioProd(p))}
+                </span>
               </div>
             ))}
           </div>
 
-          {/* Cerrar */}
           <div onClick={() => setAbierto(false)}
-            style={{padding:"10px 16px", textAlign:"center", fontSize:13, color:C.mid,
-              cursor:"pointer", borderTop:`1px solid ${C.border}`, background:C.light}}>
+            style={{padding:"10px 16px",textAlign:"center",fontSize:13,color:T.mid,
+              cursor:"pointer",borderTop:`1px solid ${T.border}`,background:T.light}}>
             Cerrar
           </div>
         </div>
@@ -584,7 +216,64 @@ function ProductoSelector({value, onChange}) {
   );
 }
 
+// ── Pantalla 0: Selector de marca ───────────────────────────
+function SelectorMarca({ onSelect }) {
+  return (
+    <div style={{minHeight:"100vh",background:"#0D0A06",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'DM Sans',sans-serif"}}>
+      <p style={{fontSize:10,letterSpacing:"0.25em",color:"#6B4C33",textTransform:"uppercase",marginBottom:6}}>by CASA JRP</p>
+      <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:28,color:"#FAF7F2",fontWeight:500,marginBottom:4,textAlign:"center"}}>Registro de pedido</h1>
+      <p style={{fontSize:14,color:"#6B4C33",marginBottom:40,textAlign:"center"}}>¿Para qué tienda estás registrando?</p>
+
+      <div style={{display:"flex",flexDirection:"column",gap:14,width:"100%",maxWidth:320}}>
+        <button onClick={() => onSelect("orkia")}
+          style={{padding:"20px 24px",background:"#1A120A",border:"1.5px solid #C4A882",borderRadius:16,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+          <p style={{margin:"0 0 4px",fontSize:10,letterSpacing:"0.2em",color:"#C4A882",textTransform:"uppercase"}}>Ropa femenina</p>
+          <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2",fontWeight:500}}>Orkia</p>
+        </button>
+
+        <button onClick={() => onSelect("nudo")}
+          style={{padding:"20px 24px",background:"#0D0D1A",border:"1.5px solid #7B6FE8",borderRadius:16,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+          <p style={{margin:"0 0 4px",fontSize:10,letterSpacing:"0.2em",color:"#7B6FE8",textTransform:"uppercase"}}>Ropa interior masculina</p>
+          <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2",fontWeight:500}}>Nudo</p>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Pantalla de carga del catálogo ──────────────────────────
+function CargandoCatalogo({ marca, onRetry, error }) {
+  const T = TEMA[marca];
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'DM Sans',sans-serif"}}>
+      {error ? (
+        <>
+          <p style={{fontSize:32,marginBottom:12}}>⚠️</p>
+          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:20,color:T.dark,marginBottom:8,textAlign:"center"}}>No se pudo cargar el catálogo</h2>
+          <p style={{fontSize:13,color:T.mid,marginBottom:24,textAlign:"center",maxWidth:280}}>{error}</p>
+          <button onClick={onRetry}
+            style={{padding:"14px 28px",background:T.dark,color:"#FAF7F2",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+            Reintentar
+          </button>
+        </>
+      ) : (
+        <>
+          <div style={{width:40,height:40,border:`3px solid ${T.border}`,borderTop:`3px solid ${T.gold}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",marginBottom:16}}/>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          <p style={{fontSize:15,color:T.mid}}>Cargando catálogo {T.nombre}...</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── App principal ───────────────────────────────────────────
 function NadiaApp() {
+  const [marca, setMarca]       = useState(null);
+  const [productos, setProductos] = useState([]);
+  const [cargando, setCargando] = useState(false);
+  const [errorCat, setErrorCat] = useState(null);
+
   const [step, setStep]         = useState(1);
   const [saving, setSaving]     = useState(false);
   const [result, setResult]     = useState(null);
@@ -610,224 +299,351 @@ function NadiaApp() {
   const [banco, setBanco]       = useState("");
   const [comp, setComp]         = useState("");
 
-  const prod       = prodId ? PRODUCTOS_RAW.find(p => p.id === prodId) : null;
-  const costoEnvio = COSTO_POR_ZONA[zonaGT] ?? (ciudad && ciudad !== "Guatemala City" ? 120 : 60);
-  const nseInf     = NSE_POR_ZONA[zonaGT] ?? null;
-  const subtotal   = prod ? prod.precio * Number(cantidad||1) : 0;
-  const totalGTQ   = subtotal * COP_GTQ + (zonaGT ? costoEnvio : 0);
+  const T = marca ? TEMA[marca] : TEMA.orkia;
+  const S = makeStyles(T);
+
+  // Cargar catálogo cuando se elige marca
+  async function cargarCatalogo(m) {
+    setCargando(true);
+    setErrorCat(null);
+    try {
+      const url = `${APPS_SCRIPT_URL}?accion=get_catalogo&marca=${m}`;
+      const res  = await fetch(url);
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || "Error desconocido");
+      // Filtrar agotados al final, disponibles primero
+      const disponibles = data.productos.filter(p => !p.agotado);
+      const agotados    = data.productos.filter(p => p.agotado);
+      setProductos([...disponibles, ...agotados]);
+      setMarca(m);
+    } catch(err) {
+      setErrorCat("Revisa la conexión e intenta de nuevo. (" + err.message + ")");
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  function elegirMarca(m) {
+    setCargando(true);
+    cargarCatalogo(m);
+  }
+
+  // Producto seleccionado
+  const prod        = prodId ? productos.find(p => (p.id_producto||p.id) === prodId) : null;
+  const precioProd  = prod ? (prod.precio_cop || prod.precio || 0) : 0;
+  const tallasDisp  = prod ? (prod.tallas || []) : [];
+  const costoEnvio  = COSTO_POR_ZONA[zonaGT] ?? (ciudad && ciudad !== "Guatemala City" ? 120 : 60);
+  const nseInf      = NSE_POR_ZONA[zonaGT] ?? null;
+  const subtotal    = precioProd * Number(cantidad||1);
+  const totalGTQ    = subtotal * COP_GTQ + (zonaGT ? costoEnvio : 0);
 
   const ok1 = nombre && telefono && canal && ciudad && colonia && direc;
   const ok2 = prodId && talla && cantidad;
   const ok3 = pago && comp && (pago !== "Transferencia bancaria" || banco);
 
-  const reset = () => {
+  function resetPedido() {
     setStep(1); setResult(null);
     setNombre(""); setTel(""); setCanal("");
     setCiudad(""); setZonaGT(""); setColonia(""); setDirec(""); setRefs("");
     setEdad(""); setCumple(""); setDec("");
     setProdId(null); setTalla(""); setCant("1"); setCupon("");
     setPago(""); setBanco(""); setComp("");
-  };
+  }
+
+  function resetTotal() {
+    resetPedido();
+    setMarca(null);
+    setProductos([]);
+    setErrorCat(null);
+  }
 
   async function confirmar() {
     setSaving(true);
     const payload = {
-      action:"nuevo_pedido",
-      nombre,telefono,canal,
-      ciudad,zonaGT,colonia,direccion:direc,referencias:refs,
-      nseInferido:nseInf||"",
-      edadInf,cumple,decision,
-      prodId:Number(prodId),talla,cantidad:Number(cantidad),cupon,
-      costoEnvio:zonaGT?costoEnvio:0,
-      pago,banco,comprobante:comp,
+      accion:          "nuevo_pedido",
+      marca:           marca,
+      nombre_cliente:  nombre,
+      telefono:        telefono,
+      canal_origen:    canal,
+      ciudad:          ciudad,
+      zona_gt:         zonaGT,
+      colonia:         colonia,
+      direccion:       direc,
+      referencias:     refs,
+      nse_inferido:    nseInf || "",
+      edad_inferida:   edadInf,
+      mes_cumpleanos:  cumple,
+      perfil_decision: decision,
+      lineas: [{
+        id_producto: Number(prodId),
+        talla:       talla,
+        cantidad:    Number(cantidad),
+      }],
+      codigo_descuento: cupon,
+      descuento_cop:    0,
+      metodo_pago:     pago,
+      banco:           banco,
+      comprobante:     comp,
+      motivo_compra:   "",
     };
     try {
-      const res = await fetch(APPS_SCRIPT_URL,{method:"POST",headers:{"Content-Type":"text/plain"},body:JSON.stringify(payload)});
+      const res  = await fetch(APPS_SCRIPT_URL, {
+        method:"POST",
+        headers:{"Content-Type":"text/plain"},
+        body: JSON.stringify(payload)
+      });
       const data = await res.json();
       setResult(data);
     } catch(err) {
-      setResult({ok:false,error:"No se pudo conectar. Revisa la conexion a internet."});
+      setResult({ ok:false, error:"No se pudo conectar. Revisa la conexión a internet." });
     } finally {
       setSaving(false);
     }
   }
 
+  // ── Pantalla 0: elegir marca ──
+  if (!marca && !cargando) {
+    return <SelectorMarca onSelect={elegirMarca} />;
+  }
+
+  // ── Cargando catálogo ──
+  if (cargando || (!marca && !errorCat)) {
+    return <CargandoCatalogo marca={marca||"orkia"} onRetry={()=>cargarCatalogo(marca)} error={null}/>;
+  }
+
+  if (errorCat) {
+    return <CargandoCatalogo marca={marca||"orkia"} onRetry={()=>cargarCatalogo(marca)} error={errorCat}/>;
+  }
+
+  // ── Pantalla resultado ──
   if (result) return (
-    <>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
-      <div style={{minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"'DM Sans',sans-serif"}}>
-        <div style={{width:"100%",maxWidth:400,textAlign:"center"}}>
-          {result.ok ? (
-            <>
-              <div style={{fontSize:48,marginBottom:8}}>OK</div>
-              <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:24,color:C.dark,margin:"0 0 4px"}}>Pedido registrado</h2>
-              <p style={{color:C.mid,fontSize:13,margin:"0 0 14px"}}>{result.clienteNuevo?"Cliente nuevo registrado.":"Cliente existente actualizado."}</p>
-              <div style={{background:C.dark,color:C.gold,borderRadius:12,padding:"10px 24px",display:"inline-block",fontSize:22,fontWeight:700,letterSpacing:"0.15em",marginBottom:20}}>{result.idPedido}</div>
-              {(nseInf||edadInf||decision)&&(
-                <div style={{background:C.light,borderRadius:10,padding:"10px 14px",marginBottom:16,border:`1px dashed ${C.gold}`,textAlign:"left"}}>
-                  <p style={{margin:"0 0 6px",fontSize:10,fontWeight:700,letterSpacing:"0.1em",color:C.gold}}>PERFIL INFERIDO (interno)</p>
-                  {nseInf&&<div style={{fontSize:12,color:C.info,marginBottom:3}}>NSE: <strong>{nseInf}</strong></div>}
-                  {edadInf&&<div style={{fontSize:12,color:C.mid,marginBottom:3}}>Edad: <strong>{edadInf}</strong></div>}
-                  {decision&&<div style={{fontSize:12,color:C.success}}>Decision: <strong>{decision}</strong></div>}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div style={{fontSize:48,marginBottom:8}}>ERROR</div>
-              <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:C.dark,margin:"0 0 8px"}}>No se pudo guardar</h2>
-              <div style={{background:"#FFF0EE",borderRadius:10,padding:"12px 16px",marginBottom:16,border:`1px solid ${C.error}`,textAlign:"left"}}>
-                <p style={{margin:0,fontSize:13,color:C.error}}>{result.error}</p>
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"'DM Sans',sans-serif"}}>
+      <div style={{width:"100%",maxWidth:400,textAlign:"center"}}>
+        {result.ok ? (
+          <>
+            <div style={{fontSize:48,marginBottom:8}}>✓</div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:24,color:T.dark,margin:"0 0 4px"}}>Pedido registrado</h2>
+            <p style={{color:T.mid,fontSize:13,margin:"0 0 14px"}}>{result.es_nuevo?"Cliente nuevo registrado.":"Cliente existente actualizado."}</p>
+            <div style={{background:T.dark,color:T.gold,borderRadius:12,padding:"10px 24px",display:"inline-block",fontSize:22,fontWeight:700,letterSpacing:"0.15em",marginBottom:20}}>{result.id_pedido}</div>
+            {(nseInf||edadInf||decision)&&(
+              <div style={{background:T.light,borderRadius:10,padding:"10px 14px",marginBottom:16,border:`1px dashed ${T.gold}`,textAlign:"left"}}>
+                <p style={{margin:"0 0 6px",fontSize:10,fontWeight:700,letterSpacing:"0.1em",color:T.gold}}>PERFIL INFERIDO (interno)</p>
+                {nseInf&&<div style={{fontSize:12,color:"#2E75B6",marginBottom:3}}>NSE: <strong>{nseInf}</strong></div>}
+                {edadInf&&<div style={{fontSize:12,color:T.mid,marginBottom:3}}>Edad: <strong>{edadInf}</strong></div>}
+                {decision&&<div style={{fontSize:12,color:"#4A9E6B"}}>Decisión: <strong>{decision}</strong></div>}
               </div>
-              <p style={{fontSize:12,color:C.mid,marginBottom:16}}>Toma captura de pantalla antes de intentar de nuevo.</p>
-            </>
-          )}
-          <button onClick={reset} style={btnSt(true,false)}>{result.ok?"+ Nuevo pedido":"Volver e intentar de nuevo"}</button>
-        </div>
+            )}
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
+              <button onClick={resetPedido} style={S.btnPrimary(true)}>+ Nuevo pedido — {T.nombre}</button>
+              <button onClick={resetTotal}  style={S.btnSec}>Cambiar tienda</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{fontSize:48,marginBottom:8}}>✗</div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 8px"}}>No se pudo guardar</h2>
+            <div style={{background:"#FFF0EE",borderRadius:10,padding:"12px 16px",marginBottom:16,border:"1px solid #E8614A",textAlign:"left"}}>
+              <p style={{margin:0,fontSize:13,color:"#E8614A"}}>{result.error}</p>
+            </div>
+            <p style={{fontSize:12,color:T.mid,marginBottom:16}}>Toma captura antes de intentar de nuevo.</p>
+            <button onClick={resetPedido} style={S.btnPrimary(true)}>Volver e intentar de nuevo</button>
+          </>
+        )}
       </div>
-    </>
+    </div>
   );
 
+  // ── App principal (steps 1-3) ──
   return (
-    <>
-      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
-      <div style={{minHeight:"100vh",background:C.bg}}>
-        <div style={{background:C.dark,padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
-          <div>
-            <p style={{margin:0,fontSize:10,letterSpacing:"0.2em",color:"#6B4C33",textTransform:"uppercase"}}>Registro</p>
-            <h1 style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:19,color:"#FAF7F2",fontWeight:500}}>Nuevo Pedido</h1>
-          </div>
-          <div style={{display:"flex",gap:16,alignItems:"center"}}>
-            {[1,2,3].map(n=><Dot key={n} n={n} active={step===n} done={step>n}/>)}
-          </div>
+    <div style={{minHeight:"100vh",background:T.bg}}>
+
+      {/* Header */}
+      <div style={{background:T.dark,padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
+        <div>
+          <p style={{margin:0,fontSize:10,letterSpacing:"0.2em",color:T.gold,textTransform:"uppercase",opacity:0.6}}>{T.nombre}</p>
+          <h1 style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:19,color:"#FAF7F2",fontWeight:500}}>Nuevo Pedido</h1>
         </div>
-
-        <div style={{maxWidth:480,margin:"0 auto",padding:"20px 16px 100px"}}>
-
-          {step===1&&(
-            <div>
-              <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:C.dark,margin:"0 0 4px"}}>Datos del cliente</h2>
-              <p style={{fontSize:13,color:C.mid,margin:"0 0 20px"}}>Campos con * son obligatorios.</p>
-              <Field label="Nombre completo"><input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Ej: Maria Garcia" style={inpSt(!!nombre)}/></Field>
-              <Field label="WhatsApp"><input value={telefono} onChange={e=>setTel(e.target.value)} placeholder="+502 9999-9999" type="tel" style={inpSt(!!telefono)}/></Field>
-              <Field label="Como llego al negocio?"><Sel value={canal} onChange={setCanal} placeholder="Selecciona..." opts={CANALES}/></Field>
-              <Divider label="Direccion de entrega"/>
-              <Field label="Ciudad"><Sel value={ciudad} onChange={v=>{setCiudad(v);setZonaGT("");}} placeholder="Selecciona la ciudad..." opts={CIUDADES}/></Field>
-              {ciudad==="Guatemala City"&&(
-                <Field label="Zona">
-                  <Sel value={zonaGT} onChange={setZonaGT} placeholder="Selecciona la zona..." opts={ZONAS_GT}/>
-                </Field>
-              )}
-              {nseInf&&(
-                <div style={{background:"#EBF3FB",borderRadius:8,padding:"7px 12px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
-                  <span style={{fontSize:12,color:C.info}}>NSE inferido: <strong>{nseInf}</strong></span>
-                  <span style={{fontSize:11,color:"#6B9EC7"}}>(automatico)</span>
-                </div>
-              )}
-              <Field label="Colonia / Residencial"><input value={colonia} onChange={e=>setColonia(e.target.value)} placeholder="Ej: Colonia Las Ilusiones" style={inpSt(!!colonia)}/></Field>
-              <Field label="Calle y numero de casa"><input value={direc} onChange={e=>setDirec(e.target.value)} placeholder="Ej: 3ra calle 12-45, casa B" style={inpSt(!!direc)}/></Field>
-              <Field label="Referencias" optional><input value={refs} onChange={e=>setRefs(e.target.value)} placeholder="Ej: frente al parque, porton cafe" style={inpSt(!!refs)}/></Field>
-              <Divider label="Solo Nadia — no preguntarle al cliente"/>
-              <div style={{background:C.light,borderRadius:12,padding:"14px 16px",border:`1px dashed ${C.gold}`}}>
-                <Field label="Edad estimada (tu criterio)" optional muted><Sel value={edadInf} onChange={setEdad} placeholder="Como la ves?" opts={EDADES}/></Field>
-                <Field label="Como decidio la compra?" optional muted><Sel value={decision} onChange={setDec} placeholder="Perfil de decision..." opts={DECISION}/></Field>
-                <Field label="Mes de cumpleanos" optional muted hint={`Di: "En que mes cumplis? Te mandamos algo especial"`}><Sel value={cumple} onChange={setCumple} placeholder="Si lo menciono..." opts={MESES}/></Field>
-              </div>
-              <button onClick={()=>setStep(2)} disabled={!ok1} style={{...btnSt(ok1,false),marginTop:20}}>Continuar →</button>
-            </div>
-          )}
-
-          {step===2&&(
-            <div>
-              <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:C.dark,margin:"0 0 4px"}}>Producto</h2>
-              <p style={{fontSize:13,color:C.mid,margin:"0 0 20px"}}>Busca por nombre, codigo, tipo o color.</p>
-              <Field label="Buscar producto">
-                <ProductoSelector value={prodId} onChange={v=>{setProdId(v);setTalla("");}}/>
-              </Field>
-              {prod&&(
-                <div style={{background:"#FFF",borderRadius:12,padding:14,border:`1.5px solid ${C.gold}`,display:"flex",gap:12,alignItems:"center",marginBottom:14}}>
-                  <div style={{width:46,height:46,borderRadius:10,background:"#F0E8DC",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
-                    {prod.tipo==="Set"?"👗":"👚"}
-                  </div>
-                  <div>
-                    <p style={{margin:"0 0 5px",fontWeight:700,fontSize:14,color:C.dark}}>{prod.nombre}</p>
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                      <span style={{background:C.mid+"18",color:C.mid,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{prod.tipo}</span>
-                      <span style={{background:C.gold+"18",color:C.gold,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{fmt(prod.precio)} COP</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-                <Field label="Talla"><Sel value={talla} onChange={setTalla} placeholder="Talla..." disabled={!prod} opts={prod?.tallas??[]}/></Field>
-                <Field label="Cantidad"><Sel value={cantidad} onChange={setCant} placeholder="Cant." opts={["1","2","3","4","5","6","7","8","9","10"]}/></Field>
-              </div>
-              <Field label="Cupon de descuento" optional hint="Solo si el cliente lo tiene">
-                <input value={cupon} onChange={e=>setCupon(e.target.value.toUpperCase())} placeholder="Ej: BIENVENIDA10" style={inpSt(!!cupon)}/>
-              </Field>
-              {prod&&talla&&(
-                <div style={{background:C.dark,borderRadius:14,padding:18,marginTop:8}}>
-                  <SummaryRow k="Producto" v={`${prod.nombre} — ${talla} x ${cantidad}`}/>
-                  <SummaryRow k="Precio unit." v={`${fmt(prod.precio)} COP`}/>
-                  <div style={{display:"flex",justifyContent:"space-between",marginTop:10,alignItems:"baseline"}}>
-                    <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>SUBTOTAL</span>
-                    <div style={{textAlign:"right"}}>
-                      <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:22,color:"#FAF7F2"}}>{fmt(subtotal)}</p>
-                      <p style={{margin:0,fontSize:12,color:"#6B4C33"}}>aprox Q{(subtotal*COP_GTQ).toFixed(0)} GTQ</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:20}}>
-                <button onClick={()=>setStep(1)} style={btnSec}>← Atras</button>
-                <button onClick={()=>setStep(3)} disabled={!ok2} style={btnSt(ok2,false)}>Continuar →</button>
-              </div>
-            </div>
-          )}
-
-          {step===3&&(
-            <div>
-              <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:C.dark,margin:"0 0 4px"}}>Pago</h2>
-              <p style={{fontSize:13,color:C.mid,margin:"0 0 20px"}}>Confirma el pago antes de empacar.</p>
-              <Field label="Metodo de pago"><Sel value={pago} onChange={v=>{setPago(v);setBanco("");}} placeholder="Como paga?" opts={PAGOS}/></Field>
-              {pago==="Transferencia bancaria"&&(
-                <Field label="Banco desde donde transfiere" hint="Nos ayuda a conocer mejor a nuestras clientas">
-                  <Sel value={banco} onChange={setBanco} placeholder="Selecciona el banco..." opts={BANCOS}/>
-                </Field>
-              )}
-              <Field label="Comprobante recibido?">
-                <Sel value={comp} onChange={setComp} placeholder="Estado del pago..." opts={[{v:"Si",l:"Si, ya recibi el comprobante"},{v:"No",l:"No, pendiente de pago"}]}/>
-              </Field>
-              {prod&&(
-                <div style={{background:C.dark,borderRadius:14,padding:18,marginTop:8}}>
-                  <p style={{margin:"0 0 12px",fontSize:10,letterSpacing:"0.18em",color:"#6B4C33",textTransform:"uppercase"}}>Resumen final</p>
-                  <SummaryRow k="Cliente" v={nombre}/>
-                  <SummaryRow k="Ciudad" v={`${ciudad}${zonaGT?" — "+zonaGT:""}`}/>
-                  <SummaryRow k="Producto" v={`${prod?.nombre} — ${talla} x ${cantidad}`}/>
-                  {cupon&&<SummaryRow k="Cupon" v={cupon}/>}
-                  <SummaryRow k="Subtotal" v={`${fmt(subtotal)} COP`}/>
-                  {zonaGT&&<SummaryRow k="Envio" v={`Q${costoEnvio} GTQ`}/>}
-                  <div style={{display:"flex",justifyContent:"space-between",marginTop:12,alignItems:"baseline"}}>
-                    <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>TOTAL A COBRAR</span>
-                    <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2"}}>Q{totalGTQ.toFixed(0)}</span>
-                  </div>
-                </div>
-              )}
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:20}}>
-                <button onClick={()=>setStep(2)} style={btnSec}>← Atras</button>
-                <button onClick={confirmar} disabled={!ok3||saving} style={{...btnSt(ok3&&!saving,true)}}>
-                  {saving?"Guardando...":"Confirmar"}
-                </button>
-              </div>
-              {saving&&<p style={{textAlign:"center",fontSize:12,color:C.mid,marginTop:12}}>Enviando al Sheets, no cierres la app...</p>}
-            </div>
-          )}
+        <div style={{display:"flex",gap:16,alignItems:"center"}}>
+          {[1,2,3].map(n=><Dot key={n} n={n} active={step===n} done={step>n} T={T}/>)}
         </div>
       </div>
-    </>
+
+      <div style={{maxWidth:480,margin:"0 auto",padding:"20px 16px 100px"}}>
+
+        {/* ── Step 1: Cliente ── */}
+        {step===1&&(
+          <div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Datos del cliente</h2>
+            <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Campos con * son obligatorios.</p>
+
+            <Field label="Nombre completo" T={T}>
+              <input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Ej: Carlos García" style={S.inpSt(!!nombre)}/>
+            </Field>
+            <Field label="WhatsApp" T={T}>
+              <input value={telefono} onChange={e=>setTel(e.target.value)} placeholder="+502 9999-9999" type="tel" style={S.inpSt(!!telefono)}/>
+            </Field>
+            <Field label="¿Cómo llegó al negocio?" T={T}>
+              <Sel value={canal} onChange={setCanal} placeholder="Selecciona..." opts={CANALES} T={T}/>
+            </Field>
+
+            <Divider label="Dirección de entrega" T={T}/>
+
+            <Field label="Ciudad" T={T}>
+              <Sel value={ciudad} onChange={v=>{setCiudad(v);setZonaGT("");}} placeholder="Selecciona la ciudad..." opts={CIUDADES} T={T}/>
+            </Field>
+            {ciudad==="Guatemala City"&&(
+              <Field label="Zona" T={T}>
+                <Sel value={zonaGT} onChange={setZonaGT} placeholder="Selecciona la zona..." opts={ZONAS_GT} T={T}/>
+              </Field>
+            )}
+            {nseInf&&(
+              <div style={{background:"#EBF3FB",borderRadius:8,padding:"7px 12px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:12,color:"#2E75B6"}}>NSE inferido: <strong>{nseInf}</strong></span>
+                <span style={{fontSize:11,color:"#6B9EC7"}}>(automático)</span>
+              </div>
+            )}
+            <Field label="Colonia / Residencial" T={T}>
+              <input value={colonia} onChange={e=>setColonia(e.target.value)} placeholder="Ej: Colonia Las Ilusiones" style={S.inpSt(!!colonia)}/>
+            </Field>
+            <Field label="Calle y número de casa" T={T}>
+              <input value={direc} onChange={e=>setDirec(e.target.value)} placeholder="Ej: 3ra calle 12-45, casa B" style={S.inpSt(!!direc)}/>
+            </Field>
+            <Field label="Referencias" optional T={T}>
+              <input value={refs} onChange={e=>setRefs(e.target.value)} placeholder="Ej: frente al parque, portón café" style={S.inpSt(!!refs)}/>
+            </Field>
+
+            <Divider label="Solo Nadia — no preguntarle al cliente" T={T}/>
+            <div style={{background:T.light,borderRadius:12,padding:"14px 16px",border:`1px dashed ${T.gold}`}}>
+              <Field label="Edad estimada (tu criterio)" optional muted T={T}>
+                <Sel value={edadInf} onChange={setEdad} placeholder="¿Cómo lo ves?" opts={EDADES} T={T}/>
+              </Field>
+              <Field label="¿Cómo decidió la compra?" optional muted T={T}>
+                <Sel value={decision} onChange={setDec} placeholder="Perfil de decisión..." opts={DECISION} T={T}/>
+              </Field>
+              <Field label="Mes de cumpleaños" optional muted hint={`Di: "¿En qué mes cumplís? Te mandamos algo especial"`} T={T}>
+                <Sel value={cumple} onChange={setCumple} placeholder="Si lo mencionó..." opts={MESES} T={T}/>
+              </Field>
+            </div>
+
+            <button onClick={()=>setStep(2)} disabled={!ok1} style={{...S.btnPrimary(ok1),marginTop:20}}>
+              Continuar →
+            </button>
+            <button onClick={resetTotal} style={{...S.btnSec,marginTop:10}}>
+              ← Cambiar tienda
+            </button>
+          </div>
+        )}
+
+        {/* ── Step 2: Producto ── */}
+        {step===2&&(
+          <div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Producto</h2>
+            <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Busca por nombre, código, tipo o color.</p>
+
+            <Field label="Buscar producto" T={T}>
+              <ProductoSelector value={prodId} onChange={v=>{setProdId(v);setTalla("");}} productos={productos} T={T}/>
+            </Field>
+
+            {prod&&(
+              <div style={{background:"#FFF",borderRadius:12,padding:14,border:`1.5px solid ${T.gold}`,display:"flex",gap:12,alignItems:"center",marginBottom:14}}>
+                <div style={{width:46,height:46,borderRadius:10,background:T.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
+                  {(prod.tipo_prenda||prod.tipo||"")===("Set"||"Body")?"👗":"👕"}
+                </div>
+                <div>
+                  <p style={{margin:"0 0 5px",fontWeight:700,fontSize:14,color:T.dark}}>{prod.descripcion||prod.nombre}</p>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    <span style={{background:T.mid+"18",color:T.mid,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{prod.tipo_prenda||prod.tipo}</span>
+                    <span style={{background:T.gold+"18",color:T.gold,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{fmt(precioProd)} COP</span>
+                    {prod.patron&&<span style={{background:T.border,color:T.mid,fontSize:11,padding:"2px 9px",borderRadius:20}}>{prod.patron}</span>}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+              <Field label="Talla" T={T}>
+                <Sel value={talla} onChange={setTalla} placeholder="Talla..." disabled={!prod} opts={tallasDisp} T={T}/>
+              </Field>
+              <Field label="Cantidad" T={T}>
+                <Sel value={cantidad} onChange={setCant} placeholder="Cant." opts={["1","2","3","4","5","6","7","8","9","10"]} T={T}/>
+              </Field>
+            </div>
+
+            <Field label="Cupón de descuento" optional hint="Solo si el cliente lo tiene" T={T}>
+              <input value={cupon} onChange={e=>setCupon(e.target.value.toUpperCase())} placeholder="Ej: BIENVENIDA10" style={S.inpSt(!!cupon)}/>
+            </Field>
+
+            {prod&&talla&&(
+              <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
+                <SummaryRow k="Producto" v={`${prod.descripcion||prod.nombre} — ${talla} x ${cantidad}`} T={T}/>
+                <SummaryRow k="Precio unit." v={`${fmt(precioProd)} COP`} T={T}/>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:10,alignItems:"baseline"}}>
+                  <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>SUBTOTAL</span>
+                  <div style={{textAlign:"right"}}>
+                    <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:22,color:"#FAF7F2"}}>{fmt(subtotal)}</p>
+                    <p style={{margin:0,fontSize:12,color:"#6B4C33"}}>aprox Q{(subtotal*COP_GTQ).toFixed(0)} GTQ</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:20}}>
+              <button onClick={()=>setStep(1)} style={S.btnSec}>← Atrás</button>
+              <button onClick={()=>setStep(3)} disabled={!ok2} style={S.btnPrimary(ok2)}>Continuar →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 3: Pago ── */}
+        {step===3&&(
+          <div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Pago</h2>
+            <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Confirma el pago antes de empacar.</p>
+
+            <Field label="Método de pago" T={T}>
+              <Sel value={pago} onChange={v=>{setPago(v);setBanco("");}} placeholder="¿Cómo paga?" opts={PAGOS} T={T}/>
+            </Field>
+            {pago==="Transferencia bancaria"&&(
+              <Field label="Banco desde donde transfiere" hint="Nos ayuda a conocer mejor a nuestros clientes" T={T}>
+                <Sel value={banco} onChange={setBanco} placeholder="Selecciona el banco..." opts={BANCOS} T={T}/>
+              </Field>
+            )}
+            <Field label="¿Comprobante recibido?" T={T}>
+              <Sel value={comp} onChange={setComp} placeholder="Estado del pago..."
+                opts={[{v:"Si",l:"Sí, ya recibí el comprobante"},{v:"No",l:"No, pendiente de pago"}]} T={T}/>
+            </Field>
+
+            {prod&&(
+              <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
+                <p style={{margin:"0 0 12px",fontSize:10,letterSpacing:"0.18em",color:"#6B4C33",textTransform:"uppercase"}}>Resumen final</p>
+                <SummaryRow k="Tienda"   v={T.nombre} T={T}/>
+                <SummaryRow k="Cliente"  v={nombre} T={T}/>
+                <SummaryRow k="Ciudad"   v={`${ciudad}${zonaGT?" — "+zonaGT:""}`} T={T}/>
+                <SummaryRow k="Producto" v={`${prod.descripcion||prod.nombre} — ${talla} x ${cantidad}`} T={T}/>
+                {cupon&&<SummaryRow k="Cupón" v={cupon} T={T}/>}
+                <SummaryRow k="Subtotal" v={`${fmt(subtotal)} COP`} T={T}/>
+                {zonaGT&&<SummaryRow k="Envío" v={`Q${costoEnvio} GTQ`} T={T}/>}
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:12,alignItems:"baseline"}}>
+                  <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>TOTAL A COBRAR</span>
+                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2"}}>Q{totalGTQ.toFixed(0)}</span>
+                </div>
+              </div>
+            )}
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:20}}>
+              <button onClick={()=>setStep(2)} style={S.btnSec}>← Atrás</button>
+              <button onClick={confirmar} disabled={!ok3||saving} style={S.btnAccent(ok3&&!saving)}>
+                {saving?"Guardando...":"Confirmar"}
+              </button>
+            </div>
+            {saving&&<p style={{textAlign:"center",fontSize:12,color:T.mid,marginTop:12}}>Enviando al Sheets, no cierres la app...</p>}
+          </div>
+        )}
+
+      </div>
+    </div>
   );
 }
-
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(React.createElement(NadiaApp));
