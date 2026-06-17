@@ -21,23 +21,15 @@
   <script type="text/babel" data-presets="react">
 const { useState, useMemo, useEffect } = React;
 
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzEK4lndMPlEuYfWtoYZjBocqUaEmV2j9KKWLM5rk2VVyUbHYls00J0mlys6NS5OmjTwQ/exec";
-const COP_GTQ = 0.005;
+// CAMBIO: nueva URL del AS bajo julian@casajrp.com
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec";
 
-// Paleta por marca
+// Paleta por marca — sin cambios
 const TEMA = {
   orkia: { bg:"#FAF7F2", dark:"#1A120A", mid:"#8B7355", gold:"#C4A882", border:"#E2D9CE", light:"#FFF8F0", accent:"#C4A882", nombre:"Orkia" },
   nudo:  { bg:"#F5F4FA", dark:"#0D0D1A", mid:"#6B6490", gold:"#7B6FE8", border:"#DDD9F0", light:"#EEEDFB", accent:"#7B6FE8", nombre:"Nudo" },
 };
 
-const ZONAS = [
-  { id:"Z1", nombre:"Centro",   barrios:"Zona 1, 4, 9, 10",         gtq:35  },
-  { id:"Z2", nombre:"Norte",    barrios:"Zona 2, 6, 17, 18, Mixco", gtq:50  },
-  { id:"Z3", nombre:"Sur",      barrios:"Zona 11, 12, 13, 14",      gtq:50  },
-  { id:"Z4", nombre:"Este",     barrios:"Zona 5, 7, 15, 16",        gtq:60  },
-  { id:"Z5", nombre:"Oeste",    barrios:"Mixco Sur, San Lucas",      gtq:70  },
-  { id:"Z6", nombre:"Interior", barrios:"Fuera de Guatemala City",   gtq:120 },
-];
 const NSE_POR_ZONA = {
   "Zona 9":"Alto","Zona 10":"Alto","Zona 14":"Alto","Zona 15":"Alto",
   "Zona 13":"Medio-Alto","Zona 16":"Medio-Alto",
@@ -45,12 +37,7 @@ const NSE_POR_ZONA = {
   "Zona 1":"Medio-Bajo","Zona 2":"Medio-Bajo","Zona 6":"Medio-Bajo",
   "Zona 18":"Popular","Zona 17":"Popular","Zona 7":"Popular",
 };
-const COSTO_POR_ZONA = {
-  "Zona 1":35,"Zona 4":35,"Zona 9":35,"Zona 10":35,
-  "Zona 2":50,"Zona 6":50,"Zona 11":50,"Zona 12":50,
-  "Zona 13":50,"Zona 14":50,"Zona 17":50,"Zona 18":50,
-  "Zona 5":60,"Zona 7":60,"Zona 15":60,"Zona 16":60,
-};
+
 const CIUDADES  = ["Guatemala City","Mixco","Villa Nueva","San Miguel Petapa","Amatitlan","Chinautla","Santa Catarina Pinula","Antigua Guatemala","Escuintla","Quetzaltenango","Otro departamento"];
 const ZONAS_GT  = ["Zona 1","Zona 2","Zona 3","Zona 4","Zona 5","Zona 6","Zona 7","Zona 8","Zona 9","Zona 10","Zona 11","Zona 12","Zona 13","Zona 14","Zona 15","Zona 16","Zona 17","Zona 18","Zona 19","Zona 21","No aplica (municipio fuera de Guatemala City)"];
 const CANALES   = ["Instagram","TikTok","Referido","WhatsApp directo","Otro"];
@@ -59,9 +46,10 @@ const BANCOS    = ["BAC Credomatic","Banco Industrial (BI)","G&T Continental","P
 const EDADES    = ["Joven (aprox 18-24)","Adulta (aprox 25-35)","Madura (aprox 36+)"];
 const MESES     = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DECISION  = ["Sabia exactamente que queria","Pregunto opciones antes de decidir","Pidio recomendacion a Nadia","Dudo mucho, casi no compra"];
-const fmt = (n) => `$${Number(n).toLocaleString("es-CO")}`;
 
-// ── Estilos dinámicos por tema ──────────────────────────────
+// CAMBIO: formato GTQ, no COP
+const fmtGTQ = (n) => `Q${Number(n).toFixed(0)}`;
+
 function makeStyles(T) {
   const base = { fontFamily:"'DM Sans',sans-serif",width:"100%",padding:"13px 16px",border:`1.5px solid ${T.border}`,borderRadius:12,fontSize:15,background:"#FFFDF9",color:T.dark,outline:"none",boxSizing:"border-box",transition:"border-color 0.2s",minHeight:50 };
   return {
@@ -73,7 +61,6 @@ function makeStyles(T) {
   };
 }
 
-// ── Componentes base ────────────────────────────────────────
 const Sel = ({value,onChange,opts,placeholder,disabled,T}) => {
   const S = makeStyles(T);
   return (
@@ -119,7 +106,7 @@ const SummaryRow = ({k,v,bold,T}) => (
   </div>
 );
 
-// ── Selector de producto dinámico ───────────────────────────
+// ProductoSelector — solo cambia precio a GTQ
 function ProductoSelector({value, onChange, productos, T}) {
   const S = makeStyles(T);
   const [busqueda, setBusqueda] = useState("");
@@ -127,7 +114,7 @@ function ProductoSelector({value, onChange, productos, T}) {
   const [filtroColor, setFiltroColor] = useState("Todos");
   const [abierto, setAbierto] = useState(false);
 
-  const tipos  = useMemo(() => ["Todos", ...new Set(productos.map(p=>p.tipo_prenda||p.tipo).filter(Boolean))].sort(), [productos]);
+  const tipos   = useMemo(() => ["Todos", ...new Set(productos.map(p=>p.tipo_prenda||p.tipo).filter(Boolean))].sort(), [productos]);
   const colores = useMemo(() => ["Todos", ...new Set(productos.map(p=>p.color).filter(Boolean))].sort(), [productos]);
 
   const filtrados = useMemo(() => {
@@ -144,7 +131,8 @@ function ProductoSelector({value, onChange, productos, T}) {
   const seleccionado = value ? productos.find(p => (p.id_producto||p.id) === value) : null;
   const nombreProd = p => p.descripcion || p.nombre || "";
   const idProd     = p => p.id_producto || p.id;
-  const precioProd = p => p.precio_cop || p.precio || 0;
+  // CAMBIO: precio en GTQ
+  const precioProd = p => p.precio_gtq || 0;
 
   return (
     <div style={{position:"relative"}}>
@@ -198,8 +186,9 @@ function ProductoSelector({value, onChange, productos, T}) {
                   <span style={{fontSize:11,color:T.mid,marginLeft:8}}>#{idProd(p)}</span>
                   {p.agotado && <span style={{fontSize:10,color:"#E8614A",marginLeft:6,fontWeight:700}}>AGOTADO</span>}
                 </div>
+                {/* CAMBIO: precio GTQ */}
                 <span style={{fontSize:12,color:T.gold,fontWeight:600,flexShrink:0,marginLeft:8}}>
-                  {fmt(precioProd(p))}
+                  {fmtGTQ(precioProd(p))}
                 </span>
               </div>
             ))}
@@ -216,21 +205,18 @@ function ProductoSelector({value, onChange, productos, T}) {
   );
 }
 
-// ── Pantalla 0: Selector de marca ───────────────────────────
 function SelectorMarca({ onSelect }) {
   return (
     <div style={{minHeight:"100vh",background:"#0D0A06",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'DM Sans',sans-serif"}}>
       <p style={{fontSize:10,letterSpacing:"0.25em",color:"#6B4C33",textTransform:"uppercase",marginBottom:6}}>by CASA JRP</p>
       <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:28,color:"#FAF7F2",fontWeight:500,marginBottom:4,textAlign:"center"}}>Registro de pedido</h1>
       <p style={{fontSize:14,color:"#6B4C33",marginBottom:40,textAlign:"center"}}>¿Para qué tienda estás registrando?</p>
-
       <div style={{display:"flex",flexDirection:"column",gap:14,width:"100%",maxWidth:320}}>
         <button onClick={() => onSelect("orkia")}
           style={{padding:"20px 24px",background:"#1A120A",border:"1.5px solid #C4A882",borderRadius:16,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
           <p style={{margin:"0 0 4px",fontSize:10,letterSpacing:"0.2em",color:"#C4A882",textTransform:"uppercase"}}>Ropa femenina</p>
           <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2",fontWeight:500}}>Orkia</p>
         </button>
-
         <button onClick={() => onSelect("nudo")}
           style={{padding:"20px 24px",background:"#0D0D1A",border:"1.5px solid #7B6FE8",borderRadius:16,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
           <p style={{margin:"0 0 4px",fontSize:10,letterSpacing:"0.2em",color:"#7B6FE8",textTransform:"uppercase"}}>Ropa interior masculina</p>
@@ -241,7 +227,6 @@ function SelectorMarca({ onSelect }) {
   );
 }
 
-// ── Pantalla de carga del catálogo ──────────────────────────
 function CargandoCatalogo({ marca, onRetry, error }) {
   const T = TEMA[marca];
   return (
@@ -267,54 +252,62 @@ function CargandoCatalogo({ marca, onRetry, error }) {
   );
 }
 
-// ── App principal ───────────────────────────────────────────
 function NadiaApp() {
-  const [marca, setMarca]       = useState(null);
+  const [marca, setMarca]         = useState(null);
   const [productos, setProductos] = useState([]);
-  const [cargando, setCargando] = useState(false);
-  const [errorCat, setErrorCat] = useState(null);
+  const [cargando, setCargando]   = useState(false);
+  const [errorCat, setErrorCat]   = useState(null);
+  // CAMBIO: zonas dinámicas desde AS
+  const [zonasList, setZonasList] = useState([]);
 
-  const [step, setStep]         = useState(1);
-  const [saving, setSaving]     = useState(false);
-  const [result, setResult]     = useState(null);
+  const [step, setStep]   = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [result, setResult] = useState(null);
 
-  const [nombre, setNombre]     = useState("");
-  const [telefono, setTel]      = useState("");
-  const [canal, setCanal]       = useState("");
-  const [ciudad, setCiudad]     = useState("");
-  const [zonaGT, setZonaGT]     = useState("");
-  const [colonia, setColonia]   = useState("");
-  const [direc, setDirec]       = useState("");
-  const [refs, setRefs]         = useState("");
-  const [edadInf, setEdad]      = useState("");
-  const [cumple, setCumple]     = useState("");
-  const [decision, setDec]      = useState("");
+  const [nombre, setNombre]   = useState("");
+  const [telefono, setTel]    = useState("");
+  const [canal, setCanal]     = useState("");
+  const [ciudad, setCiudad]   = useState("");
+  const [zonaGT, setZonaGT]   = useState("");
+  const [colonia, setColonia] = useState("");
+  const [direc, setDirec]     = useState("");
+  const [refs, setRefs]       = useState("");
+  const [edadInf, setEdad]    = useState("");
+  const [cumple, setCumple]   = useState("");
+  const [decision, setDec]    = useState("");
 
-  const [prodId, setProdId]     = useState(null);
-  const [talla, setTalla]       = useState("");
-  const [cantidad, setCant]     = useState("1");
-  const [cupon, setCupon]       = useState("");
+  const [prodId, setProdId]   = useState(null);
+  const [talla, setTalla]     = useState("");
+  const [cantidad, setCant]   = useState("1");
+  const [cupon, setCupon]     = useState("");
 
-  const [pago, setPago]         = useState("");
-  const [banco, setBanco]       = useState("");
-  const [comp, setComp]         = useState("");
+  const [pago, setPago]   = useState("");
+  const [banco, setBanco] = useState("");
+  const [comp, setComp]   = useState("");
 
   const T = marca ? TEMA[marca] : TEMA.orkia;
   const S = makeStyles(T);
 
-  // Cargar catálogo cuando se elige marca
+  // CAMBIO: carga catálogo + zonas en paralelo
   async function cargarCatalogo(m) {
     setCargando(true);
     setErrorCat(null);
     try {
-      const url = `${APPS_SCRIPT_URL}?accion=get_catalogo&marca=${m}`;
-      const res  = await fetch(url);
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || "Error desconocido");
-      // Filtrar agotados al final, disponibles primero
-      const disponibles = data.productos.filter(p => !p.agotado);
-      const agotados    = data.productos.filter(p => p.agotado);
+      const [resCat, resZonas] = await Promise.all([
+        fetch(`${APPS_SCRIPT_URL}?accion=get_catalogo&marca=${m}`),
+        fetch(`${APPS_SCRIPT_URL}?accion=get_zonas&marca=${m}`)
+      ]);
+      const dataCat   = await resCat.json();
+      const dataZonas = await resZonas.json();
+
+      if (!dataCat.ok) throw new Error(dataCat.error || "Error desconocido");
+
+      const disponibles = dataCat.productos.filter(p => !p.agotado);
+      const agotados    = dataCat.productos.filter(p => p.agotado);
       setProductos([...disponibles, ...agotados]);
+
+      if (dataZonas.ok) setZonasList(dataZonas.zonas);
+
       setMarca(m);
     } catch(err) {
       setErrorCat("Revisa la conexión e intenta de nuevo. (" + err.message + ")");
@@ -328,14 +321,25 @@ function NadiaApp() {
     cargarCatalogo(m);
   }
 
-  // Producto seleccionado
-  const prod        = prodId ? productos.find(p => (p.id_producto||p.id) === prodId) : null;
-  const precioProd  = prod ? (prod.precio_cop || prod.precio || 0) : 0;
-  const tallasDisp  = prod ? (prod.tallas || []) : [];
-  const costoEnvio  = COSTO_POR_ZONA[zonaGT] ?? (ciudad && ciudad !== "Guatemala City" ? 120 : 60);
-  const nseInf      = NSE_POR_ZONA[zonaGT] ?? null;
-  const subtotal    = precioProd * Number(cantidad||1);
-  const totalGTQ    = subtotal * COP_GTQ + (zonaGT ? costoEnvio : 0);
+  const prod      = prodId ? productos.find(p => (p.id_producto||p.id) === prodId) : null;
+  // CAMBIO: precio en GTQ
+  const precioGTQ = prod ? (prod.precio_gtq || 0) : 0;
+  const tallasDisp = prod ? (prod.tallas || []) : [];
+
+  // CAMBIO: costo de envío dinámico desde zonasList
+  const zonaSelObj = zonasList.find(z => z.nombre === zonaGT || z.id_zona === zonaGT) || null;
+  const costoEnvio = zonaSelObj ? zonaSelObj.costo_envio_gtq : 0;
+  const nseInf     = NSE_POR_ZONA[zonaGT] ?? null;
+
+  // CAMBIO: totales en GTQ
+  const subtotalGTQ = precioGTQ * Number(cantidad || 1);
+  const totalGTQ    = subtotalGTQ + costoEnvio;
+
+  // Opciones zona para Sel — dinámicas desde AS
+  const zonasOpts = zonasList.map(z => ({
+    v: z.nombre || z.id_zona,
+    l: `${z.nombre || z.id_zona} — Q${z.costo_envio_gtq}`
+  }));
 
   const ok1 = nombre && telefono && canal && ciudad && colonia && direc;
   const ok2 = prodId && talla && cantidad;
@@ -354,6 +358,7 @@ function NadiaApp() {
     resetPedido();
     setMarca(null);
     setProductos([]);
+    setZonasList([]);
     setErrorCat(null);
   }
 
@@ -401,21 +406,10 @@ function NadiaApp() {
     }
   }
 
-  // ── Pantalla 0: elegir marca ──
-  if (!marca && !cargando) {
-    return <SelectorMarca onSelect={elegirMarca} />;
-  }
+  if (!marca && !cargando) return <SelectorMarca onSelect={elegirMarca} />;
+  if (cargando || (!marca && !errorCat)) return <CargandoCatalogo marca={marca||"orkia"} onRetry={()=>cargarCatalogo(marca)} error={null}/>;
+  if (errorCat) return <CargandoCatalogo marca={marca||"orkia"} onRetry={()=>cargarCatalogo(marca)} error={errorCat}/>;
 
-  // ── Cargando catálogo ──
-  if (cargando || (!marca && !errorCat)) {
-    return <CargandoCatalogo marca={marca||"orkia"} onRetry={()=>cargarCatalogo(marca)} error={null}/>;
-  }
-
-  if (errorCat) {
-    return <CargandoCatalogo marca={marca||"orkia"} onRetry={()=>cargarCatalogo(marca)} error={errorCat}/>;
-  }
-
-  // ── Pantalla resultado ──
   if (result) return (
     <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"'DM Sans',sans-serif"}}>
       <div style={{width:"100%",maxWidth:400,textAlign:"center"}}>
@@ -424,7 +418,11 @@ function NadiaApp() {
             <div style={{fontSize:48,marginBottom:8}}>✓</div>
             <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:24,color:T.dark,margin:"0 0 4px"}}>Pedido registrado</h2>
             <p style={{color:T.mid,fontSize:13,margin:"0 0 14px"}}>{result.es_nuevo?"Cliente nuevo registrado.":"Cliente existente actualizado."}</p>
-            <div style={{background:T.dark,color:T.gold,borderRadius:12,padding:"10px 24px",display:"inline-block",fontSize:22,fontWeight:700,letterSpacing:"0.15em",marginBottom:20}}>{result.id_pedido}</div>
+            <div style={{background:T.dark,color:T.gold,borderRadius:12,padding:"10px 24px",display:"inline-block",fontSize:22,fontWeight:700,letterSpacing:"0.15em",marginBottom:16}}>{result.id_pedido}</div>
+            {/* CAMBIO: total en GTQ */}
+            <div style={{background:T.light,borderRadius:10,padding:"10px 14px",marginBottom:16,border:`1px solid ${T.border}`}}>
+              <p style={{fontSize:20,fontWeight:700,color:T.dark,margin:0}}>Total: {fmtGTQ(result.total_gtq)}</p>
+            </div>
             {(nseInf||edadInf||decision)&&(
               <div style={{background:T.light,borderRadius:10,padding:"10px 14px",marginBottom:16,border:`1px dashed ${T.gold}`,textAlign:"left"}}>
                 <p style={{margin:"0 0 6px",fontSize:10,fontWeight:700,letterSpacing:"0.1em",color:T.gold}}>PERFIL INFERIDO (interno)</p>
@@ -453,11 +451,8 @@ function NadiaApp() {
     </div>
   );
 
-  // ── App principal (steps 1-3) ──
   return (
     <div style={{minHeight:"100vh",background:T.bg}}>
-
-      {/* Header */}
       <div style={{background:T.dark,padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
         <div>
           <p style={{margin:0,fontSize:10,letterSpacing:"0.2em",color:T.gold,textTransform:"uppercase",opacity:0.6}}>{T.nombre}</p>
@@ -470,12 +465,11 @@ function NadiaApp() {
 
       <div style={{maxWidth:480,margin:"0 auto",padding:"20px 16px 100px"}}>
 
-        {/* ── Step 1: Cliente ── */}
+        {/* Step 1: Cliente — zona dinámica */}
         {step===1&&(
           <div>
             <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Datos del cliente</h2>
             <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Campos con * son obligatorios.</p>
-
             <Field label="Nombre completo" T={T}>
               <input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Ej: Carlos García" style={S.inpSt(!!nombre)}/>
             </Field>
@@ -485,9 +479,7 @@ function NadiaApp() {
             <Field label="¿Cómo llegó al negocio?" T={T}>
               <Sel value={canal} onChange={setCanal} placeholder="Selecciona..." opts={CANALES} T={T}/>
             </Field>
-
             <Divider label="Dirección de entrega" T={T}/>
-
             <Field label="Ciudad" T={T}>
               <Sel value={ciudad} onChange={v=>{setCiudad(v);setZonaGT("");}} placeholder="Selecciona la ciudad..." opts={CIUDADES} T={T}/>
             </Field>
@@ -511,7 +503,6 @@ function NadiaApp() {
             <Field label="Referencias" optional T={T}>
               <input value={refs} onChange={e=>setRefs(e.target.value)} placeholder="Ej: frente al parque, portón café" style={S.inpSt(!!refs)}/>
             </Field>
-
             <Divider label="Solo Nadia — no preguntarle al cliente" T={T}/>
             <div style={{background:T.light,borderRadius:12,padding:"14px 16px",border:`1px dashed ${T.gold}`}}>
               <Field label="Edad estimada (tu criterio)" optional muted T={T}>
@@ -524,7 +515,6 @@ function NadiaApp() {
                 <Sel value={cumple} onChange={setCumple} placeholder="Si lo mencionó..." opts={MESES} T={T}/>
               </Field>
             </div>
-
             <button onClick={()=>setStep(2)} disabled={!ok1} style={{...S.btnPrimary(ok1),marginTop:20}}>
               Continuar →
             </button>
@@ -534,16 +524,14 @@ function NadiaApp() {
           </div>
         )}
 
-        {/* ── Step 2: Producto ── */}
+        {/* Step 2: Producto — precio en GTQ */}
         {step===2&&(
           <div>
             <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Producto</h2>
             <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Busca por nombre, código, tipo o color.</p>
-
             <Field label="Buscar producto" T={T}>
               <ProductoSelector value={prodId} onChange={v=>{setProdId(v);setTalla("");}} productos={productos} T={T}/>
             </Field>
-
             {prod&&(
               <div style={{background:"#FFF",borderRadius:12,padding:14,border:`1.5px solid ${T.gold}`,display:"flex",gap:12,alignItems:"center",marginBottom:14}}>
                 <div style={{width:46,height:46,borderRadius:10,background:T.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
@@ -553,13 +541,13 @@ function NadiaApp() {
                   <p style={{margin:"0 0 5px",fontWeight:700,fontSize:14,color:T.dark}}>{prod.descripcion||prod.nombre}</p>
                   <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                     <span style={{background:T.mid+"18",color:T.mid,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{prod.tipo_prenda||prod.tipo}</span>
-                    <span style={{background:T.gold+"18",color:T.gold,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{fmt(precioProd)} COP</span>
+                    {/* CAMBIO: precio GTQ */}
+                    <span style={{background:T.gold+"18",color:T.gold,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{fmtGTQ(precioGTQ)}</span>
                     {prod.patron&&<span style={{background:T.border,color:T.mid,fontSize:11,padding:"2px 9px",borderRadius:20}}>{prod.patron}</span>}
                   </div>
                 </div>
               </div>
             )}
-
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
               <Field label="Talla" T={T}>
                 <Sel value={talla} onChange={setTalla} placeholder="Talla..." disabled={!prod} opts={tallasDisp} T={T}/>
@@ -568,25 +556,20 @@ function NadiaApp() {
                 <Sel value={cantidad} onChange={setCant} placeholder="Cant." opts={["1","2","3","4","5","6","7","8","9","10"]} T={T}/>
               </Field>
             </div>
-
             <Field label="Cupón de descuento" optional hint="Solo si el cliente lo tiene" T={T}>
               <input value={cupon} onChange={e=>setCupon(e.target.value.toUpperCase())} placeholder="Ej: BIENVENIDA10" style={S.inpSt(!!cupon)}/>
             </Field>
-
             {prod&&talla&&(
               <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
                 <SummaryRow k="Producto" v={`${prod.descripcion||prod.nombre} — ${talla} x ${cantidad}`} T={T}/>
-                <SummaryRow k="Precio unit." v={`${fmt(precioProd)} COP`} T={T}/>
+                {/* CAMBIO: precio y subtotal en GTQ */}
+                <SummaryRow k="Precio unitario" v={fmtGTQ(precioGTQ)} T={T}/>
                 <div style={{display:"flex",justifyContent:"space-between",marginTop:10,alignItems:"baseline"}}>
                   <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>SUBTOTAL</span>
-                  <div style={{textAlign:"right"}}>
-                    <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:22,color:"#FAF7F2"}}>{fmt(subtotal)}</p>
-                    <p style={{margin:0,fontSize:12,color:"#6B4C33"}}>aprox Q{(subtotal*COP_GTQ).toFixed(0)} GTQ</p>
-                  </div>
+                  <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:22,color:"#FAF7F2"}}>{fmtGTQ(subtotalGTQ)}</p>
                 </div>
               </div>
             )}
-
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:20}}>
               <button onClick={()=>setStep(1)} style={S.btnSec}>← Atrás</button>
               <button onClick={()=>setStep(3)} disabled={!ok2} style={S.btnPrimary(ok2)}>Continuar →</button>
@@ -594,12 +577,11 @@ function NadiaApp() {
           </div>
         )}
 
-        {/* ── Step 3: Pago ── */}
+        {/* Step 3: Pago — zona dinámica + total GTQ */}
         {step===3&&(
           <div>
             <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Pago</h2>
             <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Confirma el pago antes de empacar.</p>
-
             <Field label="Método de pago" T={T}>
               <Sel value={pago} onChange={v=>{setPago(v);setBanco("");}} placeholder="¿Cómo paga?" opts={PAGOS} T={T}/>
             </Field>
@@ -613,6 +595,15 @@ function NadiaApp() {
                 opts={[{v:"Si",l:"Sí, ya recibí el comprobante"},{v:"No",l:"No, pendiente de pago"}]} T={T}/>
             </Field>
 
+            {/* CAMBIO: zona de envío dinámica desde AS */}
+            <Field label="Zona de envío" T={T}>
+              {zonasList.length > 0 ? (
+                <Sel value={zonaGT} onChange={setZonaGT} placeholder="Selecciona zona de entrega..." opts={zonasOpts} T={T}/>
+              ) : (
+                <p style={{fontSize:12,color:T.mid,fontStyle:"italic",padding:"10px 0"}}>Cargando zonas de envío...</p>
+              )}
+            </Field>
+
             {prod&&(
               <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
                 <p style={{margin:"0 0 12px",fontSize:10,letterSpacing:"0.18em",color:"#6B4C33",textTransform:"uppercase"}}>Resumen final</p>
@@ -621,11 +612,12 @@ function NadiaApp() {
                 <SummaryRow k="Ciudad"   v={`${ciudad}${zonaGT?" — "+zonaGT:""}`} T={T}/>
                 <SummaryRow k="Producto" v={`${prod.descripcion||prod.nombre} — ${talla} x ${cantidad}`} T={T}/>
                 {cupon&&<SummaryRow k="Cupón" v={cupon} T={T}/>}
-                <SummaryRow k="Subtotal" v={`${fmt(subtotal)} COP`} T={T}/>
-                {zonaGT&&<SummaryRow k="Envío" v={`Q${costoEnvio} GTQ`} T={T}/>}
+                {/* CAMBIO: todo en GTQ */}
+                <SummaryRow k="Subtotal" v={fmtGTQ(subtotalGTQ)} T={T}/>
+                {costoEnvio>0&&<SummaryRow k="Envío" v={fmtGTQ(costoEnvio)} T={T}/>}
                 <div style={{display:"flex",justifyContent:"space-between",marginTop:12,alignItems:"baseline"}}>
                   <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>TOTAL A COBRAR</span>
-                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2"}}>Q{totalGTQ.toFixed(0)}</span>
+                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2"}}>{fmtGTQ(totalGTQ)}</span>
                 </div>
               </div>
             )}
