@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Registro de Pedido — CASA JRP</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #FAF7F2; font-family: 'DM Sans', sans-serif; }
+    select, input, textarea, button { font-family: inherit; }
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-thumb { background: #C4A882; border-radius: 2px; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" data-presets="react">
+const { useState, useMemo, useEffect } = React;
+
+// CAMBIO: nueva URL del AS bajo julian@casajrp.com
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec";
+
+// Paleta por marca — sin cambios
+const TEMA = {
+  orkia: { bg:"#FAF7F2", dark:"#1A120A", mid:"#8B7355", gold:"#C4A882", border:"#E2D9CE", light:"#FFF8F0", accent:"#C4A882", nombre:"Orkia" },
+  nudo:  { bg:"#F5F4FA", dark:"#0D0D1A", mid:"#6B6490", gold:"#7B6FE8", border:"#DDD9F0", light:"#EEEDFB", accent:"#7B6FE8", nombre:"Nudo" },
+};
+
+const NSE_POR_ZONA = {
+  "Zona 9":"Alto","Zona 10":"Alto","Zona 14":"Alto","Zona 15":"Alto",
+  "Zona 13":"Medio-Alto","Zona 16":"Medio-Alto",
+  "Zona 11":"Medio","Zona 12":"Medio","Zona 5":"Medio",
+  "Zona 1":"Medio-Bajo","Zona 2":"Medio-Bajo","Zona 6":"Medio-Bajo",
+  "Zona 18":"Popular","Zona 17":"Popular","Zona 7":"Popular",
+};
+
+const CIUDADES  = ["Guatemala City","Mixco","Villa Nueva","San Miguel Petapa","Amatitlan","Chinautla","Santa Catarina Pinula","Antigua Guatemala","Escuintla","Quetzaltenango","Otro departamento"];
+const ZONAS_GT  = ["Zona 1","Zona 2","Zona 3","Zona 4","Zona 5","Zona 6","Zona 7","Zona 8","Zona 9","Zona 10","Zona 11","Zona 12","Zona 13","Zona 14","Zona 15","Zona 16","Zona 17","Zona 18","Zona 19","Zona 21","No aplica (municipio fuera de Guatemala City)"];
+const CANALES   = ["Instagram","TikTok","Referido","WhatsApp directo","Otro"];
+const PAGOS     = ["Transferencia bancaria","Link de pago","Efectivo contra entrega"];
+const BANCOS    = ["BAC Credomatic","Banco Industrial (BI)","G&T Continental","Promerica","Agromercantil","Ficohsa","Citibank","Vivibanco","Credito Hipotecario Nacional","Bantrab","Banmundo","Banrural","Bancoex","Otro banco","No aplica (link de pago)"];
+const EDADES    = ["Joven (aprox 18-24)","Adulta (aprox 25-35)","Madura (aprox 36+)"];
+const MESES     = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DECISION  = ["Sabia exactamente que queria","Pregunto opciones antes de decidir","Pidio recomendacion a Nadia","Dudo mucho, casi no compra"];
+
+// CAMBIO: formato GTQ, no COP
+const fmtGTQ = (n) => `Q${Number(n).toFixed(0)}`;
+
+function makeStyles(T) {
+  const base = { fontFamily:"'DM Sans',sans-serif",width:"100%",padding:"13px 16px",border:`1.5px solid ${T.border}`,borderRadius:12,fontSize:15,background:"#FFFDF9",color:T.dark,outline:"none",boxSizing:"border-box",transition:"border-color 0.2s",minHeight:50 };
+  return {
+    selSt: (v,d) => ({...base,border:`1.5px solid ${v?T.gold:T.border}`,color:v?T.dark:"#B0A090",background:d?"#F5F0EA":"#FFFDF9",WebkitAppearance:"none",appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='${encodeURIComponent(T.gold)}' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 16px center",paddingRight:40,cursor:d?"not-allowed":"pointer"}),
+    inpSt: (v) => ({...base,border:`1.5px solid ${v?T.gold:T.border}`}),
+    btnPrimary: (ok) => ({width:"100%",padding:"16px",minHeight:54,background:ok?T.dark:T.border,color:ok?"#FAF7F2":"#B0A090",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:ok?"pointer":"not-allowed",fontFamily:"'DM Sans',sans-serif",transition:"all 0.2s"}),
+    btnAccent:  (ok) => ({width:"100%",padding:"16px",minHeight:54,background:ok?T.gold:T.border,color:ok?T.dark:"#B0A090",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:ok?"pointer":"not-allowed",fontFamily:"'DM Sans',sans-serif",transition:"all 0.2s"}),
+    btnSec: {width:"100%",padding:"16px",minHeight:54,background:"transparent",color:T.mid,border:`1.5px solid ${T.gold}`,borderRadius:14,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"},
+  };
+}
+
+const Sel = ({value,onChange,opts,placeholder,disabled,T}) => {
+  const S = makeStyles(T);
+  return (
+    <select value={value} onChange={e=>onChange(e.target.value)} disabled={disabled} style={S.selSt(!!value,disabled)}>
+      <option value="">{placeholder}</option>
+      {opts.map(o=><option key={o.v??o} value={o.v??o}>{o.l??o}</option>)}
+    </select>
+  );
+};
+
+const Field = ({label,children,optional,hint,muted,T}) => (
+  <div style={{marginBottom:14}}>
+    <label style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:muted?T.gold:T.mid,marginBottom:6,display:"block"}}>
+      {label}
+      {optional
+        ? <span style={{fontWeight:400,textTransform:"none",letterSpacing:0,color:T.gold}}> (opcional)</span>
+        : <span style={{color:"#E8614A",marginLeft:3}}>*</span>}
+    </label>
+    {children}
+    {hint&&<p style={{margin:"5px 0 0",fontSize:11,color:"#B0A090",fontStyle:"italic"}}>{hint}</p>}
+  </div>
+);
+
+const Dot = ({n,active,done,T}) => (
+  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+    <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,background:done?T.gold:active?"#FAF7F2":"#3D2518",color:done?"#FFF":active?T.dark:"#6B4C33",transition:"all 0.3s"}}>{done?"✓":n}</div>
+    <span style={{fontSize:9,letterSpacing:"0.06em",fontWeight:active?700:400,color:active?"#FAF7F2":done?T.gold:"#6B4C33"}}>{["CLIENTE","PRODUCTO","PAGO"][n-1]}</span>
+  </div>
+);
+
+const Divider = ({label,T}) => (
+  <div style={{display:"flex",alignItems:"center",gap:10,margin:"18px 0 14px"}}>
+    <div style={{flex:1,height:1,background:T.border}}/>
+    <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",color:T.gold,textTransform:"uppercase",whiteSpace:"nowrap"}}>{label}</span>
+    <div style={{flex:1,height:1,background:T.border}}/>
+  </div>
+);
+
+const SummaryRow = ({k,v,bold,T}) => (
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"5px 0",borderBottom:"1px solid #2C1A0E"}}>
+    <span style={{fontSize:11,color:"#6B4C33",flexShrink:0}}>{k}</span>
+    <span style={{fontSize:bold?14:12,color:"#FAF7F2",textAlign:"right",marginLeft:8,fontWeight:bold?700:400}}>{v}</span>
+  </div>
+);
+
+// ProductoSelector — solo cambia precio a GTQ
+function ProductoSelector({value, onChange, productos, T}) {
+  const S = makeStyles(T);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroTipo, setFiltroTipo] = useState("Todos");
+  const [filtroColor, setFiltroColor] = useState("Todos");
+  const [abierto, setAbierto] = useState(false);
+
+  const tipos   = useMemo(() => ["Todos", ...new Set(productos.map(p=>p.tipo_prenda||p.tipo).filter(Boolean))].sort(), [productos]);
+  const colores = useMemo(() => ["Todos", ...new Set(productos.map(p=>p.color).filter(Boolean))].sort(), [productos]);
+
+  const filtrados = useMemo(() => {
+    return productos.filter(p => {
+      const tipo  = p.tipo_prenda || p.tipo || "";
+      const matchTipo  = filtroTipo === "Todos" || tipo === filtroTipo;
+      const matchColor = filtroColor === "Todos" || p.color === filtroColor;
+      const nombre = p.descripcion || p.nombre || "";
+      const matchBusq  = !busqueda || nombre.toLowerCase().includes(busqueda.toLowerCase()) || String(p.id_producto||p.id).includes(busqueda);
+      return matchTipo && matchColor && matchBusq;
+    });
+  }, [busqueda, filtroTipo, filtroColor, productos]);
+
+  const seleccionado = value ? productos.find(p => (p.id_producto||p.id) === value) : null;
+  const nombreProd = p => p.descripcion || p.nombre || "";
+  const idProd     = p => p.id_producto || p.id;
+  // CAMBIO: precio en GTQ
+  const precioProd = p => p.precio_gtq || 0;
+
+  return (
+    <div style={{position:"relative"}}>
+      <div onClick={() => setAbierto(!abierto)}
+        style={{...S.inpSt(!!value), cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", userSelect:"none"}}>
+        <span style={{color: seleccionado ? T.dark : "#B0A090", fontSize:15}}>
+          {seleccionado ? `#${idProd(seleccionado)} — ${nombreProd(seleccionado)}` : "Busca o filtra el producto..."}
+        </span>
+        <span style={{color:T.gold, fontSize:12}}>{abierto ? "▲" : "▼"}</span>
+      </div>
+
+      {abierto && (
+        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,zIndex:100,
+          background:"#FFF",borderRadius:14,border:`1.5px solid ${T.gold}`,
+          boxShadow:"0 8px 32px rgba(0,0,0,0.12)",overflow:"hidden"}}>
+
+          <div style={{padding:"12px 12px 8px"}}>
+            <input value={busqueda} onChange={e=>setBusqueda(e.target.value)}
+              placeholder="Buscar por nombre o codigo..."
+              style={{...S.inpSt(!!busqueda), fontSize:14, padding:"10px 14px"}}
+              autoFocus />
+          </div>
+
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,padding:"0 12px 8px"}}>
+            <select value={filtroTipo} onChange={e=>setFiltroTipo(e.target.value)}
+              style={{...S.selSt(filtroTipo!=="Todos",false),fontSize:13,padding:"8px 32px 8px 12px",minHeight:38}}>
+              {tipos.map(t=><option key={t} value={t}>{t}</option>)}
+            </select>
+            <select value={filtroColor} onChange={e=>setFiltroColor(e.target.value)}
+              style={{...S.selSt(filtroColor!=="Todos",false),fontSize:13,padding:"8px 32px 8px 12px",minHeight:38}}>
+              {colores.map(c=><option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          <div style={{padding:"4px 12px 6px",fontSize:11,color:T.mid}}>
+            {filtrados.length} producto{filtrados.length!==1?"s":""} encontrado{filtrados.length!==1?"s":""}
+          </div>
+
+          <div style={{maxHeight:240,overflowY:"auto",borderTop:`1px solid ${T.border}`}}>
+            {filtrados.length === 0 ? (
+              <div style={{padding:"20px 16px",textAlign:"center",color:T.mid,fontSize:14}}>
+                Sin resultados. Cambia los filtros.
+              </div>
+            ) : filtrados.map(p => (
+              <div key={idProd(p)} onClick={() => { onChange(idProd(p)); setAbierto(false); setBusqueda(""); }}
+                style={{padding:"10px 16px",cursor:"pointer",borderBottom:`1px solid ${T.border}`,
+                  background: value===idProd(p) ? T.light : "transparent",
+                  display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <span style={{fontSize:13,fontWeight:600,color:T.dark}}>{nombreProd(p)}</span>
+                  <span style={{fontSize:11,color:T.mid,marginLeft:8}}>#{idProd(p)}</span>
+                  {p.agotado && <span style={{fontSize:10,color:"#E8614A",marginLeft:6,fontWeight:700}}>AGOTADO</span>}
+                </div>
+                {/* CAMBIO: precio GTQ */}
+                <span style={{fontSize:12,color:T.gold,fontWeight:600,flexShrink:0,marginLeft:8}}>
+                  {fmtGTQ(precioProd(p))}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div onClick={() => setAbierto(false)}
+            style={{padding:"10px 16px",textAlign:"center",fontSize:13,color:T.mid,
+              cursor:"pointer",borderTop:`1px solid ${T.border}`,background:T.light}}>
+            Cerrar
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SelectorMarca({ onSelect }) {
+  return (
+    <div style={{minHeight:"100vh",background:"#0D0A06",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'DM Sans',sans-serif"}}>
+      <p style={{fontSize:10,letterSpacing:"0.25em",color:"#6B4C33",textTransform:"uppercase",marginBottom:6}}>by CASA JRP</p>
+      <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:28,color:"#FAF7F2",fontWeight:500,marginBottom:4,textAlign:"center"}}>Registro de pedido</h1>
+      <p style={{fontSize:14,color:"#6B4C33",marginBottom:40,textAlign:"center"}}>¿Para qué tienda estás registrando?</p>
+      <div style={{display:"flex",flexDirection:"column",gap:14,width:"100%",maxWidth:320}}>
+        <button onClick={() => onSelect("orkia")}
+          style={{padding:"20px 24px",background:"#1A120A",border:"1.5px solid #C4A882",borderRadius:16,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+          <p style={{margin:"0 0 4px",fontSize:10,letterSpacing:"0.2em",color:"#C4A882",textTransform:"uppercase"}}>Ropa femenina</p>
+          <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2",fontWeight:500}}>Orkia</p>
+        </button>
+        <button onClick={() => onSelect("nudo")}
+          style={{padding:"20px 24px",background:"#0D0D1A",border:"1.5px solid #7B6FE8",borderRadius:16,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+          <p style={{margin:"0 0 4px",fontSize:10,letterSpacing:"0.2em",color:"#7B6FE8",textTransform:"uppercase"}}>Ropa interior masculina</p>
+          <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2",fontWeight:500}}>Nudo</p>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CargandoCatalogo({ marca, onRetry, error }) {
+  const T = TEMA[marca];
+  return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'DM Sans',sans-serif"}}>
+      {error ? (
+        <>
+          <p style={{fontSize:32,marginBottom:12}}>⚠️</p>
+          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:20,color:T.dark,marginBottom:8,textAlign:"center"}}>No se pudo cargar el catálogo</h2>
+          <p style={{fontSize:13,color:T.mid,marginBottom:24,textAlign:"center",maxWidth:280}}>{error}</p>
+          <button onClick={onRetry}
+            style={{padding:"14px 28px",background:T.dark,color:"#FAF7F2",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
+            Reintentar
+          </button>
+        </>
+      ) : (
+        <>
+          <div style={{width:40,height:40,border:`3px solid ${T.border}`,borderTop:`3px solid ${T.gold}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",marginBottom:16}}/>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          <p style={{fontSize:15,color:T.mid}}>Cargando catálogo {T.nombre}...</p>
+        </>
+      )}
+    </div>
+  );
+}
+
+function NadiaApp() {
+  const [marca, setMarca]         = useState(null);
+  const [productos, setProductos] = useState([]);
+  const [cargando, setCargando]   = useState(false);
+  const [errorCat, setErrorCat]   = useState(null);
+  // CAMBIO: zonas dinámicas desde AS
+  const [zonasList, setZonasList] = useState([]);
+
+  const [step, setStep]   = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const [nombre, setNombre]   = useState("");
+  const [telefono, setTel]    = useState("");
+  const [canal, setCanal]     = useState("");
+  const [ciudad, setCiudad]   = useState("");
+  const [zonaGT, setZonaGT]   = useState("");
+  const [colonia, setColonia] = useState("");
+  const [direc, setDirec]     = useState("");
+  const [refs, setRefs]       = useState("");
+  const [edadInf, setEdad]    = useState("");
+  const [cumple, setCumple]   = useState("");
+  const [decision, setDec]    = useState("");
+
+  const [prodId, setProdId]   = useState(null);
+  const [talla, setTalla]     = useState("");
+  const [cantidad, setCant]   = useState("1");
+  const [cupon, setCupon]     = useState("");
+
+  const [pago, setPago]   = useState("");
+  const [banco, setBanco] = useState("");
+  const [comp, setComp]   = useState("");
+
+  const T = marca ? TEMA[marca] : TEMA.orkia;
+  const S = makeStyles(T);
+
+  // CAMBIO: carga catálogo + zonas en paralelo
+  async function cargarCatalogo(m) {
+    setCargando(true);
+    setErrorCat(null);
+    try {
+      const [resCat, resZonas] = await Promise.all([
+        fetch(`${APPS_SCRIPT_URL}?accion=get_catalogo&marca=${m}`),
+        fetch(`${APPS_SCRIPT_URL}?accion=get_zonas&marca=${m}`)
+      ]);
+      const dataCat   = await resCat.json();
+      const dataZonas = await resZonas.json();
+
+      if (!dataCat.ok) throw new Error(dataCat.error || "Error desconocido");
+
+      const disponibles = dataCat.productos.filter(p => !p.agotado);
+      const agotados    = dataCat.productos.filter(p => p.agotado);
+      setProductos([...disponibles, ...agotados]);
+
+      if (dataZonas.ok) setZonasList(dataZonas.zonas);
+
+      setMarca(m);
+    } catch(err) {
+      setErrorCat("Revisa la conexión e intenta de nuevo. (" + err.message + ")");
+    } finally {
+      setCargando(false);
+    }
+  }
+
+  function elegirMarca(m) {
+    setCargando(true);
+    cargarCatalogo(m);
+  }
+
+  const prod      = prodId ? productos.find(p => (p.id_producto||p.id) === prodId) : null;
+  // CAMBIO: precio en GTQ
+  const precioGTQ = prod ? (prod.precio_gtq || 0) : 0;
+  const tallasDisp = prod ? (prod.tallas || []) : [];
+
+  // CAMBIO: costo de envío dinámico desde zonasList
+  const zonaSelObj = zonasList.find(z => z.nombre === zonaGT || z.id_zona === zonaGT) || null;
+  const costoEnvio = zonaSelObj ? zonaSelObj.costo_envio_gtq : 0;
+  const nseInf     = NSE_POR_ZONA[zonaGT] ?? null;
+
+  // CAMBIO: totales en GTQ
+  const subtotalGTQ = precioGTQ * Number(cantidad || 1);
+  const totalGTQ    = subtotalGTQ + costoEnvio;
+
+  // Opciones zona para Sel — dinámicas desde AS
+  const zonasOpts = zonasList.map(z => ({
+    v: z.nombre || z.id_zona,
+    l: `${z.nombre || z.id_zona} — Q${z.costo_envio_gtq}`
+  }));
+
+  const ok1 = nombre && telefono && canal && ciudad && colonia && direc;
+  const ok2 = prodId && talla && cantidad;
+  const ok3 = pago && comp && (pago !== "Transferencia bancaria" || banco);
+
+  function resetPedido() {
+    setStep(1); setResult(null);
+    setNombre(""); setTel(""); setCanal("");
+    setCiudad(""); setZonaGT(""); setColonia(""); setDirec(""); setRefs("");
+    setEdad(""); setCumple(""); setDec("");
+    setProdId(null); setTalla(""); setCant("1"); setCupon("");
+    setPago(""); setBanco(""); setComp("");
+  }
+
+  function resetTotal() {
+    resetPedido();
+    setMarca(null);
+    setProductos([]);
+    setZonasList([]);
+    setErrorCat(null);
+  }
+
+  async function confirmar() {
+    setSaving(true);
+    const payload = {
+      accion:          "nuevo_pedido",
+      marca:           marca,
+      nombre_cliente:  nombre,
+      telefono:        telefono,
+      canal_origen:    canal,
+      ciudad:          ciudad,
+      zona_gt:         zonaGT,
+      colonia:         colonia,
+      direccion:       direc,
+      referencias:     refs,
+      nse_inferido:    nseInf || "",
+      edad_inferida:   edadInf,
+      mes_cumpleanos:  cumple,
+      perfil_decision: decision,
+      lineas: [{
+        id_producto: Number(prodId),
+        talla:       talla,
+        cantidad:    Number(cantidad),
+      }],
+      codigo_descuento: cupon,
+      descuento_cop:    0,
+      metodo_pago:     pago,
+      banco:           banco,
+      comprobante:     comp,
+      motivo_compra:   "",
+    };
+    try {
+      const res  = await fetch(APPS_SCRIPT_URL, {
+        method:"POST",
+        headers:{"Content-Type":"text/plain"},
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      setResult(data);
+    } catch(err) {
+      setResult({ ok:false, error:"No se pudo conectar. Revisa la conexión a internet." });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!marca && !cargando) return <SelectorMarca onSelect={elegirMarca} />;
+  if (cargando || (!marca && !errorCat)) return <CargandoCatalogo marca={marca||"orkia"} onRetry={()=>cargarCatalogo(marca)} error={null}/>;
+  if (errorCat) return <CargandoCatalogo marca={marca||"orkia"} onRetry={()=>cargarCatalogo(marca)} error={errorCat}/>;
+
+  if (result) return (
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"'DM Sans',sans-serif"}}>
+      <div style={{width:"100%",maxWidth:400,textAlign:"center"}}>
+        {result.ok ? (
+          <>
+            <div style={{fontSize:48,marginBottom:8}}>✓</div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:24,color:T.dark,margin:"0 0 4px"}}>Pedido registrado</h2>
+            <p style={{color:T.mid,fontSize:13,margin:"0 0 14px"}}>{result.es_nuevo?"Cliente nuevo registrado.":"Cliente existente actualizado."}</p>
+            <div style={{background:T.dark,color:T.gold,borderRadius:12,padding:"10px 24px",display:"inline-block",fontSize:22,fontWeight:700,letterSpacing:"0.15em",marginBottom:16}}>{result.id_pedido}</div>
+            {/* CAMBIO: total en GTQ */}
+            <div style={{background:T.light,borderRadius:10,padding:"10px 14px",marginBottom:16,border:`1px solid ${T.border}`}}>
+              <p style={{fontSize:20,fontWeight:700,color:T.dark,margin:0}}>Total: {fmtGTQ(result.total_gtq)}</p>
+            </div>
+            {(nseInf||edadInf||decision)&&(
+              <div style={{background:T.light,borderRadius:10,padding:"10px 14px",marginBottom:16,border:`1px dashed ${T.gold}`,textAlign:"left"}}>
+                <p style={{margin:"0 0 6px",fontSize:10,fontWeight:700,letterSpacing:"0.1em",color:T.gold}}>PERFIL INFERIDO (interno)</p>
+                {nseInf&&<div style={{fontSize:12,color:"#2E75B6",marginBottom:3}}>NSE: <strong>{nseInf}</strong></div>}
+                {edadInf&&<div style={{fontSize:12,color:T.mid,marginBottom:3}}>Edad: <strong>{edadInf}</strong></div>}
+                {decision&&<div style={{fontSize:12,color:"#4A9E6B"}}>Decisión: <strong>{decision}</strong></div>}
+              </div>
+            )}
+            <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
+              <button onClick={resetPedido} style={S.btnPrimary(true)}>+ Nuevo pedido — {T.nombre}</button>
+              <button onClick={resetTotal}  style={S.btnSec}>Cambiar tienda</button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{fontSize:48,marginBottom:8}}>✗</div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 8px"}}>No se pudo guardar</h2>
+            <div style={{background:"#FFF0EE",borderRadius:10,padding:"12px 16px",marginBottom:16,border:"1px solid #E8614A",textAlign:"left"}}>
+              <p style={{margin:0,fontSize:13,color:"#E8614A"}}>{result.error}</p>
+            </div>
+            <p style={{fontSize:12,color:T.mid,marginBottom:16}}>Toma captura antes de intentar de nuevo.</p>
+            <button onClick={resetPedido} style={S.btnPrimary(true)}>Volver e intentar de nuevo</button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{minHeight:"100vh",background:T.bg}}>
+      <div style={{background:T.dark,padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
+        <div>
+          <p style={{margin:0,fontSize:10,letterSpacing:"0.2em",color:T.gold,textTransform:"uppercase",opacity:0.6}}>{T.nombre}</p>
+          <h1 style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:19,color:"#FAF7F2",fontWeight:500}}>Nuevo Pedido</h1>
+        </div>
+        <div style={{display:"flex",gap:16,alignItems:"center"}}>
+          {[1,2,3].map(n=><Dot key={n} n={n} active={step===n} done={step>n} T={T}/>)}
+        </div>
+      </div>
+
+      <div style={{maxWidth:480,margin:"0 auto",padding:"20px 16px 100px"}}>
+
+        {/* Step 1: Cliente — zona dinámica */}
+        {step===1&&(
+          <div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Datos del cliente</h2>
+            <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Campos con * son obligatorios.</p>
+            <Field label="Nombre completo" T={T}>
+              <input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Ej: Carlos García" style={S.inpSt(!!nombre)}/>
+            </Field>
+            <Field label="WhatsApp" T={T}>
+              <input value={telefono} onChange={e=>setTel(e.target.value)} placeholder="+502 9999-9999" type="tel" style={S.inpSt(!!telefono)}/>
+            </Field>
+            <Field label="¿Cómo llegó al negocio?" T={T}>
+              <Sel value={canal} onChange={setCanal} placeholder="Selecciona..." opts={CANALES} T={T}/>
+            </Field>
+            <Divider label="Dirección de entrega" T={T}/>
+            <Field label="Ciudad" T={T}>
+              <Sel value={ciudad} onChange={v=>{setCiudad(v);setZonaGT("");}} placeholder="Selecciona la ciudad..." opts={CIUDADES} T={T}/>
+            </Field>
+            {ciudad==="Guatemala City"&&(
+              <Field label="Zona" T={T}>
+                <Sel value={zonaGT} onChange={setZonaGT} placeholder="Selecciona la zona..." opts={ZONAS_GT} T={T}/>
+              </Field>
+            )}
+            {nseInf&&(
+              <div style={{background:"#EBF3FB",borderRadius:8,padding:"7px 12px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:12,color:"#2E75B6"}}>NSE inferido: <strong>{nseInf}</strong></span>
+                <span style={{fontSize:11,color:"#6B9EC7"}}>(automático)</span>
+              </div>
+            )}
+            <Field label="Colonia / Residencial" T={T}>
+              <input value={colonia} onChange={e=>setColonia(e.target.value)} placeholder="Ej: Colonia Las Ilusiones" style={S.inpSt(!!colonia)}/>
+            </Field>
+            <Field label="Calle y número de casa" T={T}>
+              <input value={direc} onChange={e=>setDirec(e.target.value)} placeholder="Ej: 3ra calle 12-45, casa B" style={S.inpSt(!!direc)}/>
+            </Field>
+            <Field label="Referencias" optional T={T}>
+              <input value={refs} onChange={e=>setRefs(e.target.value)} placeholder="Ej: frente al parque, portón café" style={S.inpSt(!!refs)}/>
+            </Field>
+            <Divider label="Solo Nadia — no preguntarle al cliente" T={T}/>
+            <div style={{background:T.light,borderRadius:12,padding:"14px 16px",border:`1px dashed ${T.gold}`}}>
+              <Field label="Edad estimada (tu criterio)" optional muted T={T}>
+                <Sel value={edadInf} onChange={setEdad} placeholder="¿Cómo lo ves?" opts={EDADES} T={T}/>
+              </Field>
+              <Field label="¿Cómo decidió la compra?" optional muted T={T}>
+                <Sel value={decision} onChange={setDec} placeholder="Perfil de decisión..." opts={DECISION} T={T}/>
+              </Field>
+              <Field label="Mes de cumpleaños" optional muted hint={`Di: "¿En qué mes cumplís? Te mandamos algo especial"`} T={T}>
+                <Sel value={cumple} onChange={setCumple} placeholder="Si lo mencionó..." opts={MESES} T={T}/>
+              </Field>
+            </div>
+            <button onClick={()=>setStep(2)} disabled={!ok1} style={{...S.btnPrimary(ok1),marginTop:20}}>
+              Continuar →
+            </button>
+            <button onClick={resetTotal} style={{...S.btnSec,marginTop:10}}>
+              ← Cambiar tienda
+            </button>
+          </div>
+        )}
+
+        {/* Step 2: Producto — precio en GTQ */}
+        {step===2&&(
+          <div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Producto</h2>
+            <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Busca por nombre, código, tipo o color.</p>
+            <Field label="Buscar producto" T={T}>
+              <ProductoSelector value={prodId} onChange={v=>{setProdId(v);setTalla("");}} productos={productos} T={T}/>
+            </Field>
+            {prod&&(
+              <div style={{background:"#FFF",borderRadius:12,padding:14,border:`1.5px solid ${T.gold}`,display:"flex",gap:12,alignItems:"center",marginBottom:14}}>
+                <div style={{width:46,height:46,borderRadius:10,background:T.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
+                  {(prod.tipo_prenda||prod.tipo||"")===("Set"||"Body")?"👗":"👕"}
+                </div>
+                <div>
+                  <p style={{margin:"0 0 5px",fontWeight:700,fontSize:14,color:T.dark}}>{prod.descripcion||prod.nombre}</p>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    <span style={{background:T.mid+"18",color:T.mid,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{prod.tipo_prenda||prod.tipo}</span>
+                    {/* CAMBIO: precio GTQ */}
+                    <span style={{background:T.gold+"18",color:T.gold,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{fmtGTQ(precioGTQ)}</span>
+                    {prod.patron&&<span style={{background:T.border,color:T.mid,fontSize:11,padding:"2px 9px",borderRadius:20}}>{prod.patron}</span>}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
+              <Field label="Talla" T={T}>
+                <Sel value={talla} onChange={setTalla} placeholder="Talla..." disabled={!prod} opts={tallasDisp} T={T}/>
+              </Field>
+              <Field label="Cantidad" T={T}>
+                <Sel value={cantidad} onChange={setCant} placeholder="Cant." opts={["1","2","3","4","5","6","7","8","9","10"]} T={T}/>
+              </Field>
+            </div>
+            <Field label="Cupón de descuento" optional hint="Solo si el cliente lo tiene" T={T}>
+              <input value={cupon} onChange={e=>setCupon(e.target.value.toUpperCase())} placeholder="Ej: BIENVENIDA10" style={S.inpSt(!!cupon)}/>
+            </Field>
+            {prod&&talla&&(
+              <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
+                <SummaryRow k="Producto" v={`${prod.descripcion||prod.nombre} — ${talla} x ${cantidad}`} T={T}/>
+                {/* CAMBIO: precio y subtotal en GTQ */}
+                <SummaryRow k="Precio unitario" v={fmtGTQ(precioGTQ)} T={T}/>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:10,alignItems:"baseline"}}>
+                  <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>SUBTOTAL</span>
+                  <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:22,color:"#FAF7F2"}}>{fmtGTQ(subtotalGTQ)}</p>
+                </div>
+              </div>
+            )}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:20}}>
+              <button onClick={()=>setStep(1)} style={S.btnSec}>← Atrás</button>
+              <button onClick={()=>setStep(3)} disabled={!ok2} style={S.btnPrimary(ok2)}>Continuar →</button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Pago — zona dinámica + total GTQ */}
+        {step===3&&(
+          <div>
+            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Pago</h2>
+            <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Confirma el pago antes de empacar.</p>
+            <Field label="Método de pago" T={T}>
+              <Sel value={pago} onChange={v=>{setPago(v);setBanco("");}} placeholder="¿Cómo paga?" opts={PAGOS} T={T}/>
+            </Field>
+            {pago==="Transferencia bancaria"&&(
+              <Field label="Banco desde donde transfiere" hint="Nos ayuda a conocer mejor a nuestros clientes" T={T}>
+                <Sel value={banco} onChange={setBanco} placeholder="Selecciona el banco..." opts={BANCOS} T={T}/>
+              </Field>
+            )}
+            <Field label="¿Comprobante recibido?" T={T}>
+              <Sel value={comp} onChange={setComp} placeholder="Estado del pago..."
+                opts={[{v:"Si",l:"Sí, ya recibí el comprobante"},{v:"No",l:"No, pendiente de pago"}]} T={T}/>
+            </Field>
+
+            {/* CAMBIO: zona de envío dinámica desde AS */}
+            <Field label="Zona de envío" T={T}>
+              {zonasList.length > 0 ? (
+                <Sel value={zonaGT} onChange={setZonaGT} placeholder="Selecciona zona de entrega..." opts={zonasOpts} T={T}/>
+              ) : (
+                <p style={{fontSize:12,color:T.mid,fontStyle:"italic",padding:"10px 0"}}>Cargando zonas de envío...</p>
+              )}
+            </Field>
+
+            {prod&&(
+              <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
+                <p style={{margin:"0 0 12px",fontSize:10,letterSpacing:"0.18em",color:"#6B4C33",textTransform:"uppercase"}}>Resumen final</p>
+                <SummaryRow k="Tienda"   v={T.nombre} T={T}/>
+                <SummaryRow k="Cliente"  v={nombre} T={T}/>
+                <SummaryRow k="Ciudad"   v={`${ciudad}${zonaGT?" — "+zonaGT:""}`} T={T}/>
+                <SummaryRow k="Producto" v={`${prod.descripcion||prod.nombre} — ${talla} x ${cantidad}`} T={T}/>
+                {cupon&&<SummaryRow k="Cupón" v={cupon} T={T}/>}
+                {/* CAMBIO: todo en GTQ */}
+                <SummaryRow k="Subtotal" v={fmtGTQ(subtotalGTQ)} T={T}/>
+                {costoEnvio>0&&<SummaryRow k="Envío" v={fmtGTQ(costoEnvio)} T={T}/>}
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:12,alignItems:"baseline"}}>
+                  <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>TOTAL A COBRAR</span>
+                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2"}}>{fmtGTQ(totalGTQ)}</span>
+                </div>
+              </div>
+            )}
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:20}}>
+              <button onClick={()=>setStep(2)} style={S.btnSec}>← Atrás</button>
+              <button onClick={confirmar} disabled={!ok3||saving} style={S.btnAccent(ok3&&!saving)}>
+                {saving?"Guardando...":"Confirmar"}
+              </button>
+            </div>
+            {saving&&<p style={{textAlign:"center",fontSize:12,color:T.mid,marginTop:12}}>Enviando al Sheets, no cierres la app...</p>}
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(React.createElement(NadiaApp));
+  </script>
+</body>
+</html>
