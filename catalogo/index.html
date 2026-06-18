@@ -3,296 +3,337 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <title>CASA JRP — Catálogo Orkia</title>
+  <title>Orkia — Moda femenina colombiana</title>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <style>
     :root {
-      --dark: #1A120A;
-      --mid: #7A6248;
-      --gold: #C4A882;
-      --gold-light: #E8D9C4;
-      --bg: #F7F3EE;
-      --white: #FDFAF7;
-      --border: #E0D6CB;
-      --error: #C94040;
-      --success: #3D7A56;
-      --card-bg: #FDFAF7;
+      --bg:        #F5F0EA;
+      --white:     #FFFFFF;
+      --card-bg:   #FFFFFF;
+      --dark:      #111111;
+      --carbon:    #1A1A1A;
+      --mid:       #888888;
+      --light:     #CCCCCC;
+      --border:    #E8E4DF;
+      --terracota: #C4714A;
+      --gold:      #C4714A;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
       background: var(--bg);
       font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
       color: var(--dark);
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
     ::-webkit-scrollbar { width: 3px; }
-    ::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb { background: var(--terracota); border-radius: 2px; }
 
+    /* ── BANNER ── */
+    .banner {
+      background: var(--carbon);
+      padding: 9px 16px;
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+    }
+    .banner span { font-size: 11px; letter-spacing: 0.06em; color: #999; }
+    .banner strong { color: var(--terracota); font-weight: 500; }
+
+    /* ── HEADER ── */
     .header {
       position: sticky; top: 0; z-index: 100;
-      background: var(--dark);
-      padding: 0 20px;
+      background: var(--carbon);
+      height: 54px;
       display: flex; align-items: center; justify-content: space-between;
-      height: 58px;
-      border-bottom: 1px solid #2C1E12;
+      padding: 0 18px;
+      border-bottom: 1px solid #2A2A2A;
     }
+    .header-left { display: flex; flex-direction: column; gap: 1px; }
     .header-brand {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 22px; font-weight: 500; letter-spacing: 0.12em;
-      color: var(--gold); text-transform: uppercase;
+      font-size: 20px; font-weight: 400; letter-spacing: 0.2em;
+      color: #EFEFEF; text-transform: uppercase;
+      display: flex; align-items: center; gap: 5px;
     }
-    .header-sub {
-      font-size: 10px; color: #5C3E28;
-      letter-spacing: 0.2em; text-transform: uppercase;
+    .brand-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--terracota); flex-shrink: 0; }
+    .header-sub { font-size: 8px; color: #444; letter-spacing: 0.2em; text-transform: uppercase; padding-left: 1px; }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .header-wa {
+      display: flex; align-items: center; gap: 6px;
+      color: var(--terracota); font-size: 10px; font-weight: 500;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      background: none; border: none; cursor: pointer;
     }
-    .header-right { text-align: right; }
-    .header-count { font-size: 11px; color: var(--gold); letter-spacing: 0.1em; }
 
+    /* ── HERO ── */
     .hero {
-      background: var(--dark);
-      padding: 28px 20px 32px;
-      text-align: center;
-      border-bottom: 1px solid #2C1E12;
+      background: var(--carbon);
+      padding: 22px 18px 20px;
     }
-    .hero h1 {
+    .hero-inner {
+      display: flex; align-items: flex-end; justify-content: space-between; gap: 14px;
+      margin-bottom: 16px;
+    }
+    .hero-copy { flex: 1; }
+    .hero-title {
       font-family: 'Cormorant Garamond', serif;
-      font-size: clamp(32px, 8vw, 52px);
-      font-weight: 300; color: var(--white);
-      letter-spacing: 0.06em; line-height: 1.1;
-      margin-bottom: 8px;
+      font-size: clamp(28px, 8vw, 42px);
+      font-weight: 300; color: #F0EDE8;
+      line-height: 1.05; letter-spacing: 0.01em;
+      margin-bottom: 10px;
     }
-    .hero h1 em { font-style: italic; color: var(--gold); }
-    .hero p {
-      font-size: 13px; color: #8B6E52;
-      letter-spacing: 0.15em; text-transform: uppercase;
-      margin-bottom: 20px;
+    .hero-desc { font-size: 12px; color: #666; line-height: 1.5; margin-bottom: 16px; max-width: 200px; }
+    .hero-cta {
+      display: inline-block;
+      background: var(--white); color: var(--dark);
+      font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; padding: 10px 18px;
+      border: none; border-radius: 1px; cursor: pointer;
     }
-    .hero-badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
-    .hero-badge {
-      background: #2C1E12; color: var(--gold-light);
-      font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
-      padding: 5px 14px; border-radius: 20px;
-      border: 1px solid #3C2A18;
+    .hero-img {
+      width: 110px; flex-shrink: 0;
+      aspect-ratio: 3/4; overflow: hidden;
+      border-radius: 2px; background: #2A2A2A;
     }
+    .hero-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .hero-origin {
+      padding-top: 14px; border-top: 1px solid #2A2A2A;
+      display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    }
+    .origin-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: #555;
+    }
+    .origin-item svg { color: var(--terracota); flex-shrink: 0; }
 
+    /* ── FILTROS ── */
     .filters-wrap {
-      position: sticky; top: 58px; z-index: 90;
+      position: sticky; top: 54px; z-index: 90;
       background: var(--white);
       border-bottom: 1px solid var(--border);
-      padding: 12px 16px;
+      padding: 10px 14px;
     }
-    .search-bar {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--bg); border: 1.5px solid var(--border);
-      border-radius: 10px; padding: 0 14px; height: 42px;
-      margin-bottom: 10px; transition: border-color 0.2s;
-    }
-    .search-bar:focus-within { border-color: var(--gold); }
-    .search-bar svg { color: var(--gold); flex-shrink: 0; }
-    .search-bar input {
-      flex: 1; background: none; border: none; outline: none;
-      font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--dark);
-    }
-    .search-bar input::placeholder { color: #B0A090; }
     .filter-row {
-      display: flex; gap: 8px; overflow-x: auto;
+      display: flex; gap: 7px; overflow-x: auto;
       scrollbar-width: none; -ms-overflow-style: none;
     }
     .filter-row::-webkit-scrollbar { display: none; }
     .filter-chip {
-      flex-shrink: 0; padding: 6px 14px; border-radius: 20px;
-      font-size: 12px; font-weight: 500; cursor: pointer;
-      border: 1.5px solid var(--border); background: transparent;
+      flex-shrink: 0; padding: 6px 16px; border-radius: 20px;
+      font-size: 10px; font-weight: 500; cursor: pointer;
+      border: 1px solid var(--border); background: transparent;
       color: var(--mid); transition: all 0.15s; white-space: nowrap;
-      font-family: 'DM Sans', sans-serif;
+      font-family: 'DM Sans', sans-serif; letter-spacing: 0.08em; text-transform: uppercase;
     }
-    .filter-chip.active { background: var(--dark); color: var(--gold); border-color: var(--dark); }
-    .filter-chip:hover:not(.active) { border-color: var(--gold); color: var(--dark); }
+    .filter-chip.active { background: var(--dark); color: var(--white); border-color: var(--dark); }
+    .filter-chip:hover:not(.active) { border-color: var(--dark); color: var(--dark); }
 
-    .stats-bar {
-      padding: 10px 16px;
+    /* ── SECCION ── */
+    .seccion-bar {
       display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 14px 10px;
     }
-    .stats-text { font-size: 12px; color: var(--mid); letter-spacing: 0.05em; }
-    .stats-text strong { color: var(--dark); }
+    .seccion-titulo { font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dark); }
 
+    /* ── GRID ── */
     .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1px;
-      background: var(--border);
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 1px; background: var(--border);
+      padding: 0;
     }
     @media (min-width: 600px) { .grid { grid-template-columns: repeat(3, 1fr); } }
     @media (min-width: 900px) { .grid { grid-template-columns: repeat(4, 1fr); } }
 
+    /* ── CARD ── */
     .card {
       background: var(--card-bg);
       position: relative; overflow: hidden;
-      cursor: pointer; transition: transform 0.2s;
+      cursor: pointer;
     }
-    .card:active { transform: scale(0.98); }
-    .card.agotado { opacity: 0.75; }
+    .card:active { opacity: 0.95; }
+    .card.agotado { }
 
     .card-img {
       width: 100%; aspect-ratio: 3/4;
-      background: var(--bg);
+      background: #EDEBE6;
       position: relative; overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
     }
     .card-img img {
       width: 100%; height: 100%; object-fit: cover;
-      transition: transform 0.4s ease;
+      transition: transform 0.45s ease; display: block;
     }
     .card:hover .card-img img { transform: scale(1.04); }
-    .card-placeholder {
-      width: 100%; height: 100%;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 8px;
-    }
-    .placeholder-icon { font-size: 32px; opacity: 0.4; }
-    .placeholder-tipo { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mid); opacity: 0.6; }
+    .card.agotado .card-img img { filter: saturate(0.6) brightness(0.95); }
 
     .card-badge {
       position: absolute; top: 10px; left: 10px;
-      font-size: 9px; font-weight: 600; letter-spacing: 0.12em;
-      text-transform: uppercase; padding: 3px 10px; border-radius: 20px;
+      font-size: 8px; font-weight: 600; letter-spacing: 0.14em;
+      text-transform: uppercase; padding: 3px 9px;
+      background: rgba(255,255,255,0.9); color: var(--mid);
     }
-    .badge-agotado { background: rgba(26,18,10,0.75); color: #C4A882; }
 
-    .card-body { padding: 12px 12px 14px; }
-    .card-tipo { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
+    .card-body { padding: 11px 12px 14px; }
+    .card-tipo { font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--terracota); margin-bottom: 4px; font-weight: 400; }
     .card-nombre {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 15px; font-weight: 400; color: var(--dark);
-      line-height: 1.3; margin-bottom: 6px;
-      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+      font-size: 16px; font-weight: 400; color: var(--dark);
+      line-height: 1.2; margin-bottom: 6px;
     }
-    .card-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .card-color { font-size: 11px; color: var(--mid); }
-    .card-precio { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 500; color: var(--dark); }
-    .card-tallas { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 10px; }
-    .talla-chip { font-size: 9px; letter-spacing: 0.1em; border: 1px solid var(--border); border-radius: 4px; padding: 2px 7px; color: var(--mid); }
+    .card-precio { font-size: 15px; font-weight: 600; color: var(--dark); margin-bottom: 10px; letter-spacing: -0.01em; }
 
     .card-btn {
-      width: 100%; padding: 9px; border: none; border-radius: 8px;
-      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
-      cursor: pointer; letter-spacing: 0.08em; transition: all 0.15s;
+      width: 100%; padding: 9px 12px;
+      font-family: 'DM Sans', sans-serif; font-size: 9px; font-weight: 600;
+      letter-spacing: 0.14em; text-transform: uppercase;
+      border-radius: 1px; transition: all 0.15s; border: 1px solid transparent;
     }
-    .btn-quiero { background: var(--dark); color: var(--gold); }
-    .btn-quiero:hover { background: #2C1E12; }
-    .btn-avisar { background: transparent; color: var(--mid); border: 1.5px solid var(--border); }
-    .btn-avisar:hover { border-color: var(--gold); color: var(--dark); }
+    .btn-quiero { background: var(--dark); color: var(--white); border-color: var(--dark); }
+    .btn-quiero:hover { background: #333; border-color: #333; }
+    .btn-avisar { background: transparent; color: var(--mid); border-color: var(--border); }
+    .btn-avisar:hover { border-color: var(--dark); color: var(--dark); }
 
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 200;
-      background: rgba(26,18,10,0.7);
-      display: flex; align-items: flex-end; justify-content: center;
-      animation: fadeIn 0.2s ease;
+    .card-envio {
+      display: flex; align-items: center; gap: 4px;
+      margin-top: 7px; font-size: 9px; color: var(--mid);
     }
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    .modal {
-      background: var(--white); width: 100%; max-width: 480px;
-      border-radius: 20px 20px 0 0;
-      padding: 24px 20px 36px;
-      animation: slideUp 0.3s cubic-bezier(0.34,1.56,0.64,1);
-      max-height: 90vh; overflow-y: auto;
-    }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+    .card-envio svg { color: var(--terracota); flex-shrink: 0; }
 
-    /* Galería swipe en modal */
-    .modal-galeria {
-      position: relative; overflow: hidden;
-      aspect-ratio: 3/4; margin: -24px -20px 20px;
-      background: var(--bg);
+    /* ── VALOR ── */
+    .valor {
+      background: var(--white); border-top: 1px solid var(--border);
+      padding: 24px 16px; margin-top: 1px;
     }
-    .galeria-track { display: flex; height: 100%; transition: transform 0.3s ease; }
-    .galeria-slide { min-width: 100%; height: 100%; }
-    .galeria-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .galeria-dots {
-      position: absolute; bottom: 12px; left: 0; right: 0;
-      display: flex; justify-content: center; gap: 6px;
-    }
-    .galeria-dot {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: rgba(255,255,255,0.4); transition: background 0.2s; cursor: pointer;
-    }
-    .galeria-dot.active { background: white; }
+    .valor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 14px; }
+    .valor-item { display: flex; flex-direction: column; gap: 5px; }
+    .valor-icon { color: var(--terracota); }
+    .valor-titulo { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--dark); }
+    .valor-desc { font-size: 11px; color: var(--mid); line-height: 1.4; }
 
-    .modal-tipo { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
-    .modal-nombre { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 400; color: var(--dark); line-height: 1.2; margin-bottom: 4px; }
-    .modal-color { font-size: 13px; color: var(--mid); margin-bottom: 16px; }
-    .modal-precio { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--dark); margin-bottom: 20px; }
-    .modal-precio span { font-size: 14px; color: var(--mid); font-family: 'DM Sans', sans-serif; }
-    .modal-section { margin-bottom: 16px; }
-    .modal-label { font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--mid); margin-bottom: 8px; }
-    .tallas-grid { display: flex; gap: 8px; flex-wrap: wrap; }
-    .talla-opt {
-      padding: 8px 16px; border-radius: 8px;
-      border: 1.5px solid var(--border); background: transparent;
-      font-family: 'DM Sans', sans-serif; font-size: 13px;
-      cursor: pointer; color: var(--dark); transition: all 0.15s;
+    /* ── FOOTER ── */
+    .footer { background: var(--carbon); padding: 24px 16px 32px; text-align: center; margin-top: 1px; }
+    .footer-brand {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px; font-weight: 400; letter-spacing: 0.22em;
+      color: #DADADA; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 6px;
     }
-    .talla-opt.selected { background: var(--dark); color: var(--gold); border-color: var(--dark); }
-    .modal-cta {
-      width: 100%; padding: 14px; border: none; border-radius: 12px;
-      font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
-      cursor: pointer; letter-spacing: 0.06em; margin-bottom: 10px; transition: all 0.15s;
+    .footer-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--terracota); }
+    .footer-text { font-size: 9px; color: #444; letter-spacing: 0.18em; text-transform: uppercase; }
+
+    /* ── NAV BOTTOM ── */
+    .nav-bottom {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--white); border-top: 1px solid var(--border);
+      display: flex; z-index: 100;
     }
-    .cta-principal { background: var(--dark); color: var(--gold); }
-    .cta-principal:hover { background: #2C1E12; }
-    .cta-secundario { background: transparent; color: var(--mid); border: 1.5px solid var(--border); }
-    .cta-secundario:hover { border-color: var(--gold); color: var(--dark); }
-    .modal-ref { text-align: center; font-size: 11px; color: #C0B0A0; margin-top: 8px; letter-spacing: 0.08em; }
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 10px 0 12px; gap: 3px;
+      background: none; border: none; color: var(--mid);
+      font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase;
+      font-family: 'DM Sans', sans-serif; font-weight: 400; cursor: pointer;
+    }
+    .nav-item.activo { color: var(--dark); }
+    .nav-item.wa { color: var(--terracota); }
+    body { padding-bottom: 60px; }
 
-    .aviso-icon { font-size: 36px; text-align: center; margin-bottom: 12px; }
-    .aviso-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; text-align: center; margin-bottom: 6px; }
-    .aviso-sub { font-size: 13px; color: var(--mid); text-align: center; margin-bottom: 20px; line-height: 1.5; }
-
+    /* ── LOADING ── */
     .loading {
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       min-height: 60vh; gap: 16px;
     }
     .loading-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--gold); display: inline-block;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--terracota); display: inline-block;
       animation: pulse 1.2s ease-in-out infinite;
     }
     .loading-dot:nth-child(2) { animation-delay: 0.2s; }
     .loading-dot:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1.2); } }
+    @keyframes pulse { 0%,100%{opacity:.3;transform:scale(.8)} 50%{opacity:1;transform:scale(1.2)} }
     .loading-dots { display: flex; gap: 6px; }
-    .loading-text { font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mid); }
+    .loading-text { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mid); }
 
+    /* ── EMPTY ── */
     .empty { text-align: center; padding: 60px 20px; }
-    .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+    .empty-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.4; }
     .empty-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; margin-bottom: 8px; color: var(--dark); }
     .empty-sub { font-size: 13px; color: var(--mid); }
 
-    .footer { background: var(--dark); padding: 28px 20px; text-align: center; margin-top: 1px; }
-    .footer-brand { font-family: 'Cormorant Garamond', serif; font-size: 20px; color: var(--gold); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 8px; }
-    .footer-text { font-size: 11px; color: #5C3E28; letter-spacing: 0.12em; text-transform: uppercase; }
-    .footer-wa {
-      display: inline-flex; align-items: center; gap: 8px;
-      margin-top: 16px; background: #1B3A2A;
-      color: #5CCC7A; font-size: 13px; font-weight: 600;
-      padding: 10px 20px; border-radius: 24px;
-      text-decoration: none; letter-spacing: 0.06em;
+    /* ── MODAL ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 200;
+      background: rgba(0,0,0,0.45);
+      display: flex; align-items: flex-end; justify-content: center;
+      animation: fadeIn 0.2s ease;
     }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .modal {
+      background: var(--white); width: 100%; max-width: 480px;
+      border-radius: 12px 12px 0 0;
+      max-height: 90vh; overflow-y: auto;
+      animation: slideUp 0.3s cubic-bezier(0.32,0.72,0,1);
+      display: flex; flex-direction: column;
+    }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .modal-handle { width: 32px; height: 3px; background: var(--border); border-radius: 2px; margin: 10px auto 0; flex-shrink: 0; }
 
+    .modal-galeria {
+      position: relative; overflow: hidden; aspect-ratio: 3/4;
+      background: #EDEBE6; flex-shrink: 0; margin-top: 14px; touch-action: pan-y;
+    }
+    .galeria-track { display: flex; height: 100%; transition: transform 0.3s ease; }
+    .galeria-slide { min-width: 100%; height: 100%; }
+    .galeria-slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .galeria-dots { position: absolute; bottom: 12px; left: 0; right: 0; display: flex; justify-content: center; gap: 5px; }
+    .galeria-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.35); cursor: pointer; transition: background 0.2s; }
+    .galeria-dot.active { background: rgba(255,255,255,0.9); }
+
+    .modal-body { padding: 18px 18px 0; flex: 1; }
+    .modal-tipo { font-size: 8px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--terracota); margin-bottom: 5px; }
+    .modal-nombre { font-family: 'Cormorant Garamond', serif; font-size: 26px; font-weight: 300; color: var(--dark); line-height: 1.1; margin-bottom: 4px; }
+    .modal-color { font-size: 11px; color: var(--mid); margin-bottom: 14px; }
+    .modal-precio { font-size: 26px; font-weight: 600; color: var(--dark); margin-bottom: 20px; letter-spacing: -0.01em; }
+    .modal-label { font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mid); margin-bottom: 10px; }
+    .tallas-grid { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 6px; }
+    .talla-opt { min-width: 42px; height: 42px; padding: 0 10px; border: 1px solid var(--border); background: transparent; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 300; color: var(--dark); cursor: pointer; transition: all 0.12s; border-radius: 1px; }
+    .talla-opt:hover, .talla-opt.selected { background: var(--dark); color: var(--white); border-color: var(--dark); }
+
+    .modal-cta-wrap { position: sticky; bottom: 0; background: var(--white); padding: 14px 18px 28px; border-top: 1px solid var(--border); flex-shrink: 0; }
+    .modal-cta {
+      width: 100%; padding: 14px; border-radius: 1px;
+      font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 600;
+      cursor: pointer; letter-spacing: 0.14em; text-transform: uppercase;
+      transition: all 0.15s; margin-bottom: 9px; border: 1px solid transparent;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .cta-principal { background: var(--dark); color: var(--white); border-color: var(--dark); }
+    .cta-principal:hover { background: #333; }
+    .cta-principal:disabled { background: var(--border); color: var(--mid); border-color: var(--border); cursor: not-allowed; }
+    .cta-secundario { background: transparent; color: var(--mid); border-color: var(--border); }
+    .cta-secundario:hover { border-color: var(--dark); color: var(--dark); }
+    .modal-envio { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 8px; font-size: 9px; color: var(--mid); }
+    .modal-envio svg { color: var(--terracota); }
+    .modal-ref { text-align: center; font-size: 9px; color: var(--light); margin-top: 8px; letter-spacing: 0.1em; text-transform: uppercase; }
+
+    .aviso-icon { font-size: 32px; text-align: center; margin-bottom: 12px; }
+    .aviso-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; text-align: center; margin-bottom: 6px; font-weight: 300; }
+    .aviso-sub { font-size: 12px; color: var(--mid); text-align: center; margin-bottom: 20px; line-height: 1.5; }
+    .aviso-input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 1px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300; color: var(--dark); outline: none; margin-bottom: 10px; transition: border-color 0.15s; }
+    .aviso-input:focus { border-color: var(--dark); }
+    .aviso-input::placeholder { color: var(--mid); }
+
+    /* ── TOAST ── */
     .toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: var(--dark); color: var(--gold);
-      font-size: 13px; padding: 12px 20px; border-radius: 24px;
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: var(--dark); color: var(--white);
+      font-size: 11px; padding: 11px 20px; border-radius: 20px;
       z-index: 300; animation: toastIn 0.3s ease;
-      white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      white-space: nowrap; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
     }
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-      to { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
+    @keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
   </style>
 </head>
 <body>
@@ -300,466 +341,375 @@
 <div id="app"></div>
 
 <script>
-// CAMBIO: nueva URL del AS bajo julian@casajrp.com
 const BACKEND_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec";
-// CAMBIO: número real de Nadia
 const WA_NUMBER   = "50248304736";
-// CAMBIO: marca fija para este catálogo
 const MARCA       = "orkia";
 
-function getUTM() {
-  const p = new URLSearchParams(window.location.search);
-  return p.get("utm") || "directo";
-}
+function getUTM() { return new URLSearchParams(window.location.search).get("utm")||"directo"; }
 const UTM = getUTM();
 
-const TIPO_ICON = {
-  "Blusa":"👚","Top":"👕","Vestido":"👗","Set":"✨","Pantalon":"👖",
-  "Short":"🩳","Falda":"👗","Body":"🩱","Cardigan":"🧥","default":"🛍️"
-};
-
-const COLOR_BG = {
-  "Negro":"#2A2A2A","Blanco":"#F5F5F0","Rojo":"#8B2020","Azul":"#1A3A6B",
-  "Verde":"#1A4A2A","Beige":"#D4C4A8","Cafe":"#6B4423","Gris":"#8A8A8A",
-  "Rosado":"#D4607A","Morado":"#5A2882","Fucsia":"#C4208A","Mostaza":"#B8860B",
-  "Naranja":"#C86420","Amarillo":"#C8A820","Nude":"#C8A882","default":"#8B7355"
-};
-
-function colorBg(color) {
-  for (const [k,v] of Object.entries(COLOR_BG)) {
-    if ((color||"").toLowerCase().includes(k.toLowerCase())) return v;
-  }
-  return COLOR_BG.default;
-}
-
 async function registrarClic(prod, accion) {
-  try {
-    await fetch(`${BACKEND_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=${prod.id}&nombre_producto=${encodeURIComponent(prod.nombre)}&utm_origen=${UTM}&accion=${accion}`);
-  } catch(e) {}
+  try { await fetch(`${BACKEND_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=${prod.id}&nombre_producto=${encodeURIComponent(prod.nombre)}&utm_origen=${UTM}&accion=${accion}`); } catch(e){}
 }
-
 async function registrarDemanda(prod, talla) {
-  try {
-    await fetch(`${BACKEND_URL}?accion=registrar_demanda&marca=${MARCA}&id_producto=${prod.id}&nombre_producto=${encodeURIComponent(prod.nombre)}&color=${encodeURIComponent(prod.color||"")}&talla=${encodeURIComponent(talla||"")}&canal_origen=${UTM}`);
-  } catch(e) {}
+  try { await fetch(`${BACKEND_URL}?accion=registrar_demanda&marca=${MARCA}&id_producto=${prod.id}&nombre_producto=${encodeURIComponent(prod.nombre)}&color=${encodeURIComponent(prod.color||"")}&talla=${encodeURIComponent(talla||"")}&canal_origen=${UTM}`); } catch(e){}
 }
+function abrirWhatsApp(msg) { window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`,"_blank"); }
 
-function abrirWhatsApp(mensaje) {
-  window.open(`https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(mensaje)}`, "_blank");
-}
+let catalogo=[], filtrados=[], tipActivo="Todos", busqueda="";
+let modalProd=null, modalTalla="", galeriaIdx=0, touchStartX=0;
+let modalAviso=null, avisaTalla="", toast=null, toastTimer=null;
+let cargando=true, error=null;
 
-// Estado
-let catalogo    = [];
-let filtrados   = [];
-let tipActivo   = "Todos";
-let busqueda    = "";
-let modalProd   = null;
-let modalTalla  = "";
-let galeriaIdx  = 0;
-let touchStartX = 0;
-let modalAviso  = null;
-let avisaTalla  = "";
-let toast       = null;
-let toastTimer  = null;
-let cargando    = true;
-let error       = null;
-
-function render() {
-  document.getElementById("app").innerHTML = buildHTML();
-  bindEvents();
-}
+function render() { document.getElementById("app").innerHTML=buildHTML(); bindEvents(); }
 
 function buildHTML() {
   if (cargando) return buildLoading();
   if (error)    return buildError();
-
-  const tipos = ["Todos", ...new Set(catalogo.map(p => p.tipo).filter(Boolean))].sort((a,b) => a === "Todos" ? -1 : b === "Todos" ? 1 : a.localeCompare(b));
-  const disponibles = filtrados.filter(p => !p.agotado).length;
-  const agotados    = filtrados.filter(p => p.agotado).length;
-
+  const tipos=["Todos",...new Set(catalogo.map(p=>p.tipo).filter(Boolean))].sort((a,b)=>a==="Todos"?-1:b==="Todos"?1:a.localeCompare(b));
+  const disponibles=filtrados.filter(p=>!p.agotado).length;
   return `
-    ${buildHeader(disponibles)}
+    ${buildBanner()}
+    ${buildHeader()}
     ${buildHero()}
     ${buildFiltros(tipos)}
-    ${buildStatsBar(disponibles, agotados)}
+    ${buildSeccion()}
     ${buildGrid()}
+    ${buildValor()}
     ${buildFooter()}
-    ${modalProd  ? buildModal()      : ""}
-    ${modalAviso ? buildAvisoModal() : ""}
-    ${toast      ? `<div class="toast">${toast}</div>` : ""}
+    ${buildNavBottom()}
+    ${modalProd?buildModal():""}
+    ${modalAviso?buildAvisoModal():""}
+    ${toast?`<div class="toast">${toast}</div>`:""}
   `;
 }
 
 function buildLoading() {
   return `
-    <div class="header"><div><div class="header-brand">Orkia</div></div></div>
-    <div class="loading">
-      <div class="loading-dots">
-        <div class="loading-dot"></div>
-        <div class="loading-dot"></div>
-        <div class="loading-dot"></div>
+    <div class="banner"><span>Envíos gratis en compras mayores a <strong>Q300</strong></span></div>
+    <div class="header">
+      <div class="header-left">
+        <div class="header-brand"><span class="brand-dot"></span>Orkia</div>
       </div>
-      <div class="loading-text">Cargando catálogo</div>
     </div>
-  `;
+    <div class="loading">
+      <div class="loading-dots"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>
+      <div class="loading-text">Cargando colección</div>
+    </div>`;
 }
 
 function buildError() {
   return `
-    <div class="header"><div><div class="header-brand">Orkia</div></div></div>
-    <div class="empty" style="margin-top:60px">
+    <div class="banner"><span>Envíos gratis en compras mayores a <strong>Q300</strong></span></div>
+    <div class="header"><div class="header-left"><div class="header-brand"><span class="brand-dot"></span>Orkia</div></div></div>
+    <div class="empty" style="margin-top:40px">
       <div class="empty-icon">⚠️</div>
-      <div class="empty-title">No se pudo cargar el catálogo</div>
+      <div class="empty-title">No se pudo cargar</div>
       <div class="empty-sub">Revisa tu conexión e intenta de nuevo</div>
-      <button onclick="recargar()" style="margin-top:20px;padding:12px 24px;background:#1A120A;color:#C4A882;border:none;border-radius:10px;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif">Reintentar</button>
-    </div>
-  `;
+      <button onclick="recargar()" style="margin-top:20px;padding:12px 24px;background:#111;color:#fff;border:none;font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Reintentar</button>
+    </div>`;
 }
 
-function buildHeader(disponibles) {
+function buildBanner() {
+  return `
+    <div class="banner">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.5">
+        <path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/>
+        <rect x="9" y="11" width="14" height="10" rx="2"/>
+      </svg>
+      <span>Envíos gratis en compras mayores a <strong>Q300</strong></span>
+    </div>`;
+}
+
+function buildHeader() {
   return `
     <div class="header">
-      <div>
-        <div class="header-brand">Orkia</div>
-        <div class="header-sub">by CASA JRP</div>
+      <div class="header-left">
+        <div class="header-brand"><span class="brand-dot"></span>Orkia</div>
+        <div class="header-sub">Guatemala</div>
       </div>
       <div class="header-right">
-        <div class="header-count">${disponibles} disponibles</div>
+        <button class="header-wa" onclick="abrirWhatsApp('Hola Orkia 👋 Quisiera información sobre sus prendas.')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </button>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 function buildHero() {
+  const primero = catalogo.find(p=>!p.agotado&&p.url_imagen);
   return `
     <div class="hero">
-      <h1>Estilo para cada <em>versión de ti</em></h1>
-      <p>Colección actual · Guatemala City</p>
-      <div class="hero-badges">
-        <span class="hero-badge">Diseño colombiano</span>
-        <span class="hero-badge">Envío Guatemala</span>
-        <span class="hero-badge">Pago fácil</span>
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <h1 class="hero-title">Moda colombiana<br>para mujeres<br>como tú.</h1>
+          <p class="hero-desc">Prendas versátiles y fáciles de combinar. Desde Q149.</p>
+          <button class="hero-cta" onclick="document.querySelector('.filters-wrap').scrollIntoView({behavior:'smooth'})">Ver novedades</button>
+        </div>
+        <div class="hero-img">
+          ${primero?`<img src="${primero.url_imagen}" alt="Orkia" loading="eager">`:""}
+        </div>
       </div>
-    </div>
-  `;
+      <div class="hero-origin">
+        <div class="origin-item">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/><circle cx="12" cy="10" r="3"/></svg>
+          Guatemala
+        </div>
+        <div class="origin-item">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          Manufactura y diseño colombiano
+        </div>
+      </div>
+    </div>`;
 }
 
 function buildFiltros(tipos) {
   return `
     <div class="filters-wrap">
-      <div class="search-bar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input id="buscador" type="text" placeholder="Buscar por nombre, color, referencia..." value="${busqueda}" oninput="onBuscar(this.value)"/>
-        ${busqueda ? `<button onclick="onBuscar('')" style="background:none;border:none;cursor:pointer;color:#B0A090;font-size:16px;padding:0">×</button>` : ""}
-      </div>
       <div class="filter-row">
-        ${tipos.map(t => `<button class="filter-chip ${tipActivo===t?"active":""}" onclick="onFiltroTipo('${t}')">${t}</button>`).join("")}
+        ${tipos.map(t=>`<button class="filter-chip ${tipActivo===t?"active":""}" onclick="onFiltroTipo('${t}')">${t==="Todos"?"Nuevo":t==="__menos250"?"Menos de Q250":t+"s"}</button>`).join("")}
+        <button class="filter-chip ${tipActivo==="__menos250"?"active":""}" onclick="onFiltroTipo('__menos250')">Menos de Q250</button>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
-function buildStatsBar(disponibles, agotados) {
-  const total = disponibles + agotados;
-  const texto = busqueda || tipActivo !== "Todos"
-    ? `<strong>${total}</strong> resultado${total!==1?"s":""}`
-    : `<strong>${disponibles}</strong> disponibles · <strong>${agotados}</strong> agotados`;
-  return `<div class="stats-bar"><div class="stats-text">${texto}</div></div>`;
+function buildSeccion() {
+  return `<div class="seccion-bar"><span class="seccion-titulo">${tipActivo==="Todos"?"Nuevo":tipActivo==="__menos250"?"Menos de Q250":tipActivo+"s"}</span></div>`;
 }
 
 function buildGrid() {
-  if (filtrados.length === 0) {
-    return `
-      <div class="empty">
-        <div class="empty-icon">🔍</div>
-        <div class="empty-title">Sin resultados</div>
-        <div class="empty-sub">Intenta con otro filtro o búsqueda</div>
-      </div>
-    `;
-  }
-  const ordenados = [
-    ...filtrados.filter(p => !p.agotado).sort((a,b) => b.stock_total - a.stock_total),
-    ...filtrados.filter(p => p.agotado),
-  ];
-  return `<div class="grid">${ordenados.map(p => buildCard(p)).join("")}</div>`;
+  if (!filtrados.length) return `<div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">Sin resultados</div><div class="empty-sub">Intenta con otro filtro</div></div>`;
+  const ordenados=[...filtrados.filter(p=>!p.agotado).sort((a,b)=>b.stock_total-a.stock_total),...filtrados.filter(p=>p.agotado)];
+  return `<div class="grid">${ordenados.map(p=>buildCard(p)).join("")}</div>`;
 }
 
 function buildCard(p) {
-  const icon = TIPO_ICON[p.tipo] || TIPO_ICON.default;
-  const bg   = colorBg(p.color);
-
-  // CAMBIO: URL desde R2 (ya viene construida en el AS)
-  const imgSrc = p.url_imagen || "";
-
   return `
     <div class="card ${p.agotado?"agotado":""}" onclick="onCardClick(${p.id})" data-id="${p.id}">
       <div class="card-img">
-        ${imgSrc
-          ? `<img src="${imgSrc}" alt="${p.nombre}" loading="lazy" fetchpriority="auto">`
-          : `<div class="card-placeholder" style="background:${bg}18"><div class="placeholder-icon">${icon}</div><div class="placeholder-tipo">${p.tipo}</div></div>`
-        }
-        ${p.agotado ? `<div class="card-badge badge-agotado">Agotado</div>` : ""}
+        ${p.url_imagen
+          ?`<img src="${p.url_imagen}" alt="${p.nombre}" loading="lazy">`
+          :`<div style="width:100%;height:100%;background:#EDEBE6;display:flex;align-items:center;justify-content:center"><span style="font-size:28px;opacity:.3">👗</span></div>`}
+        ${p.agotado?`<div class="card-badge">Agotado</div>`:""}
       </div>
       <div class="card-body">
         <div class="card-tipo">${p.tipo}</div>
         <div class="card-nombre">${p.nombre}</div>
-        <div class="card-meta">
-          <div class="card-color">${p.color}</div>
-          <!-- CAMBIO: precio en GTQ -->
-          <div class="card-precio">Q${p.precio_gtq}</div>
-        </div>
-        ${p.tallas && p.tallas.length > 1 ? `
-          <div class="card-tallas">
-            ${p.tallas.map(t => `<span class="talla-chip">${t}</span>`).join("")}
-          </div>
-        ` : ""}
+        <div class="card-precio">Q${p.precio_gtq}</div>
         <button class="card-btn ${p.agotado?"btn-avisar":"btn-quiero"}" onclick="event.stopPropagation();${p.agotado?`onAvisar(${p.id})`:`onQuiero(${p.id})`}">
-          ${p.agotado ? "✉ Avisarme cuando llegue" : "Lo quiero →"}
+          ${p.agotado?"Avísame":"Lo quiero"}
         </button>
+        ${!p.agotado?`<div class="card-envio"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/></svg>Envíos gratis +Q300</div>`:""}
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 function buildModal() {
-  const p    = modalProd;
-  const icon = TIPO_ICON[p.tipo] || TIPO_ICON.default;
-
-  // CAMBIO: 3 fotos desde R2
-  const fotos = [p.url_imagen, p.url_imagen_2, p.url_imagen_3].filter(Boolean);
-
+  const p=modalProd;
+  const fotos=[p.url_imagen,p.url_imagen_2,p.url_imagen_3].filter(Boolean);
   return `
     <div class="modal-overlay" onclick="cerrarModal()">
       <div class="modal" onclick="event.stopPropagation()">
         <div class="modal-handle"></div>
-
-        <!-- Galería con swipe -->
         <div class="modal-galeria" id="modal-galeria" ontouchstart="onTouchStart(event)" ontouchend="onTouchEnd(event)">
           <div class="galeria-track" id="galeria-track" style="transform:translateX(-${galeriaIdx*100}%)">
-            ${fotos.map(f => `<div class="galeria-slide"><img src="${f}" alt="${p.nombre}" loading="lazy"></div>`).join("")}
+            ${fotos.map(f=>`<div class="galeria-slide"><img src="${f}" alt="${p.nombre}" loading="lazy"></div>`).join("")}
           </div>
-          ${fotos.length > 1 ? `
-            <div class="galeria-dots">
-              ${fotos.map((f,i) => `<div class="galeria-dot ${i===galeriaIdx?"active":""}" onclick="moverGaleria(${i})"></div>`).join("")}
-            </div>
-          ` : ""}
+          ${fotos.length>1?`<div class="galeria-dots">${fotos.map((f,i)=>`<div class="galeria-dot ${i===galeriaIdx?"active":""}" onclick="moverGaleria(${i})"></div>`).join("")}</div>`:""}
         </div>
-
-        <div class="modal-tipo">${p.tipo}</div>
-        <div class="modal-nombre">${p.nombre}</div>
-        <div class="modal-color">${p.color} · Ref. #${p.ref_proveedor||p.id}</div>
-        <!-- CAMBIO: precio GTQ -->
-        <div class="modal-precio">Q${p.precio_gtq} <span>GTQ · Envío no incluido</span></div>
-
-        ${p.tallas && p.tallas.length > 1 ? `
-          <div class="modal-section">
+        <div class="modal-body">
+          <div class="modal-tipo">${p.tipo}</div>
+          <div class="modal-nombre">${p.nombre}</div>
+          <div class="modal-color">${p.color} · Ref. #${p.ref_proveedor||p.id}</div>
+          <div class="modal-precio">Q${p.precio_gtq}</div>
+          ${p.tallas&&p.tallas.length>1?`
             <div class="modal-label">Selecciona tu talla</div>
             <div class="tallas-grid">
-              ${p.tallas.map(t => `<button class="talla-opt ${modalTalla===t?"selected":""}" onclick="onTalla('${t}')">${t}</button>`).join("")}
-            </div>
+              ${p.tallas.map(t=>`<button class="talla-opt ${modalTalla===t?"selected":""}" onclick="onTalla('${t}')">${t}</button>`).join("")}
+            </div>`:""}
+        </div>
+        <div class="modal-cta-wrap">
+          <button class="modal-cta cta-principal" onclick="onConfirmarQuiero()" ${p.tallas&&p.tallas.length>1&&!modalTalla?"disabled":""}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Lo quiero — escribir por WhatsApp
+          </button>
+          <button class="modal-cta cta-secundario" onclick="cerrarModal()">Seguir viendo</button>
+          <div class="modal-envio">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/></svg>
+            Envíos gratis en compras mayores a Q300
           </div>
-        ` : ""}
-
-        <button class="modal-cta cta-principal" onclick="onConfirmarQuiero()" ${p.tallas&&p.tallas.length>1&&!modalTalla?"disabled style='opacity:0.5;cursor:not-allowed'":""}>
-          💬 Escribir por WhatsApp
-        </button>
-        <button class="modal-cta cta-secundario" onclick="cerrarModal()">Seguir viendo</button>
-        <div class="modal-ref">Ref. ${p.id} · ${p.ref_proveedor||""}</div>
+          <div class="modal-ref">Ref. ${p.id} · ${p.ref_proveedor||""}</div>
+        </div>
       </div>
-    </div>
-  `;
+    </div>`;
 }
 
 function buildAvisoModal() {
-  const p = modalAviso;
+  const p=modalAviso;
   return `
     <div class="modal-overlay" onclick="cerrarAviso()">
-      <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal" onclick="event.stopPropagation()" style="padding:0 0 32px">
         <div class="modal-handle"></div>
-        <div class="aviso-icon">🔔</div>
-        <div class="aviso-title">Te avisamos cuando llegue</div>
-        <div class="aviso-sub">
-          <strong>${p.nombre}</strong> en ${p.color} está agotado por ahora.
-          Al tocar el botón se abre WhatsApp y registramos tu interés.
-        </div>
-        ${p.tallas&&p.tallas.length>1 ? `
-          <div class="modal-section">
+        <div style="padding:20px 20px 0">
+          <div class="aviso-icon">🔔</div>
+          <div class="aviso-title">Te avisamos cuando llegue</div>
+          <div class="aviso-sub"><strong>${p.nombre}</strong> en ${p.color} está agotado. Déjanos tu WhatsApp.</div>
+          ${p.tallas&&p.tallas.length>1?`
             <div class="modal-label">¿Qué talla te interesa?</div>
-            <div class="tallas-grid">
-              ${p.tallas.map(t => `<button class="talla-opt ${avisaTalla===t?"selected":""}" onclick="onAvisaTalla('${t}')">${t}</button>`).join("")}
-            </div>
-          </div>
-        ` : ""}
-        <button class="modal-cta cta-principal" onclick="onConfirmarAviso()">✉ Avisarme por WhatsApp</button>
-        <button class="modal-cta cta-secundario" onclick="cerrarAviso()">Cancelar</button>
+            <div class="tallas-grid" style="margin-bottom:14px">
+              ${p.tallas.map(t=>`<button class="talla-opt ${avisaTalla===t?"selected":""}" onclick="onAvisaTalla('${t}')">${t}</button>`).join("")}
+            </div>`:``}
+          <input type="tel" class="aviso-input" id="aviso-tel" placeholder="Tu número de WhatsApp"/>
+          <button class="modal-cta cta-principal" onclick="onConfirmarAviso()">Avísame por WhatsApp</button>
+          <button class="modal-cta cta-secundario" onclick="cerrarAviso()">Cancelar</button>
+        </div>
       </div>
-    </div>
-  `;
+    </div>`;
+}
+
+function buildValor() {
+  return `
+    <div class="valor">
+      <div class="valor-grid">
+        <div class="valor-item">
+          <svg class="valor-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s-8-4.5-8-11.8A8 8 0 0112 2a8 8 0 018 8.2c0 7.3-8 11.8-8 11.8z"/></svg>
+          <p class="valor-titulo">Diseño colombiano</p>
+          <p class="valor-desc">Prendas seleccionadas por su estilo, color y caída.</p>
+        </div>
+        <div class="valor-item">
+          <svg class="valor-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          <p class="valor-titulo">Confección artesanal</p>
+          <p class="valor-desc">Elaboradas con atención al detalle y materiales de calidad.</p>
+        </div>
+        <div class="valor-item">
+          <svg class="valor-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          <p class="valor-titulo">Atención por WhatsApp</p>
+          <p class="valor-desc">Te ayudamos si tienes dudas o necesitas asesoría.</p>
+        </div>
+        <div class="valor-item">
+          <svg class="valor-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3"/><rect x="9" y="11" width="14" height="10" rx="2"/></svg>
+          <p class="valor-titulo">Envíos gratis +Q300</p>
+          <p class="valor-desc">En compras mayores a Q300 dentro de Guatemala.</p>
+        </div>
+      </div>
+    </div>`;
 }
 
 function buildFooter() {
   return `
     <div class="footer">
-      <div class="footer-brand">Orkia</div>
-      <div class="footer-text">by CASA JRP · Guatemala</div>
-      <a href="https://wa.me/${WA_NUMBER}" target="_blank" class="footer-wa">
+      <div class="footer-brand"><span class="footer-dot"></span>Orkia</div>
+      <div class="footer-text">Guatemala · Manufactura colombiana · © 2026</div>
+    </div>`;
+}
+
+function buildNavBottom() {
+  return `
+    <nav class="nav-bottom">
+      <button class="nav-item activo">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>
+        Inicio
+      </button>
+      <button class="nav-item" onclick="document.querySelector('.filters-wrap').scrollIntoView({behavior:'smooth'})">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        Categorías
+      </button>
+      <button class="nav-item wa" onclick="abrirWhatsApp('Hola Orkia 👋 Quisiera información sobre sus prendas.')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        Escribir al WhatsApp
-      </a>
-    </div>
-  `;
+        WhatsApp
+      </button>
+    </nav>`;
 }
 
-// Eventos
 function bindEvents() {
-  const input = document.getElementById("buscador");
-  if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+  const input=document.getElementById("buscador");
+  if(input){input.focus();input.setSelectionRange(input.value.length,input.value.length);}
 }
 
-function onFiltroTipo(tipo) {
-  tipActivo = tipo;
-  aplicarFiltros();
-  render();
-}
-
-function onBuscar(val) {
-  busqueda = val;
-  aplicarFiltros();
-  render();
-}
+function onFiltroTipo(tipo) { tipActivo=tipo; aplicarFiltros(); render(); }
+function onBuscar(val) { busqueda=val; aplicarFiltros(); render(); }
 
 function aplicarFiltros() {
-  filtrados = catalogo.filter(p => {
-    const matchTipo = tipActivo === "Todos" || p.tipo === tipActivo;
-    const matchBusq = !busqueda || [p.nombre, p.color, p.tipo, p.ref_proveedor, String(p.id)]
-      .some(f => f && f.toLowerCase().includes(busqueda.toLowerCase()));
-    return matchTipo && matchBusq;
+  filtrados=catalogo.filter(p=>{
+    const matchTipo=tipActivo==="Todos"||tipActivo==="__menos250"||p.tipo===tipActivo;
+    const matchPrecio=tipActivo!=="__menos250"||(p.precio_gtq<250);
+    const matchBusq=!busqueda||[p.nombre,p.color,p.tipo,p.ref_proveedor,String(p.id)].some(f=>f&&f.toLowerCase().includes(busqueda.toLowerCase()));
+    return matchTipo&&matchPrecio&&matchBusq;
   });
 }
 
 function onCardClick(id) {
-  const p = catalogo.find(x => x.id === id);
-  if (!p) return;
-  registrarClic(p, "VER");
-  if (p.agotado) { onAvisar(id); return; }
-  modalProd  = p;
-  galeriaIdx = 0;
-  modalTalla = p.tallas && p.tallas.length === 1 ? p.tallas[0] : "";
-  render();
+  const p=catalogo.find(x=>x.id===id); if(!p) return;
+  registrarClic(p,"VER");
+  if(p.agotado){onAvisar(id);return;}
+  modalProd=p; galeriaIdx=0; modalTalla=p.tallas&&p.tallas.length===1?p.tallas[0]:""; render();
 }
-
 function onQuiero(id) {
-  const p = catalogo.find(x => x.id === id);
-  if (!p) return;
-  registrarClic(p, "QUIERO_ESTE");
-  modalProd  = p;
-  galeriaIdx = 0;
-  modalTalla = p.tallas && p.tallas.length === 1 ? p.tallas[0] : "";
-  render();
+  const p=catalogo.find(x=>x.id===id); if(!p) return;
+  registrarClic(p,"QUIERO_ESTE");
+  modalProd=p; galeriaIdx=0; modalTalla=p.tallas&&p.tallas.length===1?p.tallas[0]:""; render();
 }
-
 function onAvisar(id) {
-  const p = catalogo.find(x => x.id === id);
-  if (!p) return;
-  registrarClic(p, "AVISARME");
-  modalAviso = p;
-  avisaTalla = p.tallas && p.tallas.length === 1 ? p.tallas[0] : "";
-  render();
+  const p=catalogo.find(x=>x.id===id); if(!p) return;
+  registrarClic(p,"AVISARME");
+  modalAviso=p; avisaTalla=p.tallas&&p.tallas.length===1?p.tallas[0]:""; render();
 }
-
-function onTalla(t) { modalTalla = t; render(); }
-function onAvisaTalla(t) { avisaTalla = t; render(); }
-
-// Galería swipe
-function moverGaleria(idx) {
-  galeriaIdx = idx;
-  render();
-}
-
-function onTouchStart(e) { touchStartX = e.touches[0].clientX; }
+function onTalla(t) { modalTalla=t; render(); }
+function onAvisaTalla(t) { avisaTalla=t; render(); }
+function moverGaleria(idx) { galeriaIdx=idx; render(); }
+function onTouchStart(e) { touchStartX=e.touches[0].clientX; }
 function onTouchEnd(e) {
-  const diff = touchStartX - e.changedTouches[0].clientX;
-  if (!modalProd) return;
-  const fotos = [modalProd.url_imagen, modalProd.url_imagen_2, modalProd.url_imagen_3].filter(Boolean);
-  if (Math.abs(diff) > 40) {
-    if (diff > 0 && galeriaIdx < fotos.length - 1) moverGaleria(galeriaIdx + 1);
-    if (diff < 0 && galeriaIdx > 0) moverGaleria(galeriaIdx - 1);
-  }
+  const diff=touchStartX-e.changedTouches[0].clientX;
+  if(!modalProd) return;
+  const fotos=[modalProd.url_imagen,modalProd.url_imagen_2,modalProd.url_imagen_3].filter(Boolean);
+  if(Math.abs(diff)>40){if(diff>0&&galeriaIdx<fotos.length-1)moverGaleria(galeriaIdx+1);if(diff<0&&galeriaIdx>0)moverGaleria(galeriaIdx-1);}
 }
-
 function onConfirmarQuiero() {
-  if (!modalProd) return;
-  const p = modalProd;
-  const t = modalTalla || (p.tallas && p.tallas[0]) || "";
-  registrarClic(p, "QUIERO_ESTE");
-  // CAMBIO: precio en GTQ en el mensaje
-  const msg = `Hola CASA JRP 👋 Me interesa:\n\n*${p.nombre}*\nColor: ${p.color}${t&&t!=="Única"?" · Talla: "+t:""}\nPrecio: Q${p.precio_gtq}\nRef: #${p.ref_proveedor||p.id}\n\n¿Está disponible?`;
-  abrirWhatsApp(msg);
-  cerrarModal();
+  if(!modalProd) return;
+  const p=modalProd; const t=modalTalla||(p.tallas&&p.tallas[0])||"";
+  registrarClic(p,"QUIERO_ESTE");
+  const msg=`Hola Orkia 👋 Me interesa:\n\n*${p.nombre}*\nColor: ${p.color}${t&&t!=="Única"?" · Talla: "+t:""}\nPrecio: Q${p.precio_gtq}\nRef: #${p.ref_proveedor||p.id}\n\n¿Está disponible?`;
+  abrirWhatsApp(msg); cerrarModal();
 }
-
 function onConfirmarAviso() {
-  if (!modalAviso) return;
-  const p = modalAviso;
-  const t = avisaTalla;
-  registrarDemanda(p, t);
-  const msg = `Hola CASA JRP 👋 Me interesa que me avisen cuando llegue:\n\n*${p.nombre}*\nColor: ${p.color}${t&&t!=="Única"?" · Talla: "+t:""}\nRef: #${p.ref_proveedor||p.id}\n\n¿Pueden avisarme?`;
-  abrirWhatsApp(msg);
-  cerrarAviso();
-  mostrarToast("✓ Registramos tu interés — te avisamos cuando llegue");
+  if(!modalAviso) return;
+  const p=modalAviso; const t=avisaTalla;
+  const tel=document.getElementById("aviso-tel")?.value||"";
+  registrarDemanda(p,t);
+  const msg=`Hola Orkia 👋 Quiero que me avisen cuando llegue:\n\n*${p.nombre}*\nColor: ${p.color}${t&&t!=="Única"?" · Talla: "+t:""}\nRef: #${p.ref_proveedor||p.id}${tel?" · Mi número: "+tel:""}`;
+  abrirWhatsApp(msg); cerrarAviso();
+  mostrarToast("✓ Te avisamos cuando llegue");
 }
-
-function cerrarModal()  { modalProd = null; modalTalla = ""; galeriaIdx = 0; render(); }
-function cerrarAviso()  { modalAviso = null; avisaTalla = ""; render(); }
-
+function cerrarModal() { modalProd=null; modalTalla=""; galeriaIdx=0; render(); }
+function cerrarAviso() { modalAviso=null; avisaTalla=""; render(); }
 function mostrarToast(msg) {
-  toast = msg; render();
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toast = null; render(); }, 3500);
+  toast=msg; render();
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{toast=null;render();},3500);
 }
+function recargar() { cargando=true; error=null; render(); cargarCatalogo(); }
 
-function recargar() { cargando = true; error = null; render(); cargarCatalogo(); }
-
-// CAMBIO: accion= y marca= correctos, data.productos en lugar de data.catalogo
 async function cargarCatalogo() {
   try {
-    const res  = await fetch(`${BACKEND_URL}?accion=get_catalogo&marca=${MARCA}`);
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || "Error desconocido");
-
-    // CAMBIO: data.productos (no data.catalogo)
-    const raw = data.productos || [];
-
-    // Mapear campos del AS al formato del catálogo
-    catalogo = raw.map(p => ({
-      id:            p.id_producto,
-      tipo:          p.tipo_prenda || "",
-      nombre:        p.descripcion || "",
-      color:         p.color || "",
-      precio_gtq:    p.precio_gtq || 0,
-      ref_proveedor: p.ref_proveedor || "",
-      tallas:        p.tallas || [],
-      tallas_agotadas: p.tallas_agotadas || [],
-      stock_total:   p.stock_total || 0,
-      agotado:       p.agotado || false,
-      // URLs desde R2 — ya vienen construidas en el AS
-      url_imagen:    p.url_imagen  || "",
-      url_imagen_2:  p.url_imagen_2 || "",
-      url_imagen_3:  p.url_imagen_3 || "",
-    }));
-
-    filtrados = [...catalogo];
-    cargando  = false;
-  } catch(e) {
-    cargando = false;
-    error    = e.message;
-  }
+    const res=await fetch(`${BACKEND_URL}?accion=get_catalogo&marca=${MARCA}`);
+    const data=await res.json();
+    if(!data.ok) throw new Error(data.error||"Error desconocido");
+    const raw=data.productos||[];
+    catalogo=raw
+      .filter(p=>p.url_imagen)
+      .map(p=>({
+        id:p.id_producto, tipo:p.tipo_prenda||"", nombre:p.descripcion||"",
+        color:p.color||"", precio_gtq:p.precio_gtq||0, ref_proveedor:p.ref_proveedor||"",
+        tallas:p.tallas||[], tallas_agotadas:p.tallas_agotadas||[],
+        stock_total:p.stock_total||0, agotado:p.agotado||false,
+        url_imagen:p.url_imagen||"", url_imagen_2:p.url_imagen_2||"", url_imagen_3:p.url_imagen_3||"",
+      }));
+    filtrados=[...catalogo]; cargando=false;
+  } catch(e) { cargando=false; error=e.message; }
   render();
 }
 
-// Inicio
 render();
 cargarCatalogo();
 </script>
