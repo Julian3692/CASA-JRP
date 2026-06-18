@@ -1,644 +1,175 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <title>Registro de Pedido — CASA JRP</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CASA JRP — Producto colombiano para Guatemala</title>
+  <meta name="description" content="CASA JRP conecta producto colombiano con oportunidades comerciales en Guatemala. Moda, textiles, confección, accesorios y categorías afines." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
+  <link rel="preload" as="image" href="https://img.casajrp.com/orkia/banners/home-hero-desktop.webp" imagesrcset="https://img.casajrp.com/orkia/banners/home-hero-mobile.webp 768w, https://img.casajrp.com/orkia/banners/home-hero-desktop.webp 1920w">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #FAF7F2; font-family: 'DM Sans', sans-serif; }
-    select, input, textarea, button { font-family: inherit; }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: #C4A882; border-radius: 2px; }
+    :root{
+      --bg:#F5F0EA;--paper:#FBF8F3;--white:#fff;--dark:#111;--carbon:#1A1A1A;--ink:#23201D;--mid:#716A63;--muted:#A79E96;--border:#E5DDD4;--terracota:#C4714A;--terracota-dark:#A75F3F;--terracota-soft:#EFE0D7;--sand:#EFE7DE;--radius:28px;--radius-lg:42px;--shadow:0 30px 80px rgba(36,26,18,.13);--max:1440px;
+    }
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}a{color:inherit;text-decoration:none}img{display:block;max-width:100%}button,input,select,textarea{font:inherit}.serif{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;letter-spacing:-.035em}.eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--terracota);font-weight:700}.top-strip{height:34px;background:#EFE6DC;color:#332E29;display:flex;justify-content:center;align-items:center;text-align:center;padding:0 16px;font-size:11px;letter-spacing:.16em;text-transform:uppercase}.top-strip b{color:var(--terracota);font-weight:800}.site-header{position:sticky;top:0;z-index:60;background:rgba(26,26,26,.97);backdrop-filter:blur(16px);color:#fff;border-bottom:1px solid rgba(255,255,255,.08)}.header-inner{height:78px;max-width:var(--max);margin:0 auto;padding:0 42px;display:grid;grid-template-columns:260px 1fr 260px;align-items:center;gap:24px}.brand-logo{line-height:.92}.brand-logo strong{font-family:'Cormorant Garamond',Georgia,serif;font-size:39px;font-weight:400;letter-spacing:.14em}.brand-logo .dot{color:var(--terracota);letter-spacing:0}.brand-logo span{display:block;margin-top:8px;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#D4CEC7}.nav{display:flex;justify-content:center;gap:38px;font-size:11px;text-transform:uppercase;letter-spacing:.18em;font-weight:700}.nav a{opacity:.86}.nav a:hover{opacity:1}.header-actions{display:flex;justify-content:flex-end;align-items:center;gap:10px}.header-btn{border:1px solid rgba(255,255,255,.28);background:transparent;color:#fff;border-radius:999px;padding:12px 16px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:700;cursor:pointer}.header-btn:hover{background:#fff;color:#111}.btn{height:52px;border-radius:999px;border:1px solid transparent;display:inline-flex;align-items:center;justify-content:center;padding:0 25px;text-transform:uppercase;letter-spacing:.15em;font-size:12px;font-weight:800;cursor:pointer;transition:.18s ease;white-space:nowrap}.btn-primary{background:#111;color:#fff}.btn-primary:hover{background:#2B2622}.btn-secondary{background:rgba(255,255,255,.72);border-color:#D7CEC6;color:#171412}.btn-secondary:hover{background:#fff}.btn-ghost{background:transparent;border-color:#D8CFC6;color:#1C1815}.btn-terracotta{background:var(--terracota);color:#fff}.btn-terracotta:hover{background:var(--terracota-dark)}
+
+    .hero{position:relative;overflow:hidden;background:linear-gradient(180deg,#FBF8F3 0%,#F4EEE7 100%);border-bottom:1px solid var(--border)}.hero:before{content:'';position:absolute;right:-14vw;bottom:-30vw;width:58vw;height:58vw;border-radius:50%;background:rgba(196,113,74,.10);filter:blur(8px);pointer-events:none}.hero-inner{max-width:var(--max);margin:0 auto;padding:76px 42px 54px;display:grid;grid-template-columns:minmax(0,1.02fr) minmax(410px,.98fr);gap:60px;align-items:center}.hero-copy{position:relative;z-index:2;max-width:760px}.hero h1{font-size:clamp(62px,6.3vw,112px);line-height:.86;margin:18px 0 24px;color:#171412}.hero .lead{font-size:19px;line-height:1.65;color:#4D4741;max-width:680px;margin:0 0 30px}.hero .lead b{color:#171412;font-weight:650}.cta-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.micro-path{margin-top:26px;display:flex;gap:12px;flex-wrap:wrap;color:#615A53;font-size:12px;text-transform:uppercase;letter-spacing:.14em}.micro-path span{display:inline-flex;align-items:center;gap:9px}.micro-path span:before{content:'';width:6px;height:6px;border-radius:50%;background:var(--terracota)}.hero-visual{position:relative;min-height:440px;border-radius:var(--radius-lg);overflow:hidden;background:#E5DBD1;box-shadow:0 24px 70px rgba(36,26,18,.10);isolation:isolate}.hero-visual:before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(245,240,234,.90) 0%,rgba(245,240,234,.42) 28%,rgba(245,240,234,0) 64%);z-index:2;pointer-events:none}.hero-visual picture,.hero-visual img{width:100%;height:100%}.hero-visual img{min-height:440px;object-fit:cover;object-position:70% center;filter:saturate(.94) contrast(.99)}.hero-visual:after{content:'';position:absolute;inset:0;border:1px solid rgba(255,255,255,.48);border-radius:inherit;pointer-events:none;z-index:3}
+
+    .lead-strip{max-width:var(--max);margin:0 auto;padding:0 42px 56px;display:grid;grid-template-columns:1.1fr .9fr;gap:16px}.lead-card{border-radius:30px;border:1px solid var(--border);background:rgba(255,255,255,.67);padding:30px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center}.lead-card h2{font-size:34px;line-height:.98;margin:0 0 8px;color:#1A1714}.lead-card p{margin:0;color:#625B54;line-height:1.58;font-size:14px}.trust-card{border-radius:30px;border:1px solid var(--border);background:#fff;padding:30px;display:grid;gap:14px}.trust-row{display:flex;gap:12px;align-items:flex-start}.trust-dot{width:9px;height:9px;border-radius:50%;background:var(--terracota);margin-top:6px;flex:0 0 auto}.trust-row strong{display:block;font-size:12px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:6px}.trust-row p{margin:0;color:#665E56;font-size:14px;line-height:1.5}
+
+    section{max-width:var(--max);margin:0 auto;padding:78px 42px}.section-head{display:grid;grid-template-columns:.95fr 1.05fr;gap:46px;align-items:end;margin-bottom:30px}.section-head h2{font-size:clamp(46px,5vw,82px);line-height:.88;margin:0;color:#1B1714}.section-head p{margin:0;color:#655E57;line-height:1.7;font-size:15px;max-width:640px}.premium-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.premium-item{background:rgba(255,255,255,.58);border:1px solid var(--border);border-radius:30px;padding:28px;min-height:236px}.premium-item .mark{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;background:var(--terracota-soft);color:var(--terracota);margin-bottom:28px;font-family:'Cormorant Garamond';font-size:28px}.premium-item strong{display:block;font-size:12px;letter-spacing:.17em;text-transform:uppercase;color:#1D1916;margin-bottom:14px}.premium-item p{margin:0;color:#645D56;line-height:1.65;font-size:14px}
+
+    .origin-section{max-width:none;background:#FAF7F1;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:0}.origin-inner{max-width:var(--max);margin:0 auto;padding:88px 42px;display:grid;grid-template-columns:.8fr 1.2fr;gap:64px}.origin-inner h2{font-size:clamp(58px,6vw,104px);line-height:.84;margin:18px 0 0;color:#171412}.origin-copy{display:grid;gap:14px}.origin-block{background:#fff;border:1px solid var(--border);border-radius:32px;padding:32px}.origin-block.dark{background:#1A1918;color:#fff;border-color:#1A1918}.origin-block strong{display:block;font-size:12px;letter-spacing:.17em;text-transform:uppercase;margin-bottom:16px}.origin-block p{margin:0;color:#645E57;line-height:1.7;font-size:15px}.origin-block.dark p{color:#DCD4CB}.origin-block.dark strong{color:#E9D4C8}
+
+    .lead-section{background:linear-gradient(135deg,#1A1918 0%,#25211E 100%);color:#fff;border-radius:44px;padding:58px;display:grid;grid-template-columns:.95fr 1.05fr;gap:54px;align-items:start;position:relative;overflow:hidden}.lead-section:before{content:'';position:absolute;right:-90px;top:-170px;width:480px;height:480px;border-radius:50%;background:rgba(196,113,74,.18)}.lead-section>*{position:relative;z-index:1}.lead-section h2{font-size:clamp(48px,5.2vw,86px);line-height:.88;margin:16px 0 20px}.lead-section p{margin:0;color:#DDD5CE;line-height:1.7;font-size:16px;max-width:760px}.lead-benefits{display:grid;gap:11px;margin-top:24px}.lead-benefits div{background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:15px 18px;color:#F0EAE3;font-size:14px}.privacy-note{margin-top:20px!important;font-size:13px!important;color:#C9BFB7!important}.privacy-note b{color:#fff}.lead-form{background:rgba(255,255,255,.96);color:#1C1815;border-radius:32px;padding:30px;border:1px solid rgba(255,255,255,.5);box-shadow:0 30px 80px rgba(0,0,0,.22)}.lead-form h3{font-size:36px;line-height:.95;margin:0 0 8px}.lead-form .form-intro{color:#6B635B;font-size:14px;line-height:1.5;margin:0 0 20px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:grid;gap:7px}.field.full{grid-column:1/-1}.field label{font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:#4D4741}.field input,.field select,.field textarea{width:100%;border:1px solid #D9D1C9;background:#fff;border-radius:16px;padding:14px 14px;color:#1D1916;outline:none}.field textarea{min-height:116px;resize:vertical}.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--terracota);box-shadow:0 0 0 3px rgba(196,113,74,.12)}.hidden-field{position:absolute!important;left:-9999px!important;opacity:0!important}.form-actions{display:flex;align-items:center;gap:14px;margin-top:16px;flex-wrap:wrap}.form-status{font-size:12px;color:#736B63;line-height:1.4;max-width:360px}.form-status.ok{color:#2D6A4F}.form-status.err{color:#9D3B31}.required-note{font-size:12px;color:#7A7169;margin-top:12px;line-height:1.45}
+
+    .brand-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.brand-card{position:relative;min-height:520px;border-radius:34px;overflow:hidden;background:#fff;border:1px solid var(--border);display:flex;align-items:flex-end;isolation:isolate;transition:transform .22s ease, box-shadow .22s ease}.brand-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}.brand-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 18%;z-index:0;filter:saturate(.92)}.brand-card:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(0,0,0,.64) 100%);z-index:1}.brand-content{position:relative;z-index:2;color:#fff;padding:34px;width:100%}.brand-content .meta{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:#E6D8CE;margin-bottom:10px}.brand-content h3{font-size:66px;line-height:.84;margin:0 0 14px}.brand-content p{margin:0;max-width:520px;color:#EEE6DE;line-height:1.55}.brand-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:26px;gap:18px}.brand-price{font-size:12px;letter-spacing:.18em;text-transform:uppercase}.enter{border:1px solid rgba(255,255,255,.42);border-radius:999px;padding:11px 15px;font-size:11px;text-transform:uppercase;letter-spacing:.14em}.brand-card.nudo{background:linear-gradient(135deg,#111 0%,#2B2723 100%)}.brand-card.nudo:before{content:'';position:absolute;right:-16%;top:-12%;width:60%;height:60%;border-radius:50%;background:rgba(196,113,74,.12);filter:blur(6px)}.brand-card.nudo:after{background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.55))}.nudo-mark{position:absolute;top:70px;left:34px;color:#fff;font-family:'Cormorant Garamond';font-size:72px;letter-spacing:.18em;z-index:2;opacity:.84}.badge{position:absolute;z-index:3;top:26px;left:26px;background:#fff;color:#111;padding:10px 13px;border-radius:2px;font-size:10px;letter-spacing:.15em;text-transform:uppercase;font-weight:800}
+
+    footer{background:#171615;color:#EFE8E1;margin-top:70px}.footer-inner{max-width:var(--max);margin:0 auto;padding:44px 42px;display:flex;justify-content:space-between;align-items:center;gap:28px;flex-wrap:wrap}.footer-logo{font-family:'Cormorant Garamond';font-size:32px;letter-spacing:.14em}.footer-logo .dot{color:var(--terracota)}.footer-meta{font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#BFB5AD}.footer-links{display:flex;gap:22px;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:#D8D0C7}.footer-links a:hover{color:#fff}
+
+    .modal{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.42);padding:22px}.modal.open{display:flex}.modal-card{width:min(760px,100%);max-height:calc(100vh - 44px);overflow:auto;background:#fff;border-radius:34px;padding:32px;box-shadow:0 50px 120px rgba(0,0,0,.34);position:relative}.modal-close{position:absolute;right:18px;top:18px;width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer}.modal-card h2{font-size:50px;line-height:.92;margin:0 0 10px}.modal-card p{color:#665E56;line-height:1.6}.modal-card .lead-form{box-shadow:none;border:1px solid var(--border);padding:0;background:transparent}.modal-card .form-status{max-width:none}
+
+    @media (max-width: 980px){.top-strip{font-size:10px}.header-inner{grid-template-columns:1fr auto;height:68px;padding:0 18px}.brand-logo strong{font-size:30px}.brand-logo span{font-size:9px}.nav{display:none}.header-actions{gap:0}.header-btn{padding:10px 13px;font-size:10px}.hero-inner{grid-template-columns:1fr;padding:48px 18px 22px;gap:28px}.hero h1{font-size:clamp(56px,15vw,74px)}.hero .lead{font-size:16px}.hero-visual{min-height:260px;border-radius:28px}.hero-visual img{min-height:260px;object-position:68% center}.lead-strip{padding:0 18px 34px;grid-template-columns:1fr}.lead-card{grid-template-columns:1fr;padding:22px}.lead-card .btn{width:100%}section{padding:56px 18px}.section-head{grid-template-columns:1fr;gap:18px}.premium-grid,.brand-grid{grid-template-columns:1fr}.origin-inner{padding:62px 18px;grid-template-columns:1fr;gap:28px}.lead-section{grid-template-columns:1fr;padding:28px;border-radius:30px}.form-grid{grid-template-columns:1fr}.brand-card{min-height:480px}.footer-inner{padding:34px 18px;display:grid}.modal{padding:0;align-items:flex-end}.modal-card{border-radius:26px 26px 0 0;max-height:92vh;padding:28px 18px 26px}.modal-card h2{font-size:42px}}
+    @media (max-width: 520px){.top-strip{height:auto;min-height:32px;line-height:1.35}.hero-inner{padding-top:28px}.hero h1{font-size:52px}.cta-row .btn{width:100%}.micro-path{font-size:10px}.hero-visual{min-height:190px}.hero-visual img{min-height:190px}.lead-card h2{font-size:30px}.trust-card{padding:22px}.premium-item{min-height:auto}.brand-card{min-height:420px}.brand-content h3{font-size:54px}.lead-section h2{font-size:48px}.lead-form{padding:22px;border-radius:24px}.lead-form h3{font-size:32px}.btn{height:50px;padding:0 18px;font-size:11px}}
   </style>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=DM+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel" data-presets="react">
-const { useState, useMemo, useEffect } = React;
+  <div class="top-strip">Colombia → Guatemala · <b>producto, marca y oportunidad comercial</b></div>
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="#inicio" class="brand-logo" aria-label="CASA JRP inicio"><strong>CASA JRP<span class="dot">.</span></strong><span>Guatemala</span></a>
+      <nav class="nav" aria-label="Navegación principal"><a href="#importar">Importar</a><a href="#origen">Origen</a><a href="#marcas">Marcas</a><a href="#contacto">Contacto</a></nav>
+      <div class="header-actions"><button class="header-btn" type="button" data-open-lead>Evaluar oportunidad</button></div>
+    </div>
+  </header>
 
-// CAMBIO: nueva URL del AS bajo julian@casajrp.com
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec";
-
-// Paleta por marca — sin cambios
-const TEMA = {
-  orkia: { bg:"#FAF7F2", dark:"#1A120A", mid:"#8B7355", gold:"#C4A882", border:"#E2D9CE", light:"#FFF8F0", accent:"#C4A882", nombre:"Orkia" },
-  nudo:  { bg:"#F5F4FA", dark:"#0D0D1A", mid:"#6B6490", gold:"#7B6FE8", border:"#DDD9F0", light:"#EEEDFB", accent:"#7B6FE8", nombre:"Nudo" },
-};
-
-const NSE_POR_ZONA = {
-  "Zona 9":"Alto","Zona 10":"Alto","Zona 14":"Alto","Zona 15":"Alto",
-  "Zona 13":"Medio-Alto","Zona 16":"Medio-Alto",
-  "Zona 11":"Medio","Zona 12":"Medio","Zona 5":"Medio",
-  "Zona 1":"Medio-Bajo","Zona 2":"Medio-Bajo","Zona 6":"Medio-Bajo",
-  "Zona 18":"Popular","Zona 17":"Popular","Zona 7":"Popular",
-};
-
-const CIUDADES  = ["Guatemala City","Mixco","Villa Nueva","San Miguel Petapa","Amatitlan","Chinautla","Santa Catarina Pinula","Antigua Guatemala","Escuintla","Quetzaltenango","Otro departamento"];
-const ZONAS_GT  = ["Zona 1","Zona 2","Zona 3","Zona 4","Zona 5","Zona 6","Zona 7","Zona 8","Zona 9","Zona 10","Zona 11","Zona 12","Zona 13","Zona 14","Zona 15","Zona 16","Zona 17","Zona 18","Zona 19","Zona 21","No aplica (municipio fuera de Guatemala City)"];
-const CANALES   = ["Instagram","TikTok","Referido","WhatsApp directo","Otro"];
-const PAGOS     = ["Transferencia bancaria","Link de pago","Efectivo contra entrega"];
-const BANCOS    = ["BAC Credomatic","Banco Industrial (BI)","G&T Continental","Promerica","Agromercantil","Ficohsa","Citibank","Vivibanco","Credito Hipotecario Nacional","Bantrab","Banmundo","Banrural","Bancoex","Otro banco","No aplica (link de pago)"];
-const EDADES    = ["Joven (aprox 18-24)","Adulta (aprox 25-35)","Madura (aprox 36+)"];
-const MESES     = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-const DECISION  = ["Sabia exactamente que queria","Pregunto opciones antes de decidir","Pidio recomendacion a Nadia","Dudo mucho, casi no compra"];
-
-// CAMBIO: formato GTQ, no COP
-const fmtGTQ = (n) => `Q${Number(n).toFixed(0)}`;
-
-function makeStyles(T) {
-  const base = { fontFamily:"'DM Sans',sans-serif",width:"100%",padding:"13px 16px",border:`1.5px solid ${T.border}`,borderRadius:12,fontSize:15,background:"#FFFDF9",color:T.dark,outline:"none",boxSizing:"border-box",transition:"border-color 0.2s",minHeight:50 };
-  return {
-    selSt: (v,d) => ({...base,border:`1.5px solid ${v?T.gold:T.border}`,color:v?T.dark:"#B0A090",background:d?"#F5F0EA":"#FFFDF9",WebkitAppearance:"none",appearance:"none",backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='${encodeURIComponent(T.gold)}' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,backgroundRepeat:"no-repeat",backgroundPosition:"right 16px center",paddingRight:40,cursor:d?"not-allowed":"pointer"}),
-    inpSt: (v) => ({...base,border:`1.5px solid ${v?T.gold:T.border}`}),
-    btnPrimary: (ok) => ({width:"100%",padding:"16px",minHeight:54,background:ok?T.dark:T.border,color:ok?"#FAF7F2":"#B0A090",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:ok?"pointer":"not-allowed",fontFamily:"'DM Sans',sans-serif",transition:"all 0.2s"}),
-    btnAccent:  (ok) => ({width:"100%",padding:"16px",minHeight:54,background:ok?T.gold:T.border,color:ok?T.dark:"#B0A090",border:"none",borderRadius:14,fontSize:16,fontWeight:700,cursor:ok?"pointer":"not-allowed",fontFamily:"'DM Sans',sans-serif",transition:"all 0.2s"}),
-    btnSec: {width:"100%",padding:"16px",minHeight:54,background:"transparent",color:T.mid,border:`1.5px solid ${T.gold}`,borderRadius:14,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"},
-  };
-}
-
-const Sel = ({value,onChange,opts,placeholder,disabled,T}) => {
-  const S = makeStyles(T);
-  return (
-    <select value={value} onChange={e=>onChange(e.target.value)} disabled={disabled} style={S.selSt(!!value,disabled)}>
-      <option value="">{placeholder}</option>
-      {opts.map(o=><option key={o.v??o} value={o.v??o}>{o.l??o}</option>)}
-    </select>
-  );
-};
-
-const Field = ({label,children,optional,hint,muted,T}) => (
-  <div style={{marginBottom:14}}>
-    <label style={{fontSize:11,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:muted?T.gold:T.mid,marginBottom:6,display:"block"}}>
-      {label}
-      {optional
-        ? <span style={{fontWeight:400,textTransform:"none",letterSpacing:0,color:T.gold}}> (opcional)</span>
-        : <span style={{color:"#E8614A",marginLeft:3}}>*</span>}
-    </label>
-    {children}
-    {hint&&<p style={{margin:"5px 0 0",fontSize:11,color:"#B0A090",fontStyle:"italic"}}>{hint}</p>}
-  </div>
-);
-
-const Dot = ({n,active,done,T}) => (
-  <div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-    <div style={{width:28,height:28,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,background:done?T.gold:active?"#FAF7F2":"#3D2518",color:done?"#FFF":active?T.dark:"#6B4C33",transition:"all 0.3s"}}>{done?"✓":n}</div>
-    <span style={{fontSize:9,letterSpacing:"0.06em",fontWeight:active?700:400,color:active?"#FAF7F2":done?T.gold:"#6B4C33"}}>{["CLIENTE","PRODUCTO","PAGO"][n-1]}</span>
-  </div>
-);
-
-const Divider = ({label,T}) => (
-  <div style={{display:"flex",alignItems:"center",gap:10,margin:"18px 0 14px"}}>
-    <div style={{flex:1,height:1,background:T.border}}/>
-    <span style={{fontSize:10,fontWeight:700,letterSpacing:"0.12em",color:T.gold,textTransform:"uppercase",whiteSpace:"nowrap"}}>{label}</span>
-    <div style={{flex:1,height:1,background:T.border}}/>
-  </div>
-);
-
-const SummaryRow = ({k,v,bold,T}) => (
-  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"5px 0",borderBottom:"1px solid #2C1A0E"}}>
-    <span style={{fontSize:11,color:"#6B4C33",flexShrink:0}}>{k}</span>
-    <span style={{fontSize:bold?14:12,color:"#FAF7F2",textAlign:"right",marginLeft:8,fontWeight:bold?700:400}}>{v}</span>
-  </div>
-);
-
-// ProductoSelector — solo cambia precio a GTQ
-function ProductoSelector({value, onChange, productos, T}) {
-  const S = makeStyles(T);
-  const [busqueda, setBusqueda] = useState("");
-  const [filtroTipo, setFiltroTipo] = useState("Todos");
-  const [filtroColor, setFiltroColor] = useState("Todos");
-  const [abierto, setAbierto] = useState(false);
-
-  const tipos   = useMemo(() => ["Todos", ...new Set(productos.map(p=>p.tipo_prenda||p.tipo).filter(Boolean))].sort(), [productos]);
-  const colores = useMemo(() => ["Todos", ...new Set(productos.map(p=>p.color).filter(Boolean))].sort(), [productos]);
-
-  const filtrados = useMemo(() => {
-    return productos.filter(p => {
-      const tipo  = p.tipo_prenda || p.tipo || "";
-      const matchTipo  = filtroTipo === "Todos" || tipo === filtroTipo;
-      const matchColor = filtroColor === "Todos" || p.color === filtroColor;
-      const nombre = p.descripcion || p.nombre || "";
-      const matchBusq  = !busqueda || nombre.toLowerCase().includes(busqueda.toLowerCase()) || String(p.id_producto||p.id).includes(busqueda);
-      return matchTipo && matchColor && matchBusq;
-    });
-  }, [busqueda, filtroTipo, filtroColor, productos]);
-
-  const seleccionado = value ? productos.find(p => (p.id_producto||p.id) === value) : null;
-  const nombreProd = p => p.descripcion || p.nombre || "";
-  const idProd     = p => p.id_producto || p.id;
-  // CAMBIO: precio en GTQ
-  const precioProd = p => p.precio_gtq || 0;
-
-  return (
-    <div style={{position:"relative"}}>
-      <div onClick={() => setAbierto(!abierto)}
-        style={{...S.inpSt(!!value), cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", userSelect:"none"}}>
-        <span style={{color: seleccionado ? T.dark : "#B0A090", fontSize:15}}>
-          {seleccionado ? `#${idProd(seleccionado)} — ${nombreProd(seleccionado)}` : "Busca o filtra el producto..."}
-        </span>
-        <span style={{color:T.gold, fontSize:12}}>{abierto ? "▲" : "▼"}</span>
-      </div>
-
-      {abierto && (
-        <div style={{position:"absolute",top:"calc(100% + 4px)",left:0,right:0,zIndex:100,
-          background:"#FFF",borderRadius:14,border:`1.5px solid ${T.gold}`,
-          boxShadow:"0 8px 32px rgba(0,0,0,0.12)",overflow:"hidden"}}>
-
-          <div style={{padding:"12px 12px 8px"}}>
-            <input value={busqueda} onChange={e=>setBusqueda(e.target.value)}
-              placeholder="Buscar por nombre o codigo..."
-              style={{...S.inpSt(!!busqueda), fontSize:14, padding:"10px 14px"}}
-              autoFocus />
-          </div>
-
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,padding:"0 12px 8px"}}>
-            <select value={filtroTipo} onChange={e=>setFiltroTipo(e.target.value)}
-              style={{...S.selSt(filtroTipo!=="Todos",false),fontSize:13,padding:"8px 32px 8px 12px",minHeight:38}}>
-              {tipos.map(t=><option key={t} value={t}>{t}</option>)}
-            </select>
-            <select value={filtroColor} onChange={e=>setFiltroColor(e.target.value)}
-              style={{...S.selSt(filtroColor!=="Todos",false),fontSize:13,padding:"8px 32px 8px 12px",minHeight:38}}>
-              {colores.map(c=><option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-
-          <div style={{padding:"4px 12px 6px",fontSize:11,color:T.mid}}>
-            {filtrados.length} producto{filtrados.length!==1?"s":""} encontrado{filtrados.length!==1?"s":""}
-          </div>
-
-          <div style={{maxHeight:240,overflowY:"auto",borderTop:`1px solid ${T.border}`}}>
-            {filtrados.length === 0 ? (
-              <div style={{padding:"20px 16px",textAlign:"center",color:T.mid,fontSize:14}}>
-                Sin resultados. Cambia los filtros.
-              </div>
-            ) : filtrados.map(p => (
-              <div key={idProd(p)} onClick={() => { onChange(idProd(p)); setAbierto(false); setBusqueda(""); }}
-                style={{padding:"10px 16px",cursor:"pointer",borderBottom:`1px solid ${T.border}`,
-                  background: value===idProd(p) ? T.light : "transparent",
-                  display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div>
-                  <span style={{fontSize:13,fontWeight:600,color:T.dark}}>{nombreProd(p)}</span>
-                  <span style={{fontSize:11,color:T.mid,marginLeft:8}}>#{idProd(p)}</span>
-                  {p.agotado && <span style={{fontSize:10,color:"#E8614A",marginLeft:6,fontWeight:700}}>AGOTADO</span>}
-                </div>
-                {/* CAMBIO: precio GTQ */}
-                <span style={{fontSize:12,color:T.gold,fontWeight:600,flexShrink:0,marginLeft:8}}>
-                  {fmtGTQ(precioProd(p))}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div onClick={() => setAbierto(false)}
-            style={{padding:"10px 16px",textAlign:"center",fontSize:13,color:T.mid,
-              cursor:"pointer",borderTop:`1px solid ${T.border}`,background:T.light}}>
-            Cerrar
-          </div>
+  <main id="inicio">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <div class="eyebrow">Casa JRP · puente comercial Colombia–Guatemala</div>
+          <h1 id="hero-title" class="serif">Producto colombiano con criterio de mercado.</h1>
+          <p class="lead"><b>CASA JRP identifica, presenta y valida oportunidades de producto colombiano para Guatemala.</b> Moda, textiles, confección, accesorios y categorías afines con potencial comercial, estética cuidada y operación local.</p>
+          <div class="cta-row"><button class="btn btn-primary" type="button" data-open-lead>Evaluar mi oportunidad</button><a class="btn btn-secondary" href="#importar">Ver cómo trabajamos</a></div>
+          <div class="micro-path" aria-label="Enfoque de CASA JRP"><span>Curaduría</span><span>Marca</span><span>Validación</span><span>Guatemala</span></div>
         </div>
-      )}
-    </div>
-  );
-}
+        <div class="hero-visual" aria-hidden="true">
+          <picture><source media="(max-width: 768px)" srcset="https://img.casajrp.com/orkia/banners/home-hero-mobile.webp"><img src="https://img.casajrp.com/orkia/banners/home-hero-desktop.webp" alt="" width="1920" height="600" fetchpriority="high" decoding="async"></picture>
 
-function SelectorMarca({ onSelect }) {
-  return (
-    <div style={{minHeight:"100vh",background:"#0D0A06",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'DM Sans',sans-serif"}}>
-      <p style={{fontSize:10,letterSpacing:"0.25em",color:"#6B4C33",textTransform:"uppercase",marginBottom:6}}>by CASA JRP</p>
-      <h1 style={{fontFamily:"'Playfair Display',serif",fontSize:28,color:"#FAF7F2",fontWeight:500,marginBottom:4,textAlign:"center"}}>Registro de pedido</h1>
-      <p style={{fontSize:14,color:"#6B4C33",marginBottom:40,textAlign:"center"}}>¿Para qué tienda estás registrando?</p>
-      <div style={{display:"flex",flexDirection:"column",gap:14,width:"100%",maxWidth:320}}>
-        <button onClick={() => onSelect("orkia")}
-          style={{padding:"20px 24px",background:"#1A120A",border:"1.5px solid #C4A882",borderRadius:16,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
-          <p style={{margin:"0 0 4px",fontSize:10,letterSpacing:"0.2em",color:"#C4A882",textTransform:"uppercase"}}>Ropa femenina</p>
-          <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2",fontWeight:500}}>Orkia</p>
-        </button>
-        <button onClick={() => onSelect("nudo")}
-          style={{padding:"20px 24px",background:"#0D0D1A",border:"1.5px solid #7B6FE8",borderRadius:16,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
-          <p style={{margin:"0 0 4px",fontSize:10,letterSpacing:"0.2em",color:"#7B6FE8",textTransform:"uppercase"}}>Ropa interior masculina</p>
-          <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2",fontWeight:500}}>Nudo</p>
-        </button>
+        </div>
       </div>
-    </div>
-  );
-}
-
-function CargandoCatalogo({ marca, onRetry, error }) {
-  const T = TEMA[marca];
-  return (
-    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"'DM Sans',sans-serif"}}>
-      {error ? (
-        <>
-          <p style={{fontSize:32,marginBottom:12}}>⚠️</p>
-          <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:20,color:T.dark,marginBottom:8,textAlign:"center"}}>No se pudo cargar el catálogo</h2>
-          <p style={{fontSize:13,color:T.mid,marginBottom:24,textAlign:"center",maxWidth:280}}>{error}</p>
-          <button onClick={onRetry}
-            style={{padding:"14px 28px",background:T.dark,color:"#FAF7F2",border:"none",borderRadius:12,fontSize:15,fontWeight:600,cursor:"pointer",fontFamily:"'DM Sans',sans-serif"}}>
-            Reintentar
-          </button>
-        </>
-      ) : (
-        <>
-          <div style={{width:40,height:40,border:`3px solid ${T.border}`,borderTop:`3px solid ${T.gold}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",marginBottom:16}}/>
-          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          <p style={{fontSize:15,color:T.mid}}>Cargando catálogo {T.nombre}...</p>
-        </>
-      )}
-    </div>
-  );
-}
-
-function NadiaApp() {
-  const [marca, setMarca]         = useState(null);
-  const [productos, setProductos] = useState([]);
-  const [cargando, setCargando]   = useState(false);
-  const [errorCat, setErrorCat]   = useState(null);
-  // CAMBIO: zonas dinámicas desde AS
-  const [zonasList, setZonasList] = useState([]);
-
-  const [step, setStep]   = useState(1);
-  const [saving, setSaving] = useState(false);
-  const [result, setResult] = useState(null);
-
-  const [nombre, setNombre]   = useState("");
-  const [telefono, setTel]    = useState("");
-  const [canal, setCanal]     = useState("");
-  const [ciudad, setCiudad]   = useState("");
-  const [zonaGT, setZonaGT]   = useState("");
-  const [colonia, setColonia] = useState("");
-  const [direc, setDirec]     = useState("");
-  const [refs, setRefs]       = useState("");
-  const [edadInf, setEdad]    = useState("");
-  const [cumple, setCumple]   = useState("");
-  const [decision, setDec]    = useState("");
-
-  const [prodId, setProdId]   = useState(null);
-  const [talla, setTalla]     = useState("");
-  const [cantidad, setCant]   = useState("1");
-  const [cupon, setCupon]     = useState("");
-
-  const [pago, setPago]   = useState("");
-  const [banco, setBanco] = useState("");
-  const [comp, setComp]   = useState("");
-
-  const T = marca ? TEMA[marca] : TEMA.orkia;
-  const S = makeStyles(T);
-
-  // CAMBIO: carga catálogo + zonas en paralelo
-  async function cargarCatalogo(m) {
-    setCargando(true);
-    setErrorCat(null);
-    try {
-      const [resCat, resZonas] = await Promise.all([
-        fetch(`${APPS_SCRIPT_URL}?accion=get_catalogo&marca=${m}`),
-        fetch(`${APPS_SCRIPT_URL}?accion=get_zonas&marca=${m}`)
-      ]);
-      const dataCat   = await resCat.json();
-      const dataZonas = await resZonas.json();
-
-      if (!dataCat.ok) throw new Error(dataCat.error || "Error desconocido");
-
-      const disponibles = dataCat.productos.filter(p => !p.agotado);
-      const agotados    = dataCat.productos.filter(p => p.agotado);
-      setProductos([...disponibles, ...agotados]);
-
-      if (dataZonas.ok) setZonasList(dataZonas.zonas);
-
-      setMarca(m);
-    } catch(err) {
-      setErrorCat("Revisa la conexión e intenta de nuevo. (" + err.message + ")");
-    } finally {
-      setCargando(false);
-    }
-  }
-
-  function elegirMarca(m) {
-    setCargando(true);
-    cargarCatalogo(m);
-  }
-
-  const prod      = prodId ? productos.find(p => (p.id_producto||p.id) === prodId) : null;
-  // CAMBIO: precio en GTQ
-  const precioGTQ = prod ? (prod.precio_gtq || 0) : 0;
-  const tallasDisp = prod ? (prod.tallas || []) : [];
-
-  // CAMBIO: costo de envío dinámico desde zonasList
-  const zonaSelObj = zonasList.find(z => z.nombre === zonaGT || z.id_zona === zonaGT) || null;
-  const costoEnvio = zonaSelObj ? zonaSelObj.costo_envio_gtq : 0;
-  const nseInf     = NSE_POR_ZONA[zonaGT] ?? null;
-
-  // CAMBIO: totales en GTQ
-  const subtotalGTQ = precioGTQ * Number(cantidad || 1);
-  const totalGTQ    = subtotalGTQ + costoEnvio;
-
-  // Opciones zona para Sel — dinámicas desde AS
-  const zonasOpts = zonasList.map(z => ({
-    v: z.nombre || z.id_zona,
-    l: `${z.nombre || z.id_zona} — Q${z.costo_envio_gtq}`
-  }));
-
-  const ok1 = nombre && telefono && canal && ciudad && colonia && direc;
-  const ok2 = prodId && talla && cantidad;
-  const ok3 = pago && comp && (pago !== "Transferencia bancaria" || banco);
-
-  function resetPedido() {
-    setStep(1); setResult(null);
-    setNombre(""); setTel(""); setCanal("");
-    setCiudad(""); setZonaGT(""); setColonia(""); setDirec(""); setRefs("");
-    setEdad(""); setCumple(""); setDec("");
-    setProdId(null); setTalla(""); setCant("1"); setCupon("");
-    setPago(""); setBanco(""); setComp("");
-  }
-
-  function resetTotal() {
-    resetPedido();
-    setMarca(null);
-    setProductos([]);
-    setZonasList([]);
-    setErrorCat(null);
-  }
-
-  async function confirmar() {
-    setSaving(true);
-    const payload = {
-      accion:          "nuevo_pedido",
-      marca:           marca,
-      nombre_cliente:  nombre,
-      telefono:        telefono,
-      canal_origen:    canal,
-      ciudad:          ciudad,
-      zona_gt:         zonaGT,
-      colonia:         colonia,
-      direccion:       direc,
-      referencias:     refs,
-      nse_inferido:    nseInf || "",
-      edad_inferida:   edadInf,
-      mes_cumpleanos:  cumple,
-      perfil_decision: decision,
-      lineas: [{
-        id_producto: Number(prodId),
-        talla:       talla,
-        cantidad:    Number(cantidad),
-      }],
-      codigo_descuento: cupon,
-      descuento_cop:    0,
-      metodo_pago:     pago,
-      banco:           banco,
-      comprobante:     comp,
-      motivo_compra:   "",
-    };
-    try {
-      const res  = await fetch(APPS_SCRIPT_URL, {
-        method:"POST",
-        headers:{"Content-Type":"text/plain"},
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      setResult(data);
-    } catch(err) {
-      setResult({ ok:false, error:"No se pudo conectar. Revisa la conexión a internet." });
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  if (!marca && !cargando) return <SelectorMarca onSelect={elegirMarca} />;
-  if (cargando || (!marca && !errorCat)) return <CargandoCatalogo marca={marca||"orkia"} onRetry={()=>cargarCatalogo(marca)} error={null}/>;
-  if (errorCat) return <CargandoCatalogo marca={marca||"orkia"} onRetry={()=>cargarCatalogo(marca)} error={errorCat}/>;
-
-  if (result) return (
-    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"'DM Sans',sans-serif"}}>
-      <div style={{width:"100%",maxWidth:400,textAlign:"center"}}>
-        {result.ok ? (
-          <>
-            <div style={{fontSize:48,marginBottom:8}}>✓</div>
-            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:24,color:T.dark,margin:"0 0 4px"}}>Pedido registrado</h2>
-            <p style={{color:T.mid,fontSize:13,margin:"0 0 14px"}}>{result.es_nuevo?"Cliente nuevo registrado.":"Cliente existente actualizado."}</p>
-            <div style={{background:T.dark,color:T.gold,borderRadius:12,padding:"10px 24px",display:"inline-block",fontSize:22,fontWeight:700,letterSpacing:"0.15em",marginBottom:16}}>{result.id_pedido}</div>
-            {/* CAMBIO: total en GTQ */}
-            <div style={{background:T.light,borderRadius:10,padding:"10px 14px",marginBottom:16,border:`1px solid ${T.border}`}}>
-              <p style={{fontSize:20,fontWeight:700,color:T.dark,margin:0}}>Total: {fmtGTQ(result.total_gtq)}</p>
-            </div>
-            {(nseInf||edadInf||decision)&&(
-              <div style={{background:T.light,borderRadius:10,padding:"10px 14px",marginBottom:16,border:`1px dashed ${T.gold}`,textAlign:"left"}}>
-                <p style={{margin:"0 0 6px",fontSize:10,fontWeight:700,letterSpacing:"0.1em",color:T.gold}}>PERFIL INFERIDO (interno)</p>
-                {nseInf&&<div style={{fontSize:12,color:"#2E75B6",marginBottom:3}}>NSE: <strong>{nseInf}</strong></div>}
-                {edadInf&&<div style={{fontSize:12,color:T.mid,marginBottom:3}}>Edad: <strong>{edadInf}</strong></div>}
-                {decision&&<div style={{fontSize:12,color:"#4A9E6B"}}>Decisión: <strong>{decision}</strong></div>}
-              </div>
-            )}
-            <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:8}}>
-              <button onClick={resetPedido} style={S.btnPrimary(true)}>+ Nuevo pedido — {T.nombre}</button>
-              <button onClick={resetTotal}  style={S.btnSec}>Cambiar tienda</button>
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{fontSize:48,marginBottom:8}}>✗</div>
-            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 8px"}}>No se pudo guardar</h2>
-            <div style={{background:"#FFF0EE",borderRadius:10,padding:"12px 16px",marginBottom:16,border:"1px solid #E8614A",textAlign:"left"}}>
-              <p style={{margin:0,fontSize:13,color:"#E8614A"}}>{result.error}</p>
-            </div>
-            <p style={{fontSize:12,color:T.mid,marginBottom:16}}>Toma captura antes de intentar de nuevo.</p>
-            <button onClick={resetPedido} style={S.btnPrimary(true)}>Volver e intentar de nuevo</button>
-          </>
-        )}
+      <div class="lead-strip">
+        <div class="lead-card">
+          <div><h2 class="serif">¿Tienes una oportunidad desde Colombia?</h2><p>Cuéntanos qué producto, proveedor o categoría quieres explorar. Te contactamos para evaluar si tiene sentido comercial en Guatemala.</p></div>
+          <button class="btn btn-terracotta" type="button" data-open-lead>Evaluar producto</button>
+        </div>
+        <div class="trust-card" aria-label="Privacidad y enfoque de contacto">
+          <div class="trust-row"><span class="trust-dot"></span><div><strong>Revisión directa</strong><p>Revisamos cada oportunidad de forma privada y te contactamos directamente para entender el contexto.</p></div></div>
+          <div class="trust-row"><span class="trust-dot"></span><div><strong>Menos fricción</strong><p>Pedimos solo lo necesario para entender la oportunidad y responder con contexto.</p></div></div>
+        </div>
       </div>
-    </div>
-  );
+    </section>
 
-  return (
-    <div style={{minHeight:"100vh",background:T.bg}}>
-      <div style={{background:T.dark,padding:"14px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:10}}>
+    <section id="importar" aria-labelledby="importar-title">
+      <div class="lead-section">
         <div>
-          <p style={{margin:0,fontSize:10,letterSpacing:"0.2em",color:T.gold,textTransform:"uppercase",opacity:0.6}}>{T.nombre}</p>
-          <h1 style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:19,color:"#FAF7F2",fontWeight:500}}>Nuevo Pedido</h1>
+          <div class="eyebrow">Importar con CASA JRP</div>
+          <h2 id="importar-title" class="serif">De producto colombiano a oportunidad comercial.</h2>
+          <p>Si quieres explorar moda, textiles, confección, accesorios o productos colombianos con potencial para Guatemala, CASA JRP puede ayudarte a convertir la idea en una propuesta presentable: selección, narrativa, precio, catálogo, canal y validación.</p>
+          <div class="lead-benefits"><div>Lectura comercial de categoría y precio</div><div>Curaduría de proveedores y producto</div><div>Construcción de catálogo, narrativa y visual</div><div>Validación de interés con mercado guatemalteco</div><div>Ruta de marca, canal y operación local</div></div>
+          <p class="privacy-note">Tus datos se usan solo para responder esta solicitud y evaluar la oportunidad comercial.</p>
         </div>
-        <div style={{display:"flex",gap:16,alignItems:"center"}}>
-          {[1,2,3].map(n=><Dot key={n} n={n} active={step===n} done={step>n} T={T}/>)}
-        </div>
+        <form class="lead-form" id="leadFormInline">
+          <input class="hidden-field" type="text" name="website" tabindex="-1" autocomplete="off">
+          <h3 class="serif">Evaluar mi oportunidad</h3>
+          <p class="form-intro">Déjanos el contexto básico y te contactamos para revisar la oportunidad.</p>
+          <div class="form-grid">
+            <div class="field"><label>Nombre *</label><input name="nombre" required autocomplete="name" placeholder="Tu nombre"></div>
+            <div class="field"><label>Contacto *</label><input name="contacto" required placeholder="WhatsApp o correo para responderte"></div>
+            <div class="field"><label>Empresa o proyecto <span class="optional">opcional</span></label><input name="empresa" autocomplete="organization" placeholder="Empresa o proyecto"></div>
+            <div class="field"><label>Categoría *</label><select name="categoria" required><option value="">Selecciona</option><option>Moda femenina</option><option>Moda masculina</option><option>Textiles</option><option>Confección</option><option>Accesorios</option><option>Producto colombiano</option><option>Otro</option></select></div>
+            <div class="field full"><label>Oportunidad *</label><textarea name="mensaje" required placeholder="Cuéntanos brevemente qué quieres traer, vender, validar o explorar desde Colombia."></textarea></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-primary" type="submit">Enviar para evaluación</button><span class="form-status" data-form-status>Usaremos tus datos solo para responder esta solicitud.</span></div>
+          <div class="required-note">* Campos necesarios para poder contactarte.</div>
+        </form>
       </div>
+    </section>
 
-      <div style={{maxWidth:480,margin:"0 auto",padding:"20px 16px 100px"}}>
+    <section aria-labelledby="modelo-title">
+      <div class="section-head"><h2 id="modelo-title" class="serif">Aprender antes de escalar.</h2><p>No se trata de traer producto por traer. CASA JRP busca probar categorías, entender demanda, construir presentación y decidir con datos qué merece crecer.</p></div>
+      <div class="premium-grid"><div class="premium-item"><div class="mark">1</div><strong>Curar</strong><p>Elegimos producto por estética, margen, precio, disponibilidad, diferenciación y potencial frente al mercado local.</p></div><div class="premium-item"><div class="mark">2</div><strong>Presentar</strong><p>Convertimos el producto en una propuesta: foto, catálogo, copy, precio, historia y experiencia digital.</p></div><div class="premium-item"><div class="mark">3</div><strong>Validar</strong><p>Medimos interés real: búsquedas, clics, leads, WhatsApp, productos agotados y señales de demanda.</p></div></div>
+    </section>
 
-        {/* Step 1: Cliente — zona dinámica */}
-        {step===1&&(
-          <div>
-            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Datos del cliente</h2>
-            <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Campos con * son obligatorios.</p>
-            <Field label="Nombre completo" T={T}>
-              <input value={nombre} onChange={e=>setNombre(e.target.value)} placeholder="Ej: Carlos García" style={S.inpSt(!!nombre)}/>
-            </Field>
-            <Field label="WhatsApp" T={T}>
-              <input value={telefono} onChange={e=>setTel(e.target.value)} placeholder="+502 9999-9999" type="tel" style={S.inpSt(!!telefono)}/>
-            </Field>
-            <Field label="¿Cómo llegó al negocio?" T={T}>
-              <Sel value={canal} onChange={setCanal} placeholder="Selecciona..." opts={CANALES} T={T}/>
-            </Field>
-            <Divider label="Dirección de entrega" T={T}/>
-            <Field label="Ciudad" T={T}>
-              <Sel value={ciudad} onChange={v=>{setCiudad(v);setZonaGT("");}} placeholder="Selecciona la ciudad..." opts={CIUDADES} T={T}/>
-            </Field>
-            {ciudad==="Guatemala City"&&(
-              <Field label="Zona" T={T}>
-                <Sel value={zonaGT} onChange={setZonaGT} placeholder="Selecciona la zona..." opts={ZONAS_GT} T={T}/>
-              </Field>
-            )}
-            {nseInf&&(
-              <div style={{background:"#EBF3FB",borderRadius:8,padding:"7px 12px",marginBottom:14,display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:12,color:"#2E75B6"}}>NSE inferido: <strong>{nseInf}</strong></span>
-                <span style={{fontSize:11,color:"#6B9EC7"}}>(automático)</span>
-              </div>
-            )}
-            <Field label="Colonia / Residencial" T={T}>
-              <input value={colonia} onChange={e=>setColonia(e.target.value)} placeholder="Ej: Colonia Las Ilusiones" style={S.inpSt(!!colonia)}/>
-            </Field>
-            <Field label="Calle y número de casa" T={T}>
-              <input value={direc} onChange={e=>setDirec(e.target.value)} placeholder="Ej: 3ra calle 12-45, casa B" style={S.inpSt(!!direc)}/>
-            </Field>
-            <Field label="Referencias" optional T={T}>
-              <input value={refs} onChange={e=>setRefs(e.target.value)} placeholder="Ej: frente al parque, portón café" style={S.inpSt(!!refs)}/>
-            </Field>
-            <Divider label="Solo Nadia — no preguntarle al cliente" T={T}/>
-            <div style={{background:T.light,borderRadius:12,padding:"14px 16px",border:`1px dashed ${T.gold}`}}>
-              <Field label="Edad estimada (tu criterio)" optional muted T={T}>
-                <Sel value={edadInf} onChange={setEdad} placeholder="¿Cómo lo ves?" opts={EDADES} T={T}/>
-              </Field>
-              <Field label="¿Cómo decidió la compra?" optional muted T={T}>
-                <Sel value={decision} onChange={setDec} placeholder="Perfil de decisión..." opts={DECISION} T={T}/>
-              </Field>
-              <Field label="Mes de cumpleaños" optional muted hint={`Di: "¿En qué mes cumplís? Te mandamos algo especial"`} T={T}>
-                <Sel value={cumple} onChange={setCumple} placeholder="Si lo mencionó..." opts={MESES} T={T}/>
-              </Field>
-            </div>
-            <button onClick={()=>setStep(2)} disabled={!ok1} style={{...S.btnPrimary(ok1),marginTop:20}}>
-              Continuar →
-            </button>
-            <button onClick={resetTotal} style={{...S.btnSec,marginTop:10}}>
-              ← Cambiar tienda
-            </button>
-          </div>
-        )}
+    <section class="origin-section" id="origen" aria-labelledby="origen-title">
+      <div class="origin-inner"><div><div class="eyebrow">Origen Colombia</div><h2 id="origen-title" class="serif">Una ventaja comercial con identidad.</h2></div><div class="origin-copy"><div class="origin-block"><strong>Producto con historia</strong><p>Colombia tiene una tradición fuerte en diseño, confección, color, textura y producto con identidad. En CASA JRP convertimos ese origen en una propuesta comercial para Guatemala.</p></div><div class="origin-block"><strong>Calidad percibida</strong><p>El diferencial no es solo importar. Es presentar bien: fotografía, narrativa, precio y atención. Lo colombiano debe sentirse deseable, cercano y competitivo.</p></div><div class="origin-block dark"><strong>Propósito sin sobreactuar</strong><p>Trabajamos con proveedores y talleres en Colombia donde participan mujeres cabeza de hogar, impulsando una cadena más humana, consciente y con oportunidad comercial real.</p></div></div></div>
+    </section>
 
-        {/* Step 2: Producto — precio en GTQ */}
-        {step===2&&(
-          <div>
-            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Producto</h2>
-            <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Busca por nombre, código, tipo o color.</p>
-            <Field label="Buscar producto" T={T}>
-              <ProductoSelector value={prodId} onChange={v=>{setProdId(v);setTalla("");}} productos={productos} T={T}/>
-            </Field>
-            {prod&&(
-              <div style={{background:"#FFF",borderRadius:12,padding:14,border:`1.5px solid ${T.gold}`,display:"flex",gap:12,alignItems:"center",marginBottom:14}}>
-                <div style={{width:46,height:46,borderRadius:10,background:T.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
-                  {(prod.tipo_prenda||prod.tipo||"")===("Set"||"Body")?"👗":"👕"}
-                </div>
-                <div>
-                  <p style={{margin:"0 0 5px",fontWeight:700,fontSize:14,color:T.dark}}>{prod.descripcion||prod.nombre}</p>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    <span style={{background:T.mid+"18",color:T.mid,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{prod.tipo_prenda||prod.tipo}</span>
-                    {/* CAMBIO: precio GTQ */}
-                    <span style={{background:T.gold+"18",color:T.gold,fontSize:11,fontWeight:700,padding:"2px 9px",borderRadius:20}}>{fmtGTQ(precioGTQ)}</span>
-                    {prod.patron&&<span style={{background:T.border,color:T.mid,fontSize:11,padding:"2px 9px",borderRadius:20}}>{prod.patron}</span>}
-                  </div>
-                </div>
-              </div>
-            )}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:14}}>
-              <Field label="Talla" T={T}>
-                <Sel value={talla} onChange={setTalla} placeholder="Talla..." disabled={!prod} opts={tallasDisp} T={T}/>
-              </Field>
-              <Field label="Cantidad" T={T}>
-                <Sel value={cantidad} onChange={setCant} placeholder="Cant." opts={["1","2","3","4","5","6","7","8","9","10"]} T={T}/>
-              </Field>
-            </div>
-            <Field label="Cupón de descuento" optional hint="Solo si el cliente lo tiene" T={T}>
-              <input value={cupon} onChange={e=>setCupon(e.target.value.toUpperCase())} placeholder="Ej: BIENVENIDA10" style={S.inpSt(!!cupon)}/>
-            </Field>
-            {prod&&talla&&(
-              <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
-                <SummaryRow k="Producto" v={`${prod.descripcion||prod.nombre} — ${talla} x ${cantidad}`} T={T}/>
-                {/* CAMBIO: precio y subtotal en GTQ */}
-                <SummaryRow k="Precio unitario" v={fmtGTQ(precioGTQ)} T={T}/>
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:10,alignItems:"baseline"}}>
-                  <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>SUBTOTAL</span>
-                  <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:22,color:"#FAF7F2"}}>{fmtGTQ(subtotalGTQ)}</p>
-                </div>
-              </div>
-            )}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:20}}>
-              <button onClick={()=>setStep(1)} style={S.btnSec}>← Atrás</button>
-              <button onClick={()=>setStep(3)} disabled={!ok2} style={S.btnPrimary(ok2)}>Continuar →</button>
-            </div>
-          </div>
-        )}
+    <section id="marcas" aria-labelledby="marcas-title">
+      <div class="section-head"><h2 id="marcas-title" class="serif">Marcas como prueba de operación.</h2><p>Las marcas propias no son el centro del homepage; son evidencia de que CASA JRP puede construir catálogo, identidad, producto y experiencia de compra para distintas audiencias.</p></div>
+      <div class="brand-grid"><a class="brand-card" href="/catalogo" aria-label="Entrar al catálogo Orkia"><img src="https://img.casajrp.com/orkia/10001_frente.webp" alt="Orkia, ropa femenina colombiana" loading="lazy" decoding="async"><div class="brand-content"><div class="meta">Ropa femenina colombiana</div><h3 class="serif">Orkia</h3><p>Prendas femeninas, versátiles y fáciles de combinar. Catálogo propio para clientas finales.</p><div class="brand-bottom"><span class="brand-price">Desde Q149</span><span class="enter">Entrar</span></div></div></a><a class="brand-card nudo" href="/nudo" aria-label="Conocer Nudo próximamente"><span class="badge">Próximamente</span><div class="nudo-mark">NUDO</div><div class="brand-content"><div class="meta">Ropa interior masculina</div><h3 class="serif">Nudo</h3><p>Una próxima línea masculina con estética sobria, producto esencial y enfoque comercial propio.</p><div class="brand-bottom"><span class="brand-price">Desde Q129</span><span class="enter">Ver pronto</span></div></div></a></div>
+    </section>
+  </main>
 
-        {/* Step 3: Pago — zona dinámica + total GTQ */}
-        {step===3&&(
-          <div>
-            <h2 style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:T.dark,margin:"0 0 4px"}}>Pago</h2>
-            <p style={{fontSize:13,color:T.mid,margin:"0 0 20px"}}>Confirma el pago antes de empacar.</p>
-            <Field label="Método de pago" T={T}>
-              <Sel value={pago} onChange={v=>{setPago(v);setBanco("");}} placeholder="¿Cómo paga?" opts={PAGOS} T={T}/>
-            </Field>
-            {pago==="Transferencia bancaria"&&(
-              <Field label="Banco desde donde transfiere" hint="Nos ayuda a conocer mejor a nuestros clientes" T={T}>
-                <Sel value={banco} onChange={setBanco} placeholder="Selecciona el banco..." opts={BANCOS} T={T}/>
-              </Field>
-            )}
-            <Field label="¿Comprobante recibido?" T={T}>
-              <Sel value={comp} onChange={setComp} placeholder="Estado del pago..."
-                opts={[{v:"Si",l:"Sí, ya recibí el comprobante"},{v:"No",l:"No, pendiente de pago"}]} T={T}/>
-            </Field>
+  <footer><div class="footer-inner"><div><div class="footer-logo">CASA JRP<span class="dot">.</span></div><div class="footer-meta">Guatemala · Producto colombiano · © 2026</div></div><div class="footer-links"><a href="#importar">Importar</a><a href="#origen">Origen</a><a href="/catalogo">Orkia</a><a href="/nudo">Nudo</a></div></div></footer>
 
-            {/* CAMBIO: zona de envío dinámica desde AS */}
-            <Field label="Zona de envío" T={T}>
-              {zonasList.length > 0 ? (
-                <Sel value={zonaGT} onChange={setZonaGT} placeholder="Selecciona zona de entrega..." opts={zonasOpts} T={T}/>
-              ) : (
-                <p style={{fontSize:12,color:T.mid,fontStyle:"italic",padding:"10px 0"}}>Cargando zonas de envío...</p>
-              )}
-            </Field>
+  <div class="modal" id="leadModal" aria-hidden="true" role="dialog" aria-labelledby="lead-modal-title">
+    <div class="modal-card"><button class="modal-close" type="button" data-close-lead aria-label="Cerrar">×</button><div class="eyebrow">Revisión directa</div><h2 id="lead-modal-title" class="serif">Evaluar mi oportunidad</h2><p>Déjanos el contexto básico y te contactamos directamente para revisar la oportunidad.</p><form class="lead-form" id="leadFormModal"><input class="hidden-field" type="text" name="website" tabindex="-1" autocomplete="off"><div class="form-grid"><div class="field"><label>Nombre *</label><input name="nombre" required autocomplete="name" placeholder="Tu nombre"></div><div class="field"><label>Contacto *</label><input name="contacto" required placeholder="WhatsApp o correo para responderte"></div><div class="field"><label>Empresa o proyecto <span class="optional">opcional</span></label><input name="empresa" autocomplete="organization" placeholder="Empresa o proyecto"></div><div class="field"><label>Categoría *</label><select name="categoria" required><option value="">Selecciona</option><option>Moda femenina</option><option>Moda masculina</option><option>Textiles</option><option>Confección</option><option>Accesorios</option><option>Producto colombiano</option><option>Otro</option></select></div><div class="field full"><label>Oportunidad *</label><textarea name="mensaje" required placeholder="Cuéntanos brevemente qué quieres traer, vender, validar o explorar desde Colombia."></textarea></div></div><div class="form-actions"><button class="btn btn-primary" type="submit">Enviar para evaluación</button><span class="form-status" data-form-status>Usaremos tus datos solo para responder esta solicitud.</span></div><div class="required-note">* Campos necesarios para poder contactarte.</div></form></div>
+  </div>
 
-            {prod&&(
-              <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
-                <p style={{margin:"0 0 12px",fontSize:10,letterSpacing:"0.18em",color:"#6B4C33",textTransform:"uppercase"}}>Resumen final</p>
-                <SummaryRow k="Tienda"   v={T.nombre} T={T}/>
-                <SummaryRow k="Cliente"  v={nombre} T={T}/>
-                <SummaryRow k="Ciudad"   v={`${ciudad}${zonaGT?" — "+zonaGT:""}`} T={T}/>
-                <SummaryRow k="Producto" v={`${prod.descripcion||prod.nombre} — ${talla} x ${cantidad}`} T={T}/>
-                {cupon&&<SummaryRow k="Cupón" v={cupon} T={T}/>}
-                {/* CAMBIO: todo en GTQ */}
-                <SummaryRow k="Subtotal" v={fmtGTQ(subtotalGTQ)} T={T}/>
-                {costoEnvio>0&&<SummaryRow k="Envío" v={fmtGTQ(costoEnvio)} T={T}/>}
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:12,alignItems:"baseline"}}>
-                  <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>TOTAL A COBRAR</span>
-                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2"}}>{fmtGTQ(totalGTQ)}</span>
-                </div>
-              </div>
-            )}
+  <script>
+    const LEAD_ENDPOINT = 'https://script.google.com/macros/s/AKfycbzAcCyvNpc9unPBSz1ZRBgYNoDCGw7urpWGcHXvcRP56fGj7BEVhrEKIhloFT8VA1jSMQ/exec';
+    const modal = document.getElementById('leadModal');
+    function openLead(){ modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); setTimeout(()=>modal.querySelector('input[name="nombre"]')?.focus(),80); }
+    function closeLead(){ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); }
+    document.querySelectorAll('[data-open-lead]').forEach(btn=>btn.addEventListener('click', openLead));
+    document.querySelectorAll('[data-close-lead]').forEach(btn=>btn.addEventListener('click', closeLead));
+    modal.addEventListener('click', e=>{ if(e.target===modal) closeLead(); });
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeLead(); });
 
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:20}}>
-              <button onClick={()=>setStep(2)} style={S.btnSec}>← Atrás</button>
-              <button onClick={confirmar} disabled={!ok3||saving} style={S.btnAccent(ok3&&!saving)}>
-                {saving?"Guardando...":"Confirmar"}
-              </button>
-            </div>
-            {saving&&<p style={{textAlign:"center",fontSize:12,color:T.mid,marginTop:12}}>Enviando al Sheets, no cierres la app...</p>}
-          </div>
-        )}
-
-      </div>
-    </div>
-  );
-}
-
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(React.createElement(NadiaApp));
+    function payloadFrom(form){
+      const fd = new FormData(form);
+      return {
+        marca:'casajrp',
+        accion:'nuevo_lead',
+        nombre:(fd.get('nombre')||'').toString().trim(),
+        empresa:(fd.get('empresa')||'').toString().trim(),
+        contacto:(fd.get('contacto')||'').toString().trim(),
+        categoria:(fd.get('categoria')||'').toString().trim(),
+        mensaje:(fd.get('mensaje')||'').toString().trim(),
+        website:(fd.get('website')||'').toString().trim(),
+        url:location.href,
+        ts:new Date().toISOString()
+      };
+    }
+    function setStatus(form,msg,cls=''){
+      const el=form.querySelector('[data-form-status]'); if(!el) return; el.className='form-status '+cls; el.textContent=msg;
+    }
+    async function submitLead(e){
+      e.preventDefault();
+      const form=e.currentTarget;
+      const data=payloadFrom(form);
+      if(data.website) return;
+      setStatus(form,'Enviando…');
+      try{
+        if(!LEAD_ENDPOINT){
+          const pending=JSON.parse(localStorage.getItem('casajrp_pending_leads')||'[]');
+          pending.push(data); localStorage.setItem('casajrp_pending_leads', JSON.stringify(pending).slice(0,120000));
+          setStatus(form,'Demo guardado localmente. Falta conectar endpoint para capturar leads reales.','ok');
+          return;
+        }
+        const res=await fetch(LEAD_ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(data)});
+        if(!res.ok) throw new Error('Respuesta no OK');
+        setStatus(form,'Listo. Recibimos tu solicitud y te contactaremos.','ok');
+        form.reset();
+      }catch(err){
+        setStatus(form,'No pudimos enviar. Intenta de nuevo en unos minutos.','err');
+      }
+    }
+    document.querySelectorAll('#leadFormInline,#leadFormModal').forEach(f=>f.addEventListener('submit', submitLead));
   </script>
 </body>
 </html>
