@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
   <title>ORKIA — Catálogo</title>
-  <!-- ORKIA Producción v10 QA Paula: selección WhatsApp + categorías mobile + copy actualizado. -->
+  <!-- ORKIA Producción v15: bugfix click delegation + sheets inert. -->
   <meta name="description" content="Moda femenina colombiana. Prendas versátiles para mujeres como tú." />
   <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
   <link rel="preload" as="image" href="https://img.casajrp.com/orkia/banners/home-hero-desktop.webp" media="(min-width: 721px)" fetchpriority="high">
@@ -231,6 +231,13 @@
       .filter-sheet-title{font-size:31px}
       .filter-sheet-sub{font-size:12.5px}
     }
+
+
+    /* ORKIA v15 bugfix: los sheets cerrados quedan realmente inertes.
+       Evita que un drawer fuera de pantalla pueda capturar hit-testing/clics. */
+    .sheet:not(.show){pointer-events:none!important;visibility:hidden!important}
+    .sheet.show{pointer-events:auto!important;visibility:visible!important}
+    .sheet-backdrop:not(.show){pointer-events:none!important}
 
   </style>
 </head>
@@ -479,6 +486,7 @@
     document.addEventListener('DOMContentLoaded', ()=>{ initPhotoLightbox(); init(); });
     function init(){
       bindGlobalEvents();
+      bindCatalogDelegatedClicks();
       updateBagUI();
       hydrateFastCatalog();
       // El refresh real corre aparte: no bloquea el primer producto visible.
@@ -506,6 +514,62 @@
         renderGrid();
       });
     }
+
+    // ORKIA v15 bugfix: activación delegada de cards.
+    // Antes cada card recibía su propio listener después de renderGrid(). Si después de abrir/cerrar
+    // la selección el navegador quedaba con hit-testing raro, algunos clics podían no llegar al
+    // listener de la card esperada. Esta capa escucha en document en capture y resuelve la card real
+    // bajo el toque/clic, incluso después de re-renderizados o sheets.
+    let _cardPointerDown = null;
+    let _lastCardActivation = {key:'', ts:0};
+
+    function bindCatalogDelegatedClicks(){
+      document.addEventListener('pointerdown', e=>{
+        const card = e.target && e.target.closest ? e.target.closest('.product-card') : null;
+        if(!card || e.target.closest('.sheet') || e.target.closest('.photo-lightbox')) return;
+        _cardPointerDown = {x:e.clientX, y:e.clientY, key:card.dataset.key || '', target:e.target};
+      }, true);
+
+      document.addEventListener('pointerup', e=>{
+        if(!_cardPointerDown) return;
+        const dx = Math.abs((e.clientX || 0) - _cardPointerDown.x);
+        const dy = Math.abs((e.clientY || 0) - _cardPointerDown.y);
+        const moved = dx > 10 || dy > 10;
+        const isTouchLike = e.pointerType === 'touch' || e.pointerType === 'pen';
+        if(isTouchLike && !moved) activateCatalogCardFromEvent(e, 'pointerup');
+        _cardPointerDown = null;
+      }, true);
+
+      document.addEventListener('click', e=>{
+        activateCatalogCardFromEvent(e, 'click');
+      }, true);
+    }
+
+    function activateCatalogCardFromEvent(e, source){
+      if(!e || !e.target || !e.target.closest) return false;
+      if(e.target.closest('.sheet') || e.target.closest('.photo-lightbox')) return false;
+      const card = e.target.closest('.product-card');
+      if(!card) return false;
+      if(e.target.closest('.card-color-dot')) return false;
+
+      const key = card.dataset.key;
+      if(!key) return false;
+      const now = Date.now();
+      if(_lastCardActivation.key === key && now - _lastCardActivation.ts < 450) return true;
+      _lastCardActivation = {key, ts:now};
+
+      const group = allProducts.find(x=>String(x.sku_key)===String(key));
+      if(!group) return false;
+
+      e.preventDefault();
+      e.stopPropagation();
+      if(typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+
+      if(e.target.closest('[data-action="notice"]')) { openNotice(group); return true; }
+      openProductGroup(group);
+      return true;
+    }
+
 
     function hydrateFastCatalog(){
       const cached = readCatalogCache();
@@ -1013,11 +1077,12 @@
           const priceEl = card.querySelector('.price'); if(priceEl && dot.dataset.price) priceEl.textContent = dot.dataset.price;
           $$('.card-color-dot', card).forEach(d=>d.classList.toggle('active', d===dot));
         }));
-        card.addEventListener('click', e=>{
+        card.addEventListener('keydown', e=>{
+          if(e.key !== 'Enter' && e.key !== ' ') return;
           const key = card.dataset.key;
           const group = allProducts.find(x=>String(x.sku_key)===key);
           if(!group) return;
-          if(e.target.closest('[data-action="notice"]')) { openNotice(group); return; }
+          e.preventDefault();
           openProductGroup(group);
         });
       });
@@ -1364,7 +1429,7 @@
         registerClick(selectedVariant,'AGREGAR_BOLSA');
         addToBag(selectedVariant, g, selectedSize);
         closeSheets();
-        openBagSheet();
+        requestAnimationFrame(()=>openBagSheet());
       });
 
       const gallery = $('#gallery'); let startX=0;
@@ -1396,34 +1461,24 @@
       });
     }
 
-    let _scrollLockCount = 0;
-    let _savedScrollY = 0;
+    // ORKIA v14 bugfix: se desactiva el scroll-lock del body.
+    // Motivo: en algunos navegadores el body con position:fixed/top negativo dejaba el grid
+    // con coordenadas de layout desfasadas tras cerrar un sheet; las cards se veían bien,
+    // pero el hit-testing/click quedaba roto. Los sheets siguen siendo fixed y tienen scroll interno.
     function lockScroll(){
-      if(_scrollLockCount === 0){
-        _savedScrollY = window.scrollY || window.pageYOffset || 0;
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${_savedScrollY}px`;
-        document.body.style.left = '0';
-        document.body.style.right = '0';
-        document.body.style.width = '100%';
-      }
-      _scrollLockCount++;
+      document.documentElement.classList.add('sheet-open');
     }
     function unlockScroll(){
-      _scrollLockCount = Math.max(0, _scrollLockCount - 1);
-      if(_scrollLockCount === 0){
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.left = '';
-        document.body.style.right = '';
-        document.body.style.width = '';
-        // Restaura exactamente la posición de scroll que tenía antes de bloquear,
-        // evitando el desfase entre el layout visual y las coordenadas reales del DOM
-        // que rompía el hit-testing de clics en las cards tras cerrar un sheet.
-        window.scrollTo(0, _savedScrollY);
-      }
+      document.documentElement.classList.remove('sheet-open');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
     }
     function showSheet(sheet){
+      if(!sheet) return;
       const backdrop = $('#backdrop');
       backdrop.style.display = '';
       void backdrop.offsetHeight;
@@ -1437,6 +1492,11 @@
       backdrop.style.display = 'none';
       $$('.sheet').forEach(s=>s.classList.remove('show'));
       unlockScroll();
+      // Fuerza un reflow limpio después de cerrar el sheet, sin tocar scrollY.
+      requestAnimationFrame(()=>{
+        void document.documentElement.offsetHeight;
+        void document.body.offsetHeight;
+      });
     }
   </script>
 </body>
