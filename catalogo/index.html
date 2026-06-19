@@ -1410,15 +1410,21 @@
         void document.body.offsetHeight;
       }
     }
-    function showSheet(sheet){ $('#backdrop').classList.add('show'); sheet.classList.add('show'); lockScroll(); }
+    function showSheet(sheet){
+      const backdrop = $('#backdrop');
+      backdrop.style.display = '';
+      // Forzar reflow antes de añadir la clase para que la transición de opacidad se vea.
+      void backdrop.offsetHeight;
+      backdrop.classList.add('show');
+      sheet.classList.add('show');
+      lockScroll();
+    }
     function closeSheets(){
       const backdrop = $('#backdrop');
       backdrop.classList.remove('show');
-      backdrop.style.pointerEvents = 'none';
+      backdrop.style.display = 'none';
       $$('.sheet').forEach(s=>s.classList.remove('show'));
       unlockScroll();
-      // Limpia el inline style tras la transición para no interferir con la próxima apertura.
-      setTimeout(()=>{ backdrop.style.pointerEvents = ''; }, 260);
     }
   </script>
 </body>
