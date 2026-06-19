@@ -1397,23 +1397,35 @@
     }
 
     let _scrollLockCount = 0;
+    let _savedScrollY = 0;
     function lockScroll(){
+      if(_scrollLockCount === 0){
+        _savedScrollY = window.scrollY || window.pageYOffset || 0;
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${_savedScrollY}px`;
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+        document.body.style.width = '100%';
+      }
       _scrollLockCount++;
-      document.body.style.overflow = 'hidden';
     }
     function unlockScroll(){
       _scrollLockCount = Math.max(0, _scrollLockCount - 1);
       if(_scrollLockCount === 0){
-        document.body.style.overflow = '';
-        // Fuerza un reflow para que iOS Safari libere correctamente el hit-testing
-        // de los elementos bajo el overlay cerrado (evita el bug de "clics fantasma").
-        void document.body.offsetHeight;
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+        document.body.style.width = '';
+        // Restaura exactamente la posición de scroll que tenía antes de bloquear,
+        // evitando el desfase entre el layout visual y las coordenadas reales del DOM
+        // que rompía el hit-testing de clics en las cards tras cerrar un sheet.
+        window.scrollTo(0, _savedScrollY);
       }
     }
     function showSheet(sheet){
       const backdrop = $('#backdrop');
       backdrop.style.display = '';
-      // Forzar reflow antes de añadir la clase para que la transición de opacidad se vea.
       void backdrop.offsetHeight;
       backdrop.classList.add('show');
       sheet.classList.add('show');
