@@ -791,8 +791,13 @@
     }
     function sendBagToWhatsApp(){
       if(!bagItems.length) return;
-      const lines = bagItems.map((item,idx)=>`${idx+1}. *${item.descripcion}*\nColor: ${item.color}\nTalla: ${item.talla}\nPrecio: ${money(item.precio_gtq)}\nCódigo interno: #${item.codigo}${item.qty>1 ? `\nCantidad: ${item.qty}` : ''}`).join('\n\n');
-      const msg = `Hola Orkia 👋 Me interesa esta selección de prendas:\n\n${lines}\n\n¿Me ayudas a finalizar la compra?`;
+      const esUnica = t => String(t||'').toLowerCase().includes('confirmar') || String(t||'').toLowerCase().includes('unica') || String(t||'').toLowerCase().includes('única');
+      const lines = bagItems.map((item,idx)=>{
+        const tallaLinea = esUnica(item.talla) ? '' : `\n📏 Talla: ${item.talla}`;
+        return `*${idx+1}. ${item.descripcion}*\n🎨 Color: ${item.color}${tallaLinea}\n💰 Precio: ${money(item.precio_gtq)}\n🏷️ Código: #${item.codigo}${item.qty>1 ? `\n🔢 Cantidad: ${item.qty}` : ''}`;
+      }).join('\n\n———\n\n');
+      const total = bagItems.reduce((s,i)=>s+(Number(i.precio_gtq)||0)*(Number(i.qty)||1),0);
+      const msg = `Hola Orkia 👋 Quiero hacer este pedido (${bagItems.length} ${bagItems.length===1?'prenda':'prendas'}):\n\n${lines}\n\n———\n\n*Total estimado: ${money(total)}*\n\n¿Me ayudas a confirmar disponibilidad y coordinar el envío?`;
       bagItems.forEach(item=>registerClick({id_producto:item.id_producto, descripcion:item.descripcion}, 'ENVIAR_BOLSA_WA'));
       window.open(`https://wa.me/${WA_NUMBER}?text=${encode(msg)}`,'_blank','noopener');
     }
