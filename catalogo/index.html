@@ -1396,8 +1396,30 @@
       });
     }
 
-    function showSheet(sheet){ $('#backdrop').classList.add('show'); sheet.classList.add('show'); document.body.style.overflow='hidden'; }
-    function closeSheets(){ $('#backdrop').classList.remove('show'); $$('.sheet').forEach(s=>s.classList.remove('show')); document.body.style.overflow=''; }
+    let _scrollLockCount = 0;
+    function lockScroll(){
+      _scrollLockCount++;
+      document.body.style.overflow = 'hidden';
+    }
+    function unlockScroll(){
+      _scrollLockCount = Math.max(0, _scrollLockCount - 1);
+      if(_scrollLockCount === 0){
+        document.body.style.overflow = '';
+        // Fuerza un reflow para que iOS Safari libere correctamente el hit-testing
+        // de los elementos bajo el overlay cerrado (evita el bug de "clics fantasma").
+        void document.body.offsetHeight;
+      }
+    }
+    function showSheet(sheet){ $('#backdrop').classList.add('show'); sheet.classList.add('show'); lockScroll(); }
+    function closeSheets(){
+      const backdrop = $('#backdrop');
+      backdrop.classList.remove('show');
+      backdrop.style.pointerEvents = 'none';
+      $$('.sheet').forEach(s=>s.classList.remove('show'));
+      unlockScroll();
+      // Limpia el inline style tras la transición para no interferir con la próxima apertura.
+      setTimeout(()=>{ backdrop.style.pointerEvents = ''; }, 260);
+    }
   </script>
 </body>
 </html>
