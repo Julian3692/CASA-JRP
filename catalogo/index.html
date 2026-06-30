@@ -686,7 +686,8 @@
         // No validamos imágenes una por una en el navegador para evitar una precarga pesada.
         const rawProducts = (data.productos || []).filter(p => p && (p.foto_publicada === true || String(p.foto_publicada).toUpperCase() === 'TRUE'));
 
-        writeCatalogCache(rawProducts);
+        // v23: no escribimos cache local en la carga inicial.
+        // El catálogo visible debe venir del Apps Script en vivo para evitar inventario viejo.
         setCatalog(rawProducts, {source:'Apps Script en vivo · Foto_Publicada', total:Number(data.total || rawProducts.length || 0), keepLoader:true});
       }catch(err){
         console.warn('[ORKIA] Carga inicial en vivo no disponible. No se muestran productos semilla para evitar inventario falso.', err);
@@ -1051,7 +1052,7 @@
       track.innerHTML = defs.map(d=>`
         <button class="category-card" type="button" data-category="${safe(d.tipo)}" aria-label="Ver ${safe(d.tipo)}s">
           <div class="category-photo-stack" aria-hidden="true">
-            ${d.imgs.map((img,i)=>`<img class="cat-img ${i===0?'active':''}" src="${safe(img)}" alt="" loading="${i===0?'eager':'lazy'}" onerror="this.remove()">`).join('')}
+            ${d.imgs.map((img,i)=>`<img class="cat-img ${i===0?'active':''}" src="${safe(img)}" alt="" loading="lazy" decoding="async" fetchpriority="low" onerror="this.remove()">`).join('')}
           </div>
           <div class="category-overlay">
             <span>${safe(d.tipo)}s</span>
@@ -1274,7 +1275,7 @@
       return `<article class="product-card ${sold?'is-soldout':''}" data-key="${safe(g.sku_key)}" tabindex="0" role="button" aria-label="Ver ${safe(g.descripcion)}">
         <div class="imgbox">
           ${sold ? '<div class="badge">Agotado</div>' : ''}
-          <img src="${safe(display.url_imagen || g.url_imagen)}" alt="${safe(g.descripcion)}" loading="${i<4?'eager':'lazy'}" ${i<4?'fetchpriority="auto"':'fetchpriority="low"'} decoding="async" data-fallbacks="${safe(buildCardFallbacks(g, display).join('|'))}" onerror="handleImgError(this)">
+          <img src="${safe(display.url_imagen || g.url_imagen)}" alt="${safe(g.descripcion)}" loading="${i<4?'eager':'lazy'}" ${i<4?'fetchpriority="auto"':'fetchpriority="low"'} decoding="async" data-fallbacks="" onerror="handleImgError(this)">
         </div>
         <div class="card-body">
           <div class="type">${safe(g.tipo_prenda || 'Prenda')}</div>
