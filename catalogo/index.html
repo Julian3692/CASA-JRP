@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
   <title>ORKIA — Catálogo</title>
-  <!-- ORKIA Producción v15: bugfix click delegation + sheets inert. -->
+  <!-- ORKIA Producción v24: performance segura.
+       Cambios v24: loader con try/finally (nunca queda bloqueando clics), se elimina display:none
+       del body en carga inicial (arregla lazy loading latente), supresión de ghost click en touch,
+       fallbacks lado/detalle conectados en grid, fetchpriority corregido, showcase de categorías
+       solo con fotos frontales (máx 2), limpieza de código muerto (validación masiva, cache local,
+       semilla, fast slots), fallback vh para dvh, overscroll contain en sheets. -->
   <meta name="description" content="Moda femenina colombiana. Prendas versátiles para mujeres como tú." />
   <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
   <link rel="preload" as="image" href="https://img.casajrp.com/orkia/banners/home-hero-desktop.webp" media="(min-width: 721px)" fetchpriority="high">
@@ -286,10 +291,20 @@
     .orkia-loader-text{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#77736F;font-weight:600}
     html.initial-loading,body.initial-loading{height:100%;overflow:hidden!important;overscroll-behavior:none}
     body.initial-loading{background:#FAF8F6}
-    body.initial-loading > :not(#orkiaLoader){display:none!important}
     body.initial-loading #orkiaLoader{display:flex!important}
     @keyframes orkiaPulse{0%,100%{opacity:.28;transform:translateY(0) scale(.82)}45%{opacity:1;transform:translateY(-5px) scale(1.08)}}
     .catalog-rendering #grid{opacity:.72;transition:opacity .12s ease}
+
+    /* ORKIA v24: fallback vh para navegadores sin soporte dvh (WebViews Android viejos).
+       El segundo valor (dvh) gana en navegadores modernos; el primero (vh) queda como respaldo. */
+    .sheet{max-height:92vh;max-height:92dvh}
+    .photo-lightbox-img{max-height:88vh;max-height:88dvh}
+    @media (max-width:720px){
+      .sheet{max-height:96vh;max-height:96dvh}
+      .photo-lightbox-img{max-height:82vh;max-height:82dvh}
+    }
+    /* ORKIA v24: el scroll interno de un sheet no encadena al fondo de la página. */
+    .product-sheet-content,.bag-sheet,.filter-sheet-content,.search-sheet-content,.notice-sheet{overscroll-behavior:contain}
 
   </style>
 </head>
@@ -491,16 +506,11 @@
     const MARCA = 'orkia';
     const WA_NUMBER = '50248304736';
     const UTM = new URLSearchParams(window.location.search).get('utm') || 'directo';
-    const CACHE_KEY = 'orkia_catalog_cache_v22_foto_publicada';
     const BAG_KEY = 'orkia_seleccion_whatsapp_v1';
     const BAG_KEY_LEGACY = 'orkia_bolsa_whatsapp_v1';
-    const CACHE_TTL_MS = 1000 * 60 * 60 * 6;
-    // v22: El catálogo visible sale únicamente de Apps Script.
+    // v24: El catálogo visible sale únicamente de Apps Script en vivo.
     // Apps Script ya filtra Foto_Publicada = TRUE, así el front no valida foto por foto.
-    const SEED_VARIANTS = [];
-    const FAST_SLOT_COUNT = 4;
-    let fastSlotKeys = [];
-    let fastSlotInternalIds = [];
+    // Se eliminaron cache local, semilla y fast slots: nunca se muestra inventario falso.
     let allVariants = [];
     let allProducts = [];
     let currentFilter = '__nuevo';
@@ -512,7 +522,7 @@
     let catalogSource = 'inicial';
     let rawStats = {recibidos:0, urlsConFoto:0, sinUrl:0, visiblesIniciales:0, modelos:0};
     const INITIAL_CATALOG_TIMEOUT_MS = 9000;
-    const MIN_INITIAL_LOADER_MS = 900;
+    const MIN_INITIAL_LOADER_MS = 300;
 
     const $ = (sel, root=document) => root.querySelector(sel);
     const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
@@ -549,17 +559,25 @@
       }, delay);
     }
     function nextFrame(){ return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))); }
+    // v24: try/finally garantiza que el loader (z-index 500, opaco) jamás quede
+    // cubriendo la página si renderGrid lanza una excepción. Antes, un error a mitad
+    // de render dejaba el catálogo "muerto" a los clics.
     async function safeRenderGrid(opts={}){
       showOrkiaLoader(opts.text || 'Actualizando catálogo');
       document.documentElement.classList.add('catalog-rendering');
       closeSheets({keepLoader:true});
-      await nextFrame();
-      renderGrid();
-      void document.body.offsetHeight;
-      if(opts.scroll){ document.getElementById('nuevo')?.scrollIntoView({behavior:'smooth', block:'start'}); }
-      await nextFrame();
-      document.documentElement.classList.remove('catalog-rendering');
-      hideOrkiaLoader(120);
+      try{
+        await nextFrame();
+        renderGrid();
+        void document.body.offsetHeight;
+        if(opts.scroll){ document.getElementById('nuevo')?.scrollIntoView({behavior:'smooth', block:'start'}); }
+        await nextFrame();
+      }catch(err){
+        console.error('[ORKIA] renderGrid falló, se libera el loader para no bloquear a la clienta.', err);
+      }finally{
+        document.documentElement.classList.remove('catalog-rendering');
+        hideOrkiaLoader(120);
+      }
     }
 
     function iconTruck(){return '<svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>'}
@@ -579,6 +597,7 @@
         localStorage.removeItem('orkia_catalog_cache_v2');
         localStorage.removeItem('orkia_catalog_cache_v1');
         localStorage.removeItem('orkia_catalog_cache_v19_live_only');
+        localStorage.removeItem('orkia_catalog_cache_v22_foto_publicada');
       }catch(err){}
     }
 
@@ -611,6 +630,11 @@
     // bajo el toque/clic, incluso después de re-renderizados o sheets.
     let _cardPointerDown = null;
     let _lastCardActivation = {key:'', ts:0};
+    // v24: cuando el modal se abre en pointerup (touch), el navegador dispara ~10ms
+    // después un click sintético en las mismas coordenadas, que aterriza DENTRO del
+    // sheet recién abierto (podía seleccionar un color, mover la galería o cerrar).
+    // Se suprime ese click fantasma durante una ventana corta.
+    let _suppressNextClickUntil = 0;
 
     function bindCatalogDelegatedClicks(){
       document.addEventListener('pointerdown', e=>{
@@ -625,11 +649,21 @@
         const dy = Math.abs((e.clientY || 0) - _cardPointerDown.y);
         const moved = dx > 10 || dy > 10;
         const isTouchLike = e.pointerType === 'touch' || e.pointerType === 'pen';
-        if(isTouchLike && !moved) activateCatalogCardFromEvent(e, 'pointerup');
+        if(isTouchLike && !moved){
+          const activated = activateCatalogCardFromEvent(e, 'pointerup');
+          if(activated) _suppressNextClickUntil = Date.now() + 500;
+        }
         _cardPointerDown = null;
       }, true);
 
       document.addEventListener('click', e=>{
+        if(Date.now() < _suppressNextClickUntil){
+          _suppressNextClickUntil = 0;
+          e.preventDefault();
+          e.stopPropagation();
+          if(typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+          return;
+        }
         activateCatalogCardFromEvent(e, 'click');
       }, true);
     }
@@ -682,7 +716,7 @@
       showOrkiaLoader('Cargando catálogo');
       try{
         const data = await withTimeout(fetchLiveCatalog(), INITIAL_CATALOG_TIMEOUT_MS);
-        // v22: Apps Script ya devuelve únicamente productos con Foto_Publicada = TRUE.
+        // v24: Apps Script ya devuelve únicamente productos con Foto_Publicada = TRUE.
         // No validamos imágenes una por una en el navegador para evitar una precarga pesada.
         const rawProducts = (data.productos || []).filter(p => p && (p.foto_publicada === true || String(p.foto_publicada).toUpperCase() === 'TRUE'));
 
@@ -699,12 +733,6 @@
       }
     }
 
-
-    function hydrateFastCatalog(){
-      // v19: no se hidrata desde cache ni semilla en producción.
-      // Si Apps Script no responde, se muestra reintento para no enseñar inventario falso.
-      showCatalogLoadError();
-    }
 
 
     function showCatalogLoadError(){
@@ -725,33 +753,6 @@
       updateDebugBox();
     }
 
-    function readCatalogCache(){
-      try{
-        const raw = localStorage.getItem(CACHE_KEY);
-        if(!raw) return null;
-        const parsed = JSON.parse(raw);
-        if(!parsed || !Array.isArray(parsed.productos)) return null;
-        if(Date.now() - Number(parsed.ts || 0) > CACHE_TTL_MS) return null;
-        return parsed.productos;
-      }catch(err){ return null; }
-    }
-
-    function writeCatalogCache(productos){
-      try{
-        const slim = productos
-          .filter(p => p && (p.url_imagen || p.url_imagen_2 || p.url_imagen_3))
-          .map(p => ({
-            id_producto:p.id_producto, id_proveedor:p.id_proveedor, ref_proveedor:p.ref_proveedor,
-            tipo_prenda:p.tipo_prenda, patron:p.patron, color:p.color,
-            precio_gtq:p.precio_gtq, descripcion:p.descripcion,
-            url_imagen:p.url_imagen, url_imagen_2:p.url_imagen_2, url_imagen_3:p.url_imagen_3,
-            tallas:p.tallas || [], tallas_agotadas:p.tallas_agotadas || [],
-            stock_total:p.stock_total || 0, agotado:!!p.agotado
-          }));
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ts:Date.now(), productos:slim}));
-      }catch(err){ /* si localStorage está lleno o bloqueado, no afecta al cliente */ }
-    }
-
     function setCatalog(rawProducts, opts={}){
       rawProducts = Array.isArray(rawProducts) ? rawProducts : [];
       catalogSource = opts.source || catalogSource;
@@ -760,84 +761,14 @@
       rawStats.sinUrl = rawProducts.filter(p => !(p.url_imagen || p.url_imagen_2 || p.url_imagen_3)).length;
       allVariants = rawProducts.filter(p => p.url_imagen || p.url_imagen_2 || p.url_imagen_3);
       rawStats.visiblesIniciales = allVariants.length;
-      let grouped = groupBySkuProveedor(allVariants);
-      grouped = stabilizeFastSlots(grouped);
-      allProducts = grouped;
-      if(opts.source === 'catálogo semilla' || opts.source === 'cache local') rememberFastSlots();
+      allProducts = groupBySkuProveedor(allVariants);
       rawStats.modelos = allProducts.length;
       buildDynamicFilters();
-      updateHero();
       renderGrid();
       renderCategoryShowcase();
       updateBagUI();
       updateDebugBox();
       if(!opts.keepLoader) hideOrkiaLoader(180);
-    }
-
-    async function refreshCatalogInBackground(){
-      try{
-        const res = await fetch(`${AS_URL}?accion=get_catalogo&marca=${MARCA}`, {cache:'no-store'});
-        const data = await res.json();
-        if(!data.ok) throw new Error(data.error || 'Respuesta no válida');
-        const rawProducts = data.productos || [];
-        writeCatalogCache(rawProducts);
-        showOrkiaLoader('Actualizando catálogo');
-        setCatalog(rawProducts, {source:'Apps Script en vivo', total:Number(data.total || rawProducts.length || 0)});
-      }catch(err){
-        console.warn('[ORKIA] No se pudo refrescar catálogo en background. Se mantiene cache/semilla.', err);
-        updateDebugBox();
-      }
-    }
-
-    function imageLoads(url, timeout=2200){
-      return new Promise(resolve=>{
-        if(!url) return resolve(false);
-        const img = new Image();
-        let done = false;
-        const finish = ok => { if(done) return; done = true; clearTimeout(t); resolve(ok); };
-        const t = setTimeout(()=>finish(false), timeout);
-        img.onload = () => finish(true);
-        img.onerror = () => finish(false);
-        img.src = url;
-      });
-    }
-
-    async function firstValidImage(p){
-      const urls = [p.url_imagen, p.url_imagen_2, p.url_imagen_3].filter(Boolean);
-      for(const url of urls){
-        if(await imageLoads(url)) return url;
-      }
-      return '';
-    }
-
-    async function validateVariantImages(products){
-      const candidates = (Array.isArray(products) ? products : []).filter(p => p && (p.url_imagen || p.url_imagen_2 || p.url_imagen_3));
-      const valid = [];
-      let index = 0;
-      let checked = 0;
-      const total = candidates.length;
-      const workerCount = Math.min(10, total || 1);
-      const workers = Array.from({length: workerCount}, async ()=>{
-        while(index < total){
-          const p = candidates[index++];
-          const validUrl = await firstValidImage(p);
-          checked++;
-          if(checked === 1 || checked === total || checked % 12 === 0){
-            showOrkiaLoader('Preparando prendas');
-          }
-          if(validUrl){
-            const copy = {...p};
-            if(copy.url_imagen !== validUrl){
-              if(copy.url_imagen_2 === validUrl) copy.url_imagen_2 = copy.url_imagen;
-              if(copy.url_imagen_3 === validUrl) copy.url_imagen_3 = copy.url_imagen;
-              copy.url_imagen = validUrl;
-            }
-            valid.push(copy);
-          }
-        }
-      });
-      await Promise.all(workers);
-      return valid.sort((a,b)=>Number(a.id_producto||0)-Number(b.id_producto||0));
     }
 
     function groupBySkuProveedor(variants){
@@ -874,32 +805,6 @@
       });
     }
 
-
-    function rememberFastSlots(){
-      if(fastSlotKeys.length) return;
-      const slots = allProducts.filter(g=>!g.agotado).slice(0, FAST_SLOT_COUNT);
-      fastSlotKeys = slots.map(g=>String(g.sku_key));
-      fastSlotInternalIds = slots.flatMap(g => (g.variants || []).map(v => String(v.id_producto))).filter(Boolean);
-    }
-
-    function stabilizeFastSlots(groups){
-      if(!fastSlotKeys.length && !fastSlotInternalIds.length) return groups;
-      const used = new Set();
-      const score = (g) => {
-        const keyIdx = fastSlotKeys.indexOf(String(g.sku_key));
-        if(keyIdx >= 0) return keyIdx;
-        const ids = (g.variants || []).map(v => String(v.id_producto));
-        const matches = ids.map(id => fastSlotInternalIds.indexOf(id)).filter(i=>i>=0);
-        return matches.length ? Math.min(...matches) : -1;
-      };
-      const pinned = [];
-      groups.forEach(g=>{
-        const idx = score(g);
-        if(idx >= 0){ pinned.push({idx,g}); used.add(g); }
-      });
-      pinned.sort((a,b)=>a.idx-b.idx);
-      return [...pinned.map(x=>x.g), ...groups.filter(g=>!used.has(g))];
-    }
 
     function variantForDisplay(g){
       const colorFilter = advancedFilters.color || searchColorPreference() || '';
@@ -994,7 +899,7 @@
       const list = bagItems.map(item=>{
         const key = bagKeyFor(item);
         return `<article class="bag-item">
-          <img src="${safe(item.imagen || '')}" alt="${safe(item.descripcion)}" onerror="this.style.visibility='hidden'">
+          <img src="${safe(item.imagen || '')}" alt="${safe(item.descripcion)}" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">
           <div><h4>${safe(item.descripcion)}</h4><p>${safe(item.color)} · Talla: ${safe(item.talla)} · ${money(item.precio_gtq)}<br>Código #${safe(item.codigo)}${item.qty>1 ? ` · Cant. ${item.qty}` : ''}</p></div>
           <button class="bag-remove" type="button" data-remove="${safe(key)}" aria-label="Quitar prenda">×</button>
         </article>`;
@@ -1039,10 +944,12 @@
           });
         const seen = new Set();
         const imgs = [];
+        // v24: el showcase usa SOLO fotos frontales (máx 2 por categoría).
+        // Las fotos de lado/detalle se cargan únicamente al abrir el modal de producto.
         groups.forEach(g=>{
           const v = variantForDisplay(g) || g.variants?.[0] || {};
-          [v.url_imagen, v.url_imagen_2, v.url_imagen_3, g.url_imagen].forEach(url=>{
-            if(url && !seen.has(url) && imgs.length < 4){ seen.add(url); imgs.push(url); }
+          [v.url_imagen, g.url_imagen].forEach(url=>{
+            if(url && !seen.has(url) && imgs.length < 2){ seen.add(url); imgs.push(url); }
           });
         });
         if(!imgs.length) return null;
@@ -1064,6 +971,7 @@
 
       if(categoryAutoTimer) clearInterval(categoryAutoTimer);
       categoryAutoTimer = setInterval(()=>{
+        if(document.hidden) return; // v24: no rotar con la pestaña oculta (batería/CPU en mobile)
         $$('.category-card', track).forEach(card=>{
           const imgs = $$('.cat-img', card).filter(img=>img.isConnected);
           if(imgs.length < 2) return;
@@ -1183,14 +1091,9 @@
       const show = new URLSearchParams(window.location.search).get('debug') === '1';
       box.classList.toggle('show', show);
       if(show){
-        box.innerHTML = `<strong>Debug catálogo:</strong> <span class="debug-source">${safe(catalogSource)}</span> · ${rawStats.recibidos} SKUs recibidos · ${rawStats.urlsConFoto} SKUs con URL de foto · ${rawStats.visiblesIniciales} SKUs renderizados inicialmente · ${rawStats.sinUrl} SKUs sin URL ocultos · ${rawStats.modelos} modelos visibles agrupados por SKU proveedor. Primeros bloques rápidos preservados: ${fastSlotKeys.length || fastSlotInternalIds.length}. Las imágenes rotas se ocultan en tiempo real sin bloquear al cliente.`;
+        box.innerHTML = `<strong>Debug catálogo:</strong> <span class="debug-source">${safe(catalogSource)}</span> · ${rawStats.recibidos} SKUs recibidos · ${rawStats.urlsConFoto} SKUs con URL de foto · ${rawStats.visiblesIniciales} SKUs renderizados inicialmente · ${rawStats.sinUrl} SKUs sin URL ocultos · ${rawStats.modelos} modelos visibles agrupados por SKU proveedor. Las imágenes rotas se ocultan en tiempo real sin bloquear al cliente.`;
       }
       console.info('[ORKIA catálogo]', rawStats);
-    }
-
-    function updateHero(){
-      const firstGroup = allProducts.find(p=>!p.agotado && p.url_imagen) || allProducts.find(p=>p.url_imagen);
-      // Hero fijo desde Cloudflare R2. No se reemplaza con productos para evitar saltos visuales.
     }
 
     function getFiltered(){
@@ -1275,7 +1178,7 @@
       return `<article class="product-card ${sold?'is-soldout':''}" data-key="${safe(g.sku_key)}" tabindex="0" role="button" aria-label="Ver ${safe(g.descripcion)}">
         <div class="imgbox">
           ${sold ? '<div class="badge">Agotado</div>' : ''}
-          <img src="${safe(display.url_imagen || g.url_imagen)}" alt="${safe(g.descripcion)}" loading="${i<4?'eager':'lazy'}" ${i<4?'fetchpriority="auto"':'fetchpriority="low"'} decoding="async" data-fallbacks="" onerror="handleImgError(this)">
+          <img src="${safe(display.url_imagen || g.url_imagen)}" alt="${safe(g.descripcion)}" loading="${i<4?'eager':'lazy'}" ${i<4?'fetchpriority="high"':''} decoding="async" data-fallbacks="${safe(buildCardFallbacks(g, display).join('|'))}" onerror="handleImgError(this)">
         </div>
         <div class="card-body">
           <div class="type">${safe(g.tipo_prenda || 'Prenda')}</div>
@@ -1305,7 +1208,7 @@
       $('#searchResults').innerHTML = results.length ? results.map(g=>{
         const display = variantForDisplay(g) || g.display || g.variants[0];
         return `<button class="search-result" type="button" data-key="${safe(g.sku_key)}">
-          <img src="${safe(display.url_imagen || g.url_imagen || '')}" alt="${safe(g.descripcion)}" onerror="handleImgError(this)">
+          <img src="${safe(display.url_imagen || g.url_imagen || '')}" alt="${safe(g.descripcion)}" loading="lazy" decoding="async" onerror="handleImgError(this)">
           <span><span class="result-type">${safe(g.tipo_prenda || 'Prenda')}</span><span class="result-name">${safe(g.descripcion || 'Prenda Orkia')}</span><span class="result-meta">${money(g.precio_gtq)} · Código #${safe(internalCode(display || g.display || g))}${g.colors && g.colors.length ? ' · ' + safe(g.colors.slice(0,3).join(', ')) : ''}</span></span>
         </button>`;
       }).join('') : '<div class="empty-state">No encontramos prendas con esa búsqueda.</div>';
