@@ -5,6 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
   <title>ORKIA — Catálogo</title>
+  <!-- ORKIA Producción v28: fix crítico de estado de filtros.
+       Cambios v28: separación de "filtros en borrador" (stagedFilters, solo viven mientras el
+       sheet está abierto) de "filtros aplicados" (advancedFilters, los únicos que afectan el
+       grid y la foto mostrada). Antes, tocar un color dentro del sheet contaminaba de inmediato
+       advancedFilters.color y por lo tanto variantForDisplay(), AUNQUE la clienta cerrara el
+       sheet sin tocar "Aplicar filtros" y el grid nunca se hubiera filtrado de verdad. Eso hacía
+       que, por ejemplo, tocar "Verde" y cerrar sin aplicar dejara el catálogo completo mostrando
+       fotos "de respaldo" (normalmente Negro) para cualquier modelo sin variante verde. Ahora
+       advancedFilters solo cambia al tocar "Aplicar filtros" o "Limpiar", nunca por un simple tap
+       de exploración dentro del sheet. Se agrega además un segundo seguro en variantForDisplay:
+       el color solo influye en la foto si currentFilter === '__advanced' de verdad.
+  -->
+  <!-- ORKIA Producción v27: filtros dinámicos + fix de foto por familia de color.
+       Cambios v27: (1) FIX variantForDisplay ahora prioriza el color EXACTO sobre cualquier
+       otro color de la misma familia (antes, filtrar "Verde" podía mostrar la foto de un SKU
+       "Menta" solo porque llegaba primero en el arreglo). (2) El sheet de filtros ahora es
+       dinámico/en cascada: al elegir Tipo, las opciones de Color, Patrón y Talla Plus se
+       recalculan en vivo y solo muestran lo que existe CON STOCK dentro de esa selección.
+       Talla Plus además desaparece del todo si no hay stock plus disponible en el contexto
+       actual. INITIAL_CATALOG_TIMEOUT_MS subido a 15s para absorber cold starts de Apps Script.
+  -->
   <!-- ORKIA Producción v26: segunda auditoría.
        Cambios v26: FIX imagen que quedaba oculta al cambiar de color tras un error de foto,
        FIX dot de color activo ahora coincide con la foto mostrada, filtros/orden ya no usan
@@ -543,13 +564,21 @@
     let allProducts = [];
     let currentFilter = '__nuevo';
     let advancedFilters = {tipo:'', color:'', patron:'', precio:'', plus:false};
+    // v28: copia de trabajo que vive SOLO mientras el sheet de filtros está abierto.
+    // Los taps dentro del sheet mutan esto, no advancedFilters. Solo "Aplicar filtros"
+    // copia stagedFilters -> advancedFilters. Cerrar el sheet sin aplicar (backdrop, X,
+    // swipe, Escape) simplemente descarta stagedFilters sin tocar el estado real.
+    let stagedFilters = {tipo:'', color:'', patron:'', precio:'', plus:false};
     let currentSort = 'destacados';
     let searchTerm = '';
     let bagItems = readBag();
     let categoryAutoTimer = null;
     let catalogSource = 'inicial';
     let rawStats = {recibidos:0, urlsConFoto:0, sinUrl:0, visiblesIniciales:0, modelos:0};
-    const INITIAL_CATALOG_TIMEOUT_MS = 9000;
+    // v26: 15s en vez de 9s. Un cold start de Apps Script (script "dormido") puede tardar
+    // 8 a 12s en responder, sobre todo con catálogos grandes (100+ productos). Con 9s el
+    // timeout se ganaba la carrera antes de que el script alcanzara a contestar.
+    const INITIAL_CATALOG_TIMEOUT_MS = 15000;
     const MIN_INITIAL_LOADER_MS = 300;
 
     const $ = (sel, root=document) => root.querySelector(sel);
@@ -851,10 +880,28 @@
     }
 
 
+    // v27 FIX: cuando el filtro de color activo es una FAMILIA (p.ej. "Verde" agrupa
+    // "Verde Botella", "Oliva" y "Menta"), antes se mostraba la foto de la primera variante
+    // que calzara con la familia, en el orden en que llegó desde Sheets/Apps Script, sin
+    // relación con cuál color exacto tenía la clienta en mente. Resultado: filtrar "Verde"
+    // podía enseñar la foto correcta de un SKU real, pero de un color distinto (Menta), lo
+    // que la clienta percibía como "la foto de otro SKU" aunque el archivo en R2 estuviera bien.
+    // Ahora se prioriza el color cuyo nombre exacto coincide con el filtro, y solo si ninguno
+    // coincide exacto se cae a cualquier variante de la misma familia.
+    // v28: segundo seguro. advancedFilters.color solo debe influir en qué foto se muestra
+    // cuando el filtro avanzado está realmente activo (currentFilter === '__advanced'), nunca
+    // como efecto colateral de estar simplemente "guardado" en el objeto sin haberse aplicado.
     function variantForDisplay(g){
-      const colorFilter = advancedFilters.color || searchColorPreference() || '';
-      const byColor = colorFilter ? g.variants.find(v=>colorFamily(v.color) === colorFilter && !v.agotado) || g.variants.find(v=>colorFamily(v.color) === colorFilter) : null;
-      return byColor || g.variants.find(v=>!v.agotado && Number(v.stock_total||0)>0) || g.variants[0];
+      const colorFilter = (currentFilter === '__advanced' ? advancedFilters.color : '') || searchColorPreference() || '';
+      if(colorFilter){
+        const inFamily = g.variants.filter(v => colorFamily(v.color) === colorFilter);
+        if(inFamily.length){
+          const exact = inFamily.filter(v => normColor(v.color) === normColor(colorFilter));
+          const pool = exact.length ? exact : inFamily;
+          return pool.find(v => !v.agotado && Number(v.stock_total||0)>0) || pool[0];
+        }
+      }
+      return g.variants.find(v=>!v.agotado && Number(v.stock_total||0)>0) || g.variants[0];
     }
 
     function buildDynamicFilters(){
@@ -885,6 +932,32 @@
     function availableVariantsFor(g){ return (g.variants || []).filter(isVariantInStock); }
     function groupHasValue(g, field, value){ return visibleVariantsFor(g).some(v => normalize(v[field]) === value); }
     function groupHasColor(g, value){ return visibleVariantsFor(g).some(v => colorFamily(v.color) === value); }
+    // v27: helpers para el sheet de filtros dinámicos.
+    function variantHasPlusSize(v){
+      return [...(v.tallas || []), ...(v.tallas_agotadas || [])]
+        .map(t => String(t).toUpperCase().trim())
+        .some(t => ['XL','XXL','1XL','2XL','3XL','4XL','PLUS','TALLA PLUS','CURVY'].includes(t));
+    }
+    // Tipo activo hoy dentro del sheet, venga del pill rápido (tipo::Blusa) o del borrador.
+    // v28: usa SIEMPRE stagedFilters (el borrador), nunca advancedFilters directamente, porque
+    // esta función solo se invoca para calcular facetas mientras el sheet está abierto.
+    function activeTipoFilter(){
+      if(stagedFilters.tipo) return stagedFilters.tipo;
+      if(currentFilter.startsWith('tipo::')) return currentFilter.slice('tipo::'.length);
+      return '';
+    }
+    // v27/v28: pool de variantes con stock y foto, aplicando el BORRADOR de filtros (stagedFilters)
+    // excepto el campo indicado en excludeField. Cascada en vivo mientras se explora el sheet,
+    // sin tocar advancedFilters (el estado que de verdad afecta el catálogo detrás).
+    function facetPool(excludeField){
+      let pool = allVariants.filter(v => variantHasPhoto(v) && isVariantInStock(v));
+      const tipo = excludeField === 'tipo' ? '' : activeTipoFilter();
+      if(tipo) pool = pool.filter(v => normalize(v.tipo_prenda) === tipo);
+      if(excludeField !== 'color' && stagedFilters.color) pool = pool.filter(v => colorFamily(v.color) === stagedFilters.color);
+      if(excludeField !== 'patron' && stagedFilters.patron) pool = pool.filter(v => normalize(v.patron) === stagedFilters.patron);
+      if(excludeField !== 'precio' && stagedFilters.precio === 'menos250') pool = pool.filter(v => Number(v.precio_gtq) <= 250);
+      return pool;
+    }
     function uniqueFromVisibleVariants(field){
       const map = new Map();
       allVariants.filter(variantHasPhoto).forEach(v=>{
@@ -1039,45 +1112,72 @@
       $$('#filterContent [data-menu-filter]').forEach(btn=>btn.addEventListener('click',()=>{ currentFilter=btn.dataset.menuFilter; $$('.pill').forEach(p=>p.classList.toggle('active', p.dataset.filter===currentFilter)); safeRenderGrid({text:'Aplicando filtro', scroll:true}); }));
     }
 
-    function openFilterSheet(){
-      const tipos = uniqueFromVisibleVariants('tipo_prenda');
-      const colores = [...new Set(allVariants.filter(variantHasPhoto).map(p => colorFamily(p.color)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
-      const patrones = uniqueFromVisibleVariants('patron');
-      const opt = (group, value, label, extra='') => `<button class="filter-option ${extra}" data-group="${group}" data-value="${safe(value)}">${safe(label || value)}</button>`;
-      const colorOpt = (value) => `<button class="filter-option swatch" data-group="color" data-value="${safe(value)}"><span class="swatch-dot" style="--dot:${safe(colorToHex(value))}"></span>${safe(value)}</button>`;
-      $('#filterContent').innerHTML = `
-        <div class="filter-sheet-head">
-          <h3 class="filter-sheet-title">Filtrar catálogo</h3>
-          <p class="filter-sheet-sub">Usa estos filtros para encontrar más rápido una prenda por tipo, paleta de color, patrón, precio o talla plus.</p>
-        </div>
+    const opt = (group, value, label, extra='') => `<button class="filter-option ${extra}" data-group="${group}" data-value="${safe(value)}">${safe(label || value)}</button>`;
+    const colorOpt = (value) => `<button class="filter-option swatch" data-group="color" data-value="${safe(value)}"><span class="swatch-dot" style="--dot:${safe(colorToHex(value))}"></span>${safe(value)}</button>`;
+
+    // v27: recalcula y re-pinta el CUERPO del sheet (mantiene los botones Limpiar/Aplicar
+    // fuera, ya enlazados una sola vez). Se llama al abrir el sheet y después de cada tap
+    // en una opción, así el resto de facetas siempre refleja lo que aún tiene stock real
+    // dado lo que ya está seleccionado.
+    // v28: opera enteramente sobre stagedFilters (el borrador). advancedFilters (lo aplicado
+    // de verdad) no se toca aquí bajo ninguna circunstancia.
+    function renderFilterBody(){
+      const tipos = [...new Set(facetPool('tipo').map(v => normalize(v.tipo_prenda)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+      const colores = [...new Set(facetPool('color').map(v => colorFamily(v.color)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+      const patrones = [...new Set(facetPool('patron').map(v => normalize(v.patron)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+      const plusDisponible = facetPool('plus').some(variantHasPlusSize);
+
+      // Si el valor elegido en el borrador ya no tiene stock bajo las demás restricciones,
+      // se limpia solo (evita quedar "atascado" en un color que dejó de existir en Blusas).
+      if(stagedFilters.tipo && !tipos.includes(stagedFilters.tipo)) stagedFilters.tipo = '';
+      if(stagedFilters.color && !colores.includes(stagedFilters.color)) stagedFilters.color = '';
+      if(stagedFilters.patron && !patrones.includes(stagedFilters.patron)) stagedFilters.patron = '';
+      if(stagedFilters.plus && !plusDisponible) stagedFilters.plus = false;
+
+      $('#filterBody').innerHTML = `
         <div class="filter-group"><h4>Tipo de prenda</h4><div class="filter-options">${tipos.map(t=>opt('tipo',t,t)).join('')}</div></div>
         <div class="filter-group"><h4>Color</h4><div class="filter-options">${colores.map(colorOpt).join('')}</div></div>
         <div class="filter-group"><h4>Patrón</h4><div class="filter-options">${patrones.map(pt=>opt('patron',pt,pt)).join('')}</div></div>
-        <div class="filter-group"><h4>Precio y talla</h4><div class="filter-options">${opt('precio','menos250','Menos de Q250','sale')}${opt('plus','true','Talla Plus','sale')}</div></div>
-        <div class="filter-sheet-actions"><button class="clear-filter" id="clearAdvanced">Limpiar</button><button class="btn apply-filter" id="applyAdvanced">Aplicar filtros</button></div>`;
-      $$('.filter-option').forEach(btn=>{
+        <div class="filter-group"><h4>Precio y talla</h4><div class="filter-options">${opt('precio','menos250','Menos de Q250','sale')}${plusDisponible ? opt('plus','true','Talla Plus','sale') : ''}</div></div>`;
+
+      $$('#filterBody .filter-option').forEach(btn=>{
         const group = btn.dataset.group;
         const value = btn.dataset.value;
-        if(advancedFilters[group] === value || (group === 'plus' && advancedFilters.plus)) btn.classList.add('active');
+        if(stagedFilters[group] === value || (group === 'plus' && stagedFilters.plus)) btn.classList.add('active');
         btn.addEventListener('click',()=>{
-          if(group === 'plus'){
-            advancedFilters.plus = !advancedFilters.plus;
-            btn.classList.toggle('active', advancedFilters.plus);
-            return;
+          if(group === 'plus'){ stagedFilters.plus = !stagedFilters.plus; }
+          else{
+            const isActive = btn.classList.contains('active');
+            stagedFilters[group] = isActive ? '' : value;
           }
-          const isActive = btn.classList.contains('active');
-          $$(`.filter-option[data-group="${group}"]`).forEach(b=>b.classList.remove('active'));
-          advancedFilters[group] = isActive ? '' : value;
-          if(!isActive) btn.classList.add('active');
+          renderFilterBody();
         });
       });
+    }
+
+    // v28: cada vez que se abre el sheet, el borrador arranca como copia de lo que esté
+    // realmente aplicado (así si ya habías aplicado un filtro antes, lo ves marcado al reabrir).
+    function openFilterSheet(){
+      stagedFilters = {...advancedFilters};
+      $('#filterContent').innerHTML = `
+        <div class="filter-sheet-head">
+          <h3 class="filter-sheet-title">Filtrar catálogo</h3>
+          <p class="filter-sheet-sub">Usa estos filtros para encontrar más rápido una prenda por tipo, paleta de color, patrón, precio o talla plus. Las opciones se ajustan según lo que sigue disponible.</p>
+        </div>
+        <div id="filterBody"></div>
+        <div class="filter-sheet-actions"><button class="clear-filter" id="clearAdvanced">Limpiar</button><button class="btn apply-filter" id="applyAdvanced">Aplicar filtros</button></div>`;
+      renderFilterBody();
       $('#clearAdvanced').addEventListener('click',()=>{
+        stagedFilters = {tipo:'',color:'',patron:'',precio:'',plus:false};
         advancedFilters = {tipo:'',color:'',patron:'',precio:'',plus:false};
         currentFilter = '__nuevo';
         $$('.pill').forEach((p,i)=>p.classList.toggle('active', i===0));
         safeRenderGrid({text:'Limpiando filtros', scroll:true});
       });
       $('#applyAdvanced').addEventListener('click',()=>{
+        // v28: recién AQUÍ el borrador se vuelve real. Antes de este clic, nada de lo tocado
+        // en el sheet afectaba el catálogo ni las fotos mostradas.
+        advancedFilters = {...stagedFilters};
         currentFilter = '__advanced';
         $$('.pill').forEach(p=>p.classList.remove('active'));
         safeRenderGrid({text:'Aplicando filtros', scroll:true});
