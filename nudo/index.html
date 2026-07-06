@@ -1,0 +1,1911 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#111111" />
+  <title>NUDO — Catálogo</title>
+  <!-- NUDO Producción v1: catálogo masculino basado en ORKIA Producción v30.
+       Heredado tal cual de Orkia v30: arquitectura SPA vanilla JS, fetch al Apps Script
+       compartido (getCatalogo, registrarClic, registrarDemanda), parámetros accion/marca/
+       id_producto/nombre_producto/utm_origen/color/canal_origen, lógica de agrupación por
+       sku_key, filtros en cascada con stagedFilters vs advancedFilters, búsqueda con miniaturas
+       por color, manejo de productos agotados directo a "Avísame", historial trampa v29 para
+       cerrar sheets/lightbox con back móvil, lightbox con zoom/swipe/flechas, accesibilidad de
+       sheets y modales, manejo de is-image-missing y nombres de campo del catálogo.
+       Adaptado para Nudo: MARCA='nudo', identidad oxblood + carbón sobre fondo arena CASA JRP,
+       copy masculino, envío gratis desde Q250, pills rápidos por categorías masculinas, tallas
+       ocultas en productos unitalla y galería compatible con tiers de 1 o 3 fotos.
+  -->
+  <!-- ORKIA Producción v30: auditoría integral UX/UI + optimización.
+       Cambios v30: (1) card agotada abre directamente "Avísame" en vez del modal sin salida,
+       (2) el filtro avanzado de color exige stock real en esa familia (antes un modelo cuyo
+       único verde estaba agotado igual aparecía al filtrar Verde), (3) pills rápidos dinámicos:
+       solo aparecen tipos con productos y los pills Talla Plus / Menos de Q250 se ocultan si
+       están vacíos, (4) fix de zoom involuntario del viewport en iOS al tocar el buscador
+       (font-size 16px), (5) las miniaturas del buscador respetan el color escrito mientras se
+       teclea ("vestido verde" muestra las fotos verdes), (6) estado vacío del grid con botón
+       "Ver todo el catálogo" para no dejar a la cliente en un callejón, (7) scrollRestoration
+       manual para que cerrar sheets con el gesto atrás no salte el scroll, (8) limpieza de
+       getUniqueValues y uniqueFromVisibleVariants (muertos desde v27).
+  -->
+  <!-- ORKIA Producción v29: gesto de "atrás" (swipe/back) ya no saca del sitio.
+       Cambios v29: al abrir un sheet (producto, filtros, bolsa, búsqueda, menú) o el lightbox
+       de zoom, se empuja un estado de historial "trampa". Si la cliente desliza desde el borde
+       (iOS) o usa el gesto/botón atrás de Android sin haber tocado la X, el navegador dispara
+       popstate en vez de navegar fuera de casajrp.com: se intercepta y se cierra solo la capa
+       superior (el lightbox si está abierto, si no el sheet activo), dejándola en el catálogo.
+       Cerrar por la vía normal (X, backdrop, Aplicar, Limpiar, Seguir comprando, Escape) consume
+       ese estado de historial para que no se acumulen entradas fantasma. Escape ahora también
+       cierra el lightbox (antes no hacía nada con el lightbox abierto).
+  -->
+  <!-- ORKIA Producción v28: fix crítico de estado de filtros.
+       Cambios v28: separación de "filtros en borrador" (stagedFilters, solo viven mientras el
+       sheet está abierto) de "filtros aplicados" (advancedFilters, los únicos que afectan el
+       grid y la foto mostrada). Antes, tocar un color dentro del sheet contaminaba de inmediato
+       advancedFilters.color y por lo tanto variantForDisplay(), AUNQUE la cliente cerrara el
+       sheet sin tocar "Aplicar filtros" y el grid nunca se hubiera filtrado de verdad. Eso hacía
+       que, por ejemplo, tocar "Verde" y cerrar sin aplicar dejara el catálogo completo mostrando
+       fotos "de respaldo" (normalmente Negro) para cualquier modelo sin variante verde. Ahora
+       advancedFilters solo cambia al tocar "Aplicar filtros" o "Limpiar", nunca por un simple tap
+       de exploración dentro del sheet. Se agrega además un segundo seguro en variantForDisplay:
+       el color solo influye en la foto si currentFilter === '__advanced' de verdad.
+  -->
+  <!-- ORKIA Producción v27: filtros dinámicos + fix de foto por familia de color.
+       Cambios v27: (1) FIX variantForDisplay ahora prioriza el color EXACTO sobre cualquier
+       otro color de la misma familia (antes, filtrar "Verde" podía mostrar la foto de un SKU
+       "Menta" solo porque llegaba primero en el arreglo). (2) El sheet de filtros ahora es
+       dinámico/en cascada: al elegir Tipo, las opciones de Color, Patrón y Talla Plus se
+       recalculan en vivo y solo muestran lo que existe CON STOCK dentro de esa selección.
+       Talla Plus además desaparece del todo si no hay stock plus disponible en el contexto
+       actual. INITIAL_CATALOG_TIMEOUT_MS subido a 15s para absorber cold starts de Apps Script.
+  -->
+  <!-- ORKIA Producción v26: segunda auditoría.
+       Cambios v26: FIX imagen que quedaba oculta al cambiar de color tras un error de foto,
+       FIX dot de color activo ahora coincide con la foto mostrada, filtros/orden ya no usan
+       loader opaco de pantalla completa (solo atenuación del grid), AbortController cancela
+       de verdad el fetch al vencer el timeout, Escape cierra sheets, Google Fonts recortado
+       de 9 a 5 variantes (itálicas y peso 300 no se usaban), Open Graph para previews
+       de WhatsApp al compartir el link del catálogo. -->
+  <!-- ORKIA Producción v25: lightbox reconectado.
+       Cambios v25: tap en la foto del modal abre el lightbox con zoom (con umbral anti-swipe
+       y supresión de ghost click), evento ZOOM_FOTO para analítica de demanda, inicialización
+       perezosa del lightbox (los listeners wheel/touch no pasivos solo se registran al primer uso).
+  -->
+  <!-- ORKIA Producción v24: performance segura.
+       Cambios v24: loader con try/finally (nunca queda bloqueando clics), se elimina display:none
+       del body en carga inicial (arregla lazy loading latente), supresión de ghost click en touch,
+       fallbacks lado/detalle conectados en grid, fetchpriority corregido, showcase de categorías
+       solo con fotos frontales (máx 2), limpieza de código muerto (validación masiva, cache local,
+       semilla, fast slots), fallback vh para dvh, overscroll contain en sheets. -->
+  <meta name="description" content="Ropa interior masculina Nudo en Guatemala. Diseño colombiano, fit cómodo, compra discreta por WhatsApp." />
+  <!-- v26: Open Graph. Cuando una cliente comparte el link del catálogo por WhatsApp,
+       aparece una tarjeta con imagen en vez de un link pelado. URL canónica: casajrp.com/nudo/ -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="NUDO" />
+  <meta property="og:title" content="NUDO — Ropa interior masculina en Guatemala" />
+  <meta property="og:description" content="Ropa interior masculina con diseño colombiano, fit cómodo y envío discreto. Envío gratis desde Q250. Pide por WhatsApp." />
+  <meta property="og:image" content="https://img.casajrp.com/nudo/banners/home-hero-desktop.webp" />
+  <meta property="og:url" content="https://casajrp.com/nudo/" />
+  <meta property="og:locale" content="es_GT" />
+  <link rel="canonical" href="https://casajrp.com/nudo/" />
+  <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
+  <link rel="preload" as="image" href="https://img.casajrp.com/nudo/banners/home-hero-desktop.webp" media="(min-width: 721px)" fetchpriority="high">
+  <link rel="preload" as="image" href="https://img.casajrp.com/nudo/banners/home-hero-mobile.webp" media="(max-width: 720px)" fetchpriority="high">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- v26: recorte de 9 a 5 variantes. Itálicas y peso 300 no se usan en ningún selector.
+       Se conserva Cormorant 500 porque es el peso al que resuelven los títulos serif en bold. -->
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#F5F0EA;
+      --surface:#FFFFFF;
+      --dark:#111111;
+      --carbon:#1A1A1A;
+      --text:#1E1E1E;
+      --mid:#77736F;
+      --soft:#A8A19A;
+      --border:#E8E4DF;
+      --terracota:#4A1F2C;
+      --terracota-dark:#2B0F16;
+      --radius:0px;
+      --header-h:72px;
+      --nav-h:64px;
+      --container:1440px;
+      --shadow:0 14px 40px rgba(17,17,17,.08);
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;padding-bottom:env(safe-area-inset-bottom)}
+    img{display:block;max-width:100%}
+    button,input{font:inherit}
+    button{cursor:pointer}
+    a{color:inherit;text-decoration:none}
+    .serif{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;letter-spacing:-.025em}
+    .top-shipping{position:relative;z-index:1;height:34px;background:#EFE8E0;color:var(--text);display:flex;align-items:center;justify-content:center;gap:9px;font-size:12px;letter-spacing:.01em;border-bottom:1px solid rgba(232,228,223,.7)}
+    .top-shipping .q{color:var(--terracota);font-weight:600}
+    .icon{width:18px;height:18px;stroke:currentColor;stroke-width:1.55;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+    .site-header{height:var(--header-h);background:linear-gradient(180deg,var(--terracota-dark),#16070B);color:white;display:flex;align-items:center;position:sticky;top:0;z-index:80;border-bottom:1px solid rgba(255,255,255,.07)}
+    .header-inner{width:100%;max-width:none;margin:0 auto;padding:0 42px;display:grid;grid-template-columns:260px 1fr 170px;align-items:center;gap:24px}
+    .brand{line-height:1}.brand-logo{font-family:'Cormorant Garamond',Georgia,serif;font-size:42px;letter-spacing:.11em;font-weight:400}.brand-dot{display:inline-block;width:8px;height:8px;background:var(--terracota);border-radius:50%;margin-left:2px;transform:translateY(-3px)}.brand-sub{font-size:12px;color:rgba(255,255,255,.82);margin-top:4px;letter-spacing:.01em}
+    .desktop-nav{display:flex;align-items:center;justify-content:center;gap:52px;font-size:12px;font-weight:600;letter-spacing:.13em;text-transform:uppercase}.desktop-nav a{opacity:.92}.desktop-nav a:hover{opacity:1;color:#fff}
+    .header-actions{display:flex;align-items:center;justify-content:flex-end;gap:23px}.icon-btn{border:0;background:transparent;color:inherit;padding:8px;line-height:0;position:relative}.wa-header{font-size:12px;letter-spacing:.13em;text-transform:uppercase;border:1px solid rgba(255,255,255,.26);padding:10px 14px;display:none}.menu-btn{display:none}
+    .hero{background:#F8F4EF;border-bottom:1px solid var(--border)}
+    .hero-inner{max-width:none;margin:0 auto;min-height:330px;padding:0 42px;display:grid;grid-template-columns:minmax(330px,450px) 1fr;align-items:center;gap:36px;overflow:hidden}.hero-copy{padding:42px 0}.eyebrow{font-size:11px;line-height:1;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--terracota);margin-bottom:12px}.hero h1{font-size:49px;line-height:.97;margin:0 0 22px;color:var(--dark)}.hero p{font-size:16px;line-height:1.65;color:#3D3935;margin:0 0 24px;max-width:390px}.btn{border:0;background:var(--terracota-dark);color:#fff;height:42px;padding:0 28px;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;transition:.18s ease}.btn:hover{transform:translateY(-1px);background:#16070B}.btn.ghost{background:transparent;color:var(--dark);border:1px solid #B8B2AC}.btn.ghost:hover{background:#fff}.hero-meta{display:flex;gap:10px;align-items:center;font-size:13px;color:#625B55;margin-top:22px}.hero-meta:before{content:'';width:5px;height:5px;border-radius:50%;background:var(--terracota)}.hero-image-wrap{align-self:stretch;display:flex;align-items:stretch;justify-content:flex-end;overflow:hidden}.hero-picture{display:block;width:100%;height:330px}.hero-img{width:100%;height:100%;object-fit:cover;object-position:center;background:#E9E0D6}
+    .filters-wrap{background:rgba(255,255,255,.94);backdrop-filter:blur(12px);position:sticky;top:var(--header-h);z-index:70;border-bottom:1px solid var(--border)}
+    .filters-inner{max-width:none;margin:0 auto;padding:18px 42px;display:grid;grid-template-columns:190px 1fr auto;align-items:center;gap:22px}.filter-title{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase}.pills{display:flex;gap:13px;overflow-x:auto;scrollbar-width:none}.pills::-webkit-scrollbar{display:none}.pill{height:34px;border:1px solid var(--border);background:#fff;border-radius:999px;padding:0 22px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:#272727}.pill.active{background:var(--terracota-dark);border-color:var(--terracota-dark);color:white}.pill.sale{background:#F1E4DB;border-color:#F1E4DB;color:var(--terracota)}.pill.sale.active{background:var(--terracota);color:#fff}.filter-actions{display:flex;gap:28px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}.filter-action{display:flex;align-items:center;gap:8px;color:#34302D}.sort-wrap{position:relative}.sort-menu{position:absolute;right:0;top:calc(100% + 10px);min-width:190px;background:#fff;border:1px solid var(--border);box-shadow:0 16px 40px rgba(17,17,17,.12);padding:6px;z-index:95;display:none}.sort-menu.show{display:block}.sort-option{width:100%;height:36px;border:0;background:#fff;text-align:left;padding:0 12px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#34302D}.sort-option:hover,.sort-option.active{background:#F5F0EA;color:#111}.chev{width:8px;height:8px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg) translateY(-2px)}
+    main{max-width:none;margin:0 auto;padding:28px 42px 0}.section-head{display:flex;align-items:flex-end;justify-content:space-between;margin:4px 0 18px}.section-head h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:34px;line-height:1;margin:0;letter-spacing:-.02em;text-transform:uppercase}.section-head .view-all{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:10px;color:var(--dark)}.arrow{color:var(--terracota);font-size:17px;line-height:1}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border)}.product-card{background:var(--surface);border:0;display:flex;flex-direction:column;min-width:0;text-align:left;position:relative;overflow:hidden}.product-card .imgbox{position:relative;background:#EAE2D9;aspect-ratio:3/4.15;overflow:hidden}.product-card img{width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .35s ease,filter .2s ease}.product-card .imgbox.is-image-missing::after,.gallery-slide.is-image-missing::after{content:'Foto pendiente';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8A837B;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;background:#EEE7DF}.product-card:hover img{transform:scale(1.015)}.product-card.is-soldout img{filter:saturate(.12) contrast(.92);opacity:.86}.badge{position:absolute;left:14px;top:14px;background:rgba(255,255,255,.92);color:#57514C;padding:7px 12px;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;z-index:2}.heart{position:absolute;right:12px;top:12px;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.18);z-index:2}.card-body{padding:15px 17px 16px;display:flex;flex-direction:column;gap:7px;flex:1}.type{font-size:10px;line-height:1;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--terracota)}.product-name{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;line-height:1.02;letter-spacing:-.02em;color:var(--dark);margin:0;min-height:34px}.card-code{font-size:10px;color:#7A746E;letter-spacing:.08em;text-transform:uppercase;margin-top:-2px}.price{font-size:18px;font-weight:600;color:var(--terracota);line-height:1}.card-btn{height:38px;margin-top:5px;width:100%;font-size:10px;letter-spacing:.16em}.shipping-note{margin-top:auto;display:flex;align-items:center;gap:7px;color:#5E5954;font-size:11px;line-height:1.2}.shipping-note .icon{width:16px;height:16px;color:var(--terracota)}.empty-state,.loading-state{grid-column:1/-1;background:#fff;padding:50px 22px;text-align:center;color:var(--mid);font-size:14px}.debug-source{color:var(--terracota);font-weight:600}.value-props{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:36px 0;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}.value-item{background:var(--bg);display:grid;grid-template-columns:42px 1fr;gap:18px;padding:22px 24px;align-items:start}.value-item .icon{width:34px;height:34px;color:var(--dark);stroke-width:1.2}.value-item h3{margin:0 0 7px;font-size:11px;letter-spacing:.16em;text-transform:uppercase}.value-item p{margin:0;color:#625B55;font-size:13px;line-height:1.55}.footer{background:linear-gradient(180deg,var(--terracota-dark),var(--carbon));color:#fff;margin-top:0;padding:34px 28px 90px;text-align:center}.footer .brand-logo{font-size:34px}.footer p{margin:8px 0 0;color:rgba(255,255,255,.62);font-size:11px;letter-spacing:.14em;text-transform:uppercase}.bottom-nav{display:none}.debug-box{display:none;margin:0 42px 18px;padding:12px 14px;background:#fff;border:1px solid var(--border);font-size:12px;color:#625B55}.debug-box.show{display:block}.debug-box strong{color:#111}
+    
+    .filter-sheet-content{overflow:auto;padding:0 22px calc(24px + env(safe-area-inset-bottom))}.filter-sheet-head{padding:8px 0 18px;border-bottom:1px solid var(--border)}.filter-sheet-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;line-height:1;margin:0;color:var(--dark)}.filter-sheet-sub{margin:8px 0 0;color:var(--mid);font-size:13px;line-height:1.5}.filter-group{padding:18px 0;border-bottom:1px solid var(--border)}.filter-group h4{margin:0 0 12px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dark)}.filter-options{display:flex;flex-wrap:wrap;gap:8px}.filter-option{height:34px;border:1px solid var(--border);background:#fff;border-radius:999px;padding:0 14px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#272727}.filter-option.active{background:var(--terracota-dark);border-color:var(--terracota-dark);color:#fff}.filter-option.sale{background:#F1E4DB;border-color:#F1E4DB;color:var(--terracota)}.filter-option.sale.active{background:var(--terracota);border-color:var(--terracota);color:#fff}.filter-option.swatch{height:auto;min-height:42px;padding:7px 12px 7px 8px;gap:8px;display:inline-flex;align-items:center}.filter-option.swatch .swatch-dot{width:22px;height:22px;border-radius:50%;background:var(--dot,#D8D2CC);border:1px solid rgba(0,0,0,.18);box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}.filter-option.swatch.active .swatch-dot{border-color:rgba(255,255,255,.65)}.filter-sheet-actions{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,.88),#fff 30%);display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 0 0;margin-top:4px}.clear-filter{border:1px solid var(--border);background:#fff;color:var(--dark);height:40px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}.apply-filter{height:40px}
+
+    .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:200;opacity:0;pointer-events:none;transition:.2s ease}.sheet-backdrop.show{opacity:1;pointer-events:auto}.sheet{position:fixed;left:50%;bottom:0;transform:translate(-50%,105%);z-index:210;width:min(720px,100%);max-height:92dvh;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.2);transition:.24s ease;overflow:hidden;display:flex;flex-direction:column}.sheet.show{transform:translate(-50%,0)}.sheet-handle{width:40px;height:4px;border-radius:100px;background:#D8D2CC;margin:10px auto 8px}.sheet-close{position:absolute;right:14px;top:12px;width:34px;height:34px;border:0;border-radius:50%;background:#F3EFEA;color:#111;font-size:20px;line-height:1;z-index:8}.product-sheet-content{overflow:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}.modal-gallery{position:relative;overflow:hidden;background:#EEE7DF;height:clamp(360px,52dvh,560px);width:100%;flex:0 0 auto}.gallery-track{display:flex;height:100%;transition:transform .25s ease}.gallery-slide{min-width:100%;height:100%;background:#EEE7DF}.gallery-slide img{width:100%;height:100%;object-fit:cover;object-position:center top}.dots{display:flex;justify-content:center;gap:7px;margin:10px 0}.dot{width:6px;height:6px;border-radius:50%;background:#D8D2CC}.dot.active{background:var(--terracota)}.modal-info{padding:6px 20px 0}.modal-name{font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;line-height:1;margin:5px 0 8px}.modal-meta{color:#625B55;font-size:13px;margin-bottom:12px}.modal-price{font-size:22px;font-weight:600;margin-bottom:18px;color:var(--terracota)}.size-title{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}.sizes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.size-btn{width:42px;height:42px;border:1px solid #D9D2CC;background:#fff;color:#111}.size-btn.active{background:var(--terracota-dark);color:#fff;border-color:var(--terracota-dark)}.size-btn.disabled{color:#B2ABA4;text-decoration:line-through;background:#F6F3EF}.modal-actions{position:sticky;bottom:0;background:#fff;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border)}.modal-actions .btn{width:100%;height:46px}.modal-actions .btn:disabled{background:#D0CBC5;color:#fff;cursor:not-allowed;transform:none}.secondary-link{width:100%;border:0;background:transparent;margin-top:10px;color:#625B55;font-size:12px;letter-spacing:.1em;text-transform:uppercase}.notice-sheet{padding:0 22px 26px}.notice-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:32px;margin:8px 0 8px;line-height:1}.notice-text{font-size:14px;line-height:1.55;color:#625B55;margin:0 0 18px}.phone-input{width:100%;height:44px;border:1px solid var(--border);padding:0 12px;margin-bottom:12px;background:#FAF8F6;color:#111}.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+    .color-title{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin:12px 0 10px}.color-options{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.color-btn{min-height:38px;border:1px solid #D9D2CC;background:#fff;color:#111;border-radius:999px;padding:0 13px;display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}.color-btn.active{background:var(--terracota-dark);color:#fff;border-color:var(--terracota-dark)}.color-btn .color-code{font-size:9px;opacity:.72;margin-left:2px}.color-btn.disabled{opacity:.45;text-decoration:line-through}.color-dot{width:13px;height:13px;border-radius:50%;border:1px solid rgba(0,0,0,.18);background:var(--dot,#D8D2CC);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}.variant-hint{font-size:12px;color:#77736F;margin:-4px 0 14px}.card-colors{display:flex;align-items:center;gap:5px;min-height:16px;margin-top:1px}.card-color-dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.15);background:var(--dot,#D8D2CC);padding:0;display:inline-block;cursor:pointer}.card-color-dot.active{outline:1px solid #111;outline-offset:2px}.gallery-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:34px;height:34px;border:0;border-radius:999px;background:rgba(255,255,255,.88);color:#111;box-shadow:0 4px 18px rgba(0,0,0,.10);display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1}.gallery-arrow.prev{left:10px}.gallery-arrow.next{right:10px}.size-block.hidden{display:none}.card-more-colors{font-size:10px;color:#77736F;margin-left:3px}.modal-ref{font-size:11px;color:#77736F;margin:2px 0 14px}.selection-warning{font-size:12px;color:#77736F;margin-top:8px;text-align:center}
+
+
+    .story-section{margin:36px 0 0;background:#fff;border:1px solid var(--border);display:grid;grid-template-columns:minmax(280px,.9fr) 1.1fr;gap:1px}.story-kicker{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--terracota);margin-bottom:14px}.story-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:42px;line-height:1;margin:0 0 18px;color:var(--dark);letter-spacing:-.025em}.story-copy{padding:42px 44px}.story-copy p{font-size:15px;line-height:1.7;color:#4D4741;margin:0 0 16px;max-width:610px}.story-panel{background:#F8F4EF;padding:42px 44px;display:flex;flex-direction:column;justify-content:center}.story-panel h3{margin:0 0 14px;font-size:11px;letter-spacing:.17em;text-transform:uppercase;color:var(--dark)}.story-list{display:grid;gap:14px;margin:0;padding:0;list-style:none}.story-list li{font-size:14px;line-height:1.55;color:#5F5851;border-bottom:1px solid var(--border);padding-bottom:12px}.story-list li:last-child{border-bottom:0;padding-bottom:0}.about-section{margin:0 0 36px;background:var(--terracota-dark);color:#fff;display:grid;grid-template-columns:1fr 1fr;gap:1px;border:1px solid rgba(255,255,255,.08)}.about-section .story-copy{background:var(--terracota-dark)}.about-section .story-title{color:#fff}.about-section .story-copy p{color:rgba(255,255,255,.72)}.about-section .story-panel{background:#120509}.about-section .story-panel h3{color:#fff}.about-section .story-list li{border-color:rgba(255,255,255,.10);color:rgba(255,255,255,.70)}.search-sheet-content{padding:0 22px calc(24px + env(safe-area-inset-bottom));overflow:auto}.search-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;line-height:1;margin:8px 0 12px;color:var(--dark)}.search-input{width:100%;height:48px;border:1px solid var(--border);background:#FAF8F6;padding:0 14px;color:#111;font-size:16px;outline:none}.search-input:focus{border-color:#B8B2AC;background:#fff}.search-help{margin:10px 0 16px;color:#77736F;font-size:12px;line-height:1.45}.search-results{display:grid;gap:1px;background:var(--border);border:1px solid var(--border);margin-top:12px}.search-result{border:0;background:#fff;display:grid;grid-template-columns:76px 1fr;gap:14px;text-align:left;padding:10px;align-items:center}.search-result img{width:76px;height:96px;object-fit:cover;background:#EEE7DF}.search-result .result-type{font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota)}.search-result .result-name{font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;line-height:1;margin:2px 0;color:#111}.search-result .result-meta{font-size:11px;color:#77736F}.active-search{grid-column:1/-1;display:inline-flex;align-items:center;gap:8px;margin:0 0 14px;padding:8px 10px;background:#fff;border:1px solid var(--border);font-size:11px;color:#625B55}.active-search button{border:0;background:transparent;color:var(--terracota);font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:0}
+
+    /* Desktop product modal: large image without cropping + details on the right */
+    @media (min-width:721px){
+      #productSheet.sheet{
+        top:50%;
+        bottom:auto;
+        width:min(1180px,calc(100vw - 64px));
+        max-height:min(88vh,820px);
+        border-radius:18px;
+        transform:translate(-50%,calc(-50% + 28px));
+        opacity:0;
+      }
+      #productSheet.sheet.show{
+        transform:translate(-50%,-50%);
+        opacity:1;
+      }
+      #productSheet .sheet-handle{display:none}
+      #productSheet .sheet-close{
+        right:18px;
+        top:18px;
+        background:rgba(255,255,255,.92);
+        box-shadow:0 8px 26px rgba(0,0,0,.10);
+      }
+      #productSheet .product-sheet-content{
+        position:relative;
+        display:grid;
+        grid-template-columns:minmax(0,1.18fr) minmax(360px,.82fr);
+        grid-template-rows:1fr auto;
+        overflow:hidden;
+        padding-bottom:0;
+        max-height:min(88vh,820px);
+      }
+      #productSheet .modal-gallery{
+        grid-column:1;
+        grid-row:1 / 3;
+        height:min(88vh,820px);
+        max-height:min(88vh,820px);
+        background:#EEE7DF;
+      }
+      #productSheet .gallery-slide img{
+        object-fit:contain;
+        object-position:center;
+        cursor:zoom-in;
+      }
+      #productSheet .dots{
+        grid-column:1;
+        grid-row:2;
+        align-self:end;
+        justify-self:center;
+        z-index:5;
+        margin:0 0 18px;
+        background:rgba(255,255,255,.78);
+        padding:7px 10px;
+        border-radius:999px;
+        backdrop-filter:blur(8px);
+      }
+      #productSheet .modal-info{
+        grid-column:2;
+        grid-row:1;
+        overflow:auto;
+        padding:48px 34px 14px;
+      }
+      #productSheet .modal-actions{
+        grid-column:2;
+        grid-row:2;
+        position:static;
+        padding:16px 34px 22px;
+        border-top:1px solid var(--border);
+      }
+      #productSheet .modal-name{font-size:38px;line-height:.96;margin-top:6px}
+      #productSheet .modal-price{font-size:24px;margin-bottom:20px}
+      #productSheet .color-options{gap:10px;margin-bottom:18px}
+      #productSheet .gallery-arrow{width:40px;height:40px;font-size:26px}
+      #productSheet .gallery-arrow.prev{left:16px}
+      #productSheet .gallery-arrow.next{right:16px}
+    }
+
+    @media (max-width:1024px){:root{--header-h:64px}.header-inner{grid-template-columns:210px 1fr 130px}.desktop-nav{gap:28px}.grid{grid-template-columns:repeat(2,1fr)}.hero-inner{min-height:290px}.hero h1{font-size:44px}.hero-picture{height:290px}.value-props{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width:720px){:root{--header-h:58px}.top-shipping{height:32px;font-size:11px}.site-header{height:var(--header-h)}.header-inner{padding:0 12px;display:grid;grid-template-columns:42px 1fr 78px;gap:4px}.menu-btn{display:inline-flex}.desktop-nav{display:none}.brand{text-align:center}.brand-logo{font-size:29px;letter-spacing:.12em}.brand-sub{display:none}.header-actions{gap:4px}.header-actions .icon-btn:nth-child(2){display:none}.hero-inner{padding:0;min-height:0;display:grid;grid-template-columns:1fr 41%;gap:0;align-items:stretch}.hero-copy{padding:17px 0 15px 14px}.eyebrow{display:none}.hero h1{font-size:27px;line-height:1.02;margin:0 0 8px;max-width:225px}.hero p{font-size:12px;line-height:1.35;margin-bottom:10px;max-width:175px}.hero .btn{height:32px;padding:0 15px;font-size:9px}.hero-meta{font-size:10px;margin-top:9px}.hero-image-wrap{align-items:stretch}.hero-picture{height:100%;min-height:145px}.hero-img{width:100%;height:100%;object-position:68% center}.filters-wrap{top:var(--header-h)}.filters-inner{padding:10px 12px 9px;display:block}.filter-title{display:none}.pills{gap:7px;padding-bottom:2px}.pill{height:31px;padding:0 12px;font-size:9.5px}.filter-actions{display:flex;justify-content:space-between;gap:12px;margin-top:8px}.filter-action{height:28px;padding:0;font-size:10px}.sort-menu{left:auto;right:0;top:calc(100% + 6px);min-width:170px}main{padding:14px 0 0}.section-head{margin:2px 0 12px;padding:0 12px}.debug-box{margin:0 12px 12px}.section-head h2{font-size:24px}.section-head .view-all{font-size:10px}.grid{grid-template-columns:repeat(2,1fr);border:0;background:var(--border);gap:1px}.product-card{border:0}.product-card .imgbox{aspect-ratio:3/4.2}.card-body{padding:9px 10px 10px;gap:5px}.type{font-size:9px}.product-name{font-size:19px;min-height:32px}.price{font-size:16px}.card-btn{height:31px;font-size:8.5px}.shipping-note{display:none}.badge{left:8px;top:8px;font-size:9px;padding:6px 9px}.heart{right:8px;top:8px}.heart .icon{width:18px;height:18px}.value-props{grid-template-columns:1fr;gap:0;margin:24px 0 0;border-bottom:0}.value-item{padding:18px 20px}.footer{padding-bottom:calc(86px + env(safe-area-inset-bottom))}.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:120;height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#fff;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);box-shadow:0 -10px 30px rgba(17,17,17,.06)}.bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#252525}.bottom-nav a.active{color:var(--terracota)}.bottom-nav .icon{width:21px;height:21px}.sheet{width:100%;max-height:96dvh;border-radius:14px 14px 0 0}.modal-gallery{height:min(50dvh,460px);min-height:330px}.modal-name{font-size:31px}.modal-info{padding-left:18px;padding-right:18px}.modal-actions{padding-left:18px;padding-right:18px}}
+
+    @media (max-width:720px){.story-section,.about-section{grid-template-columns:1fr;margin:24px 0 0;border-left:0;border-right:0}.story-copy,.story-panel{padding:26px 20px}.story-title{font-size:32px}.story-copy p{font-size:14px}.about-section{margin-bottom:0}.search-title{font-size:31px}.search-result{grid-template-columns:64px 1fr}.search-result img{width:64px;height:82px}.search-result .result-name{font-size:20px}}
+    @media (max-width:380px){.hero h1{font-size:26px}.hero p{font-size:12px}.hero-copy{padding-left:14px}.product-name{font-size:18px}.card-body{padding:11px 10px}.shipping-note{display:none}.card-btn{margin-top:3px}.pill{padding:0 13px}.brand-logo{font-size:27px}}
+  
+
+    /* NUDO v3: UX compradora */
+    .bag-btn{display:inline-flex;position:relative}
+    .bag-count{position:absolute;right:2px;top:1px;min-width:17px;height:17px;border-radius:999px;background:var(--terracota);color:#fff;font-size:10px;font-weight:700;line-height:17px;text-align:center;display:none}
+    .bag-count.show{display:block}
+    .category-showcase{background:var(--bg);border-bottom:1px solid var(--border);padding:26px 42px 24px;overflow:hidden}
+    .category-showcase-head{display:flex;align-items:end;justify-content:space-between;margin-bottom:14px}
+    .category-showcase h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:34px;line-height:1;margin:0;letter-spacing:-.02em}
+    .category-showcase p{display:none;margin:0;color:#625B55;font-size:13px;max-width:460px;line-height:1.5;text-align:right}
+    .category-track{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(220px,1fr);grid-template-rows:1fr;gap:1px;overflow-x:auto;scroll-snap-type:x mandatory;background:var(--border);border:1px solid var(--border);scrollbar-width:none}
+    .category-track::-webkit-scrollbar{display:none}
+    .category-card{min-height:260px;border:0;background:#111;color:#fff;position:relative;overflow:hidden;text-align:left;padding:0;scroll-snap-align:start;display:block}
+    .category-card img{width:100%;height:100%;object-fit:cover;object-position:center;filter:brightness(.74);transition:transform .35s ease, filter .35s ease}
+    .category-card:hover img{transform:scale(1.02);filter:brightness(.68)}
+    .category-card span{position:absolute;left:18px;bottom:18px;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;z-index:2}
+    .category-card small{position:absolute;left:18px;bottom:40px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72);z-index:2}
+    .category-card:after{content:'';position:absolute;inset:auto 0 0;height:50%;background:linear-gradient(0deg,rgba(0,0,0,.55),transparent);z-index:1}
+    .filters-wrap{position:relative;top:auto;z-index:30}
+    .heart{display:none!important}
+    .photo-lightbox{position:fixed;inset:0;background:rgba(17,17,17,.96);z-index:260;display:none;align-items:center;justify-content:center;color:#fff;touch-action:none}
+    .photo-lightbox.show{display:flex}
+    .photo-lightbox-img{max-width:96vw;max-height:88dvh;width:auto;height:auto;object-fit:contain;transition:transform .08s linear;cursor:zoom-in;user-select:none;-webkit-user-drag:none}
+    .photo-lightbox-img.dragging{cursor:grabbing}
+    .photo-lightbox-close,.photo-lightbox-arrow{position:absolute;border:0;background:rgba(255,255,255,.14);color:#fff;border-radius:999px;width:42px;height:42px;font-size:26px;display:flex;align-items:center;justify-content:center;z-index:4}
+    .photo-lightbox-close{right:18px;top:18px}.photo-lightbox-arrow.prev{left:18px;top:50%;transform:translateY(-50%)}.photo-lightbox-arrow.next{right:18px;top:50%;transform:translateY(-50%)}
+    .zoom-hint{position:absolute;left:50%;bottom:46px;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.72);text-align:center}.photo-lightbox-counter{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.82)}
+    .bag-sheet{padding:0 20px 22px;overflow:auto}.bag-title{font-family:'Cormorant Garamond',Georgia,serif;font-size:34px;line-height:1;margin:6px 0 8px}.bag-sub{font-size:14px;line-height:1.55;color:#625B55;margin:0 0 16px}.bag-list{display:grid;gap:10px;margin:16px 0}.bag-item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;border:1px solid var(--border);padding:9px;background:#FAF8F6}.bag-item img{width:58px;height:76px;object-fit:cover;background:#EEE7DF}.bag-item h4{margin:0 0 3px;font-family:'Cormorant Garamond',Georgia,serif;font-size:20px;line-height:1}.bag-item p{margin:0;color:#625B55;font-size:12px;line-height:1.35}.bag-remove{border:0;background:transparent;font-size:20px;color:#7A746E;padding:6px}.bag-actions{position:sticky;bottom:0;background:#fff;padding-top:12px;border-top:1px solid var(--border)}.bag-actions .btn{width:100%;height:46px}.bag-empty{padding:28px 0;color:#625B55;font-size:14px;text-align:center}.side-menu-list{display:grid;gap:8px;margin:16px 0 0}.side-menu-list button,.side-menu-list a{height:42px;border:1px solid var(--border);background:#fff;color:var(--dark);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+    @media (max-width:720px){.top-shipping{font-weight:500}.filters-wrap{position:relative!important;top:auto!important;z-index:20}.filter-title{display:block!important;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin-bottom:9px}.category-showcase{padding:18px 0 18px}.category-showcase-head{padding:0 12px;display:block;margin-bottom:10px}.category-showcase h2{font-size:25px}.category-showcase p{display:none}.category-track{border-left:0;border-right:0;grid-auto-columns:72%;gap:1px}.category-card{min-height:190px}.header-actions .icon-btn[aria-label="WhatsApp"]{display:none!important}.bag-btn{display:inline-flex!important}.bottom-nav{grid-template-columns:repeat(4,1fr)!important}.bottom-nav .icon{width:20px;height:20px}.bottom-nav a{font-size:8.2px}.zoom-hint{display:none}.photo-lightbox-arrow{display:none}.photo-lightbox-close{right:14px;top:14px}.photo-lightbox-img{max-height:82dvh}.bag-sheet{padding-left:18px;padding-right:18px}.bag-title{font-size:31px}}
+
+    @media (max-width:720px){.filters-wrap{position:relative!important;top:auto!important}.top-shipping{position:relative!important}.category-showcase{border-top:1px solid var(--border)}}
+
+
+    /* NUDO v7: categorías visuales solo mobile, desktop simple */
+    .category-showcase{background:var(--bg);padding:24px 42px 22px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .category-showcase-head{margin-bottom:14px}.category-showcase h2{font-size:32px}
+    .category-track{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:1px;overflow-x:auto;scroll-snap-type:x mandatory;background:var(--border);border:1px solid var(--border);scrollbar-width:none}
+    .category-card{height:310px;min-height:310px;position:relative;overflow:hidden;border:0;background:#111;color:#fff;text-align:left;padding:0;scroll-snap-align:start;cursor:pointer}
+    .category-photo-stack{position:absolute;inset:0;background:#111}
+    .category-card .cat-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;opacity:0;transform:scale(1.015);filter:brightness(.76);transition:opacity .8s ease, transform 4.2s ease, filter .35s ease}
+    .category-card .cat-img.active{opacity:1;transform:scale(1.055)}
+    .category-card:hover .cat-img.active{filter:brightness(.68);transform:scale(1.075)}
+    .category-overlay{position:absolute;inset:auto 0 0;padding:52px 18px 18px;z-index:2;background:linear-gradient(0deg,rgba(0,0,0,.66),rgba(0,0,0,0))}
+    .category-overlay span{position:static;display:block;font-size:13px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#fff;margin:0 0 7px}
+    .category-overlay em{display:inline-flex;font-style:normal;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.82)}
+    .category-card small{display:none!important}.category-card:after{display:none!important}.category-card img:not(.cat-img){display:none}
+    @media (max-width:720px){
+      .category-showcase{padding:16px 0 16px}
+      .category-showcase-head{padding:0 14px;margin-bottom:10px}
+      .category-showcase h2{font-size:25px}
+      .category-track{grid-auto-columns:74%;border-left:0;border-right:0;gap:1px}
+      .category-card{height:255px;min-height:255px}
+      .category-overlay{padding:46px 16px 16px}
+      .category-overlay span{font-size:12px}.category-overlay em{font-size:9.5px}
+    }
+
+
+
+    /* v7: En desktop el catálogo queda simple: filtros + grid. Las categorías visuales solo aparecen en mobile. */
+    @media (min-width:721px){
+      .category-showcase{display:none!important}
+    }
+    @media (max-width:720px){
+      .category-showcase{display:block!important;background:var(--bg);padding:18px 0 20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+      .category-showcase-head{padding:0 14px;margin-bottom:10px}
+      .category-showcase h2{font-size:27px;line-height:1;margin:0}
+      .category-track{display:grid;grid-auto-flow:column;grid-auto-columns:84%;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;background:transparent;border:0;padding:0 14px 2px;scrollbar-width:none}
+      .category-track::-webkit-scrollbar{display:none}
+      .category-card{height:auto;min-height:0;aspect-ratio:4/5;border-radius:20px;scroll-snap-align:center;background:#e9e1d7;box-shadow:0 16px 34px rgba(17,17,17,.10)}
+      .category-card .cat-img{object-fit:cover;object-position:center;filter:brightness(.88);transition:opacity .9s ease, transform 4.6s ease, filter .35s ease}
+      .category-card .cat-img.active{transform:scale(1.025)}
+      .category-overlay{padding:72px 18px 18px;background:linear-gradient(0deg,rgba(0,0,0,.62),rgba(0,0,0,.05) 55%,transparent)}
+      .category-overlay span{font-size:13px;letter-spacing:.18em}
+      .category-overlay em{font-size:10px;letter-spacing:.15em;background:rgba(255,255,255,.94);color:#111;padding:10px 12px;border-radius:999px;margin-top:4px}
+    }
+    @media (max-width:390px){.category-track{grid-auto-columns:88%}.category-card{aspect-ratio:4/5}}
+
+
+    /* v11 QA: filtros avanzados más limpios en mobile */
+    @media (max-width:720px){
+      .filter-sheet-content{padding-left:18px;padding-right:18px}
+      .filter-options{gap:7px}
+      .filter-option{height:32px;padding:0 12px;font-size:10px;letter-spacing:.07em}
+      .filter-option.swatch{min-height:38px;padding:6px 10px 6px 7px}
+      .filter-option.swatch .swatch-dot{width:20px;height:20px}
+      .filter-group{padding:16px 0}
+      .filter-sheet-title{font-size:31px}
+      .filter-sheet-sub{font-size:12.5px}
+    }
+
+
+    /* NUDO v15 bugfix: los sheets cerrados quedan realmente inertes.
+       Evita que un drawer fuera de pantalla pueda capturar hit-testing/clics. */
+    .sheet:not(.show){pointer-events:none!important;visibility:hidden!important}
+    .sheet.show{pointer-events:auto!important;visibility:visible!important}
+    .sheet-backdrop:not(.show){pointer-events:none!important}
+
+
+    /* v16 BUGFIX: ningún sheet cerrado puede quedar sobre el catálogo.
+       Antes el productSheet desktop quedaba centrado con opacity:0 y su imagen
+       podía conservar cursor zoom-in / capturar hit-testing. */
+    .sheet{display:none!important;pointer-events:none!important;visibility:hidden!important;opacity:0!important}
+    .sheet.show{display:flex!important;pointer-events:auto!important;visibility:visible!important;opacity:1!important}
+    .sheet:not(.show),#productSheet.sheet:not(.show){top:auto!important;bottom:0!important;transform:translate(-50%,120vh)!important}
+    .sheet:not(.show) *{pointer-events:none!important;cursor:auto!important}
+    .photo-lightbox:not(.show){display:none!important;pointer-events:none!important;visibility:hidden!important}
+    .photo-lightbox:not(.show) *{pointer-events:none!important;cursor:auto!important}
+
+
+
+    /* NUDO v18: capas estables, precarga inicial y proporción 4:5 */
+    html.sheet-open{overflow:auto!important}
+    body{cursor:auto!important}
+    .sheet{display:none!important;pointer-events:none!important;visibility:hidden!important;opacity:0!important}
+    .sheet.show{display:flex!important;pointer-events:auto!important;visibility:visible!important;opacity:1!important}
+    .sheet[aria-hidden="true"], .sheet[aria-hidden="true"] *{pointer-events:none!important;cursor:auto!important}
+    .sheet-backdrop{display:none;pointer-events:none!important}
+    .sheet-backdrop.show{display:block;pointer-events:auto!important}
+    #productSheet:not(.show),#bagSheet:not(.show),#filterSheet:not(.show),#searchSheet:not(.show),#noticeSheet:not(.show){top:auto!important;bottom:0!important;transform:translate(-50%,120vh)!important}
+    #productSheet .gallery-slide img{object-fit:contain;background:#EEE7DF}
+    /* v25: el cursor zoom solo existe con el sheet realmente abierto.
+       Con el sheet cerrado, .sheet:not(.show) * ya fuerza cursor:auto y pointer-events:none,
+       así que no puede reaparecer el bug del cursor fantasma de v16. */
+    #productSheet.sheet.show .gallery-slide img{cursor:zoom-in!important}
+    #productSheet .modal-gallery{aspect-ratio:4/5;height:auto!important;min-height:0!important;max-height:none!important;background:#EEE7DF}
+    #productSheet .gallery-track,#productSheet .gallery-slide{height:100%}
+    @media (min-width:721px){
+      #productSheet .product-sheet-content{grid-template-columns:minmax(360px,520px) minmax(360px,1fr)!important;grid-template-rows:auto auto!important;align-items:start!important;max-height:min(88vh,820px)!important;overflow:auto!important}
+      #productSheet .modal-gallery{grid-column:1!important;grid-row:1 / 3!important;width:100%!important;height:auto!important;aspect-ratio:4/5!important;max-height:min(84vh,760px)!important;align-self:start!important}
+      #productSheet .modal-info{grid-column:2!important;grid-row:1!important;max-height:calc(min(88vh,820px) - 98px)!important;overflow:auto!important}
+      #productSheet .modal-actions{grid-column:2!important;grid-row:2!important;position:sticky!important;bottom:0!important;background:#fff!important}
+      #productSheet .dots{grid-column:1!important;grid-row:2!important;align-self:end!important;margin-bottom:18px!important}
+    }
+    @media (max-width:720px){
+      #productSheet .modal-gallery{width:100%!important;aspect-ratio:4/5!important;height:auto!important;min-height:0!important;max-height:none!important}
+      #productSheet .gallery-slide img{object-fit:contain!important;object-position:center!important}
+    }
+    .orkia-loader{position:fixed;inset:0;z-index:500;background:#FAF8F6;display:none;align-items:center;justify-content:center;text-align:center;color:#111;pointer-events:auto}
+    .orkia-loader.show{display:flex}
+    .orkia-loader-card{transform:translateY(-8px)}
+    .orkia-loader-logo{font-family:'Cormorant Garamond',Georgia,serif;font-size:54px;letter-spacing:.12em;font-weight:400;line-height:1;color:#111}
+    .orkia-loader-logo .brand-dot{width:7px;height:7px;transform:translateY(-5px)}
+    .orkia-loader-bars{display:flex;justify-content:center;gap:7px;margin:22px 0 12px}
+    .orkia-loader-bars span{width:7px;height:7px;border-radius:999px;background:var(--terracota);opacity:.32;animation:orkiaPulse .9s ease-in-out infinite}
+    .orkia-loader-bars span:nth-child(2){animation-delay:.12s}.orkia-loader-bars span:nth-child(3){animation-delay:.24s}.orkia-loader-bars span:nth-child(4){animation-delay:.36s}.orkia-loader-bars span:nth-child(5){animation-delay:.48s}
+    .orkia-loader-text{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#77736F;font-weight:600}
+    html.initial-loading,body.initial-loading{height:100%;overflow:hidden!important;overscroll-behavior:none}
+    body.initial-loading{background:#FAF8F6}
+    body.initial-loading #orkiaLoader{display:flex!important}
+    @keyframes orkiaPulse{0%,100%{opacity:.28;transform:translateY(0) scale(.82)}45%{opacity:1;transform:translateY(-5px) scale(1.08)}}
+    .catalog-rendering #grid{opacity:.72;transition:opacity .12s ease}
+
+    /* NUDO v24: fallback vh para navegadores sin soporte dvh (WebViews Android viejos).
+       El segundo valor (dvh) gana en navegadores modernos; el primero (vh) queda como respaldo. */
+    .sheet{max-height:92vh;max-height:92dvh}
+    .photo-lightbox-img{max-height:88vh;max-height:88dvh}
+    @media (max-width:720px){
+      .sheet{max-height:96vh;max-height:96dvh}
+      .photo-lightbox-img{max-height:82vh;max-height:82dvh}
+    }
+    /* NUDO v24: el scroll interno de un sheet no encadena al fondo de la página. */
+    .product-sheet-content,.bag-sheet,.filter-sheet-content,.search-sheet-content,.notice-sheet{overscroll-behavior:contain}
+
+  </style>
+</head>
+<body class="initial-loading">
+  <div class="orkia-loader show" id="orkiaLoader" aria-live="polite" aria-label="Cargando catálogo Nudo">
+    <div class="orkia-loader-card">
+      <div class="orkia-loader-logo">NUDO<span class="brand-dot"></span></div>
+      <div class="orkia-loader-bars" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="orkia-loader-text" id="orkiaLoaderText">Cargando catálogo</div>
+    </div>
+  </div>
+
+  <header class="site-header" id="inicio">
+    <div class="header-inner">
+      <button class="icon-btn menu-btn" aria-label="Abrir menú">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+      <a class="brand" href="#inicio" aria-label="Nudo inicio">
+        <div class="brand-logo">NUDO<span class="brand-dot"></span></div>
+        <div class="brand-sub">Underwear masculino</div>
+      </a>
+      <nav class="desktop-nav" aria-label="Navegación principal">
+        <a href="#nuevo">Nuevo</a><a href="#origen">Origen Colombia</a><a href="#nosotros">Nosotros</a>
+      </nav>
+      <div class="header-actions">
+        <button class="icon-btn" id="searchBtn" type="button" aria-label="Buscar"><svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
+        <button class="icon-btn bag-btn" id="bagHeaderBtn" type="button" aria-label="Selección"><svg class="icon" viewBox="0 0 24 24"><path d="M6 8h12l-1 13H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg><span class="bag-count" id="bagCountHeader">0</span></button>
+        <a class="icon-btn" href="https://wa.me/50248304736?text=Hola%20Nudo%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20su%20ropa%20interior." target="_blank" rel="noopener" aria-label="WhatsApp"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/><path d="M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8c.3.1.4.3.4.6v.4c0 .4-.2.7-.6.9-.6.3-1.9.4-3.8-.6-2.6-1.3-4.3-4.1-4.4-5.5 0-.5.2-.9.4-1.3Z"/></svg></a>
+      </div>
+    </div>
+  </header>
+
+  <div class="top-shipping" role="note">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
+    <span>Envío gratis desde <span class="q">Q250</span></span>
+  </div>
+
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <div class="eyebrow">Underwear masculino</div>
+        <h1 id="hero-title" class="serif">Ropa interior masculina con presencia.</h1>
+        <p>Diseños masculinos con fit cómodo, materiales seleccionados y una compra discreta por WhatsApp. Seguridad sin exagerar.</p>
+        <a class="btn" href="#nuevo">Ver novedades</a>
+        <div class="hero-meta">Ropa interior masculina desde Q129</div>
+      </div>
+      <div class="hero-image-wrap">
+        <picture class="hero-picture">
+          <source media="(max-width: 720px)" srcset="https://img.casajrp.com/nudo/banners/home-hero-mobile.webp">
+          <img id="heroImg" class="hero-img" alt="Ropa interior masculina Nudo" src="https://img.casajrp.com/nudo/banners/home-hero-desktop.webp" width="1920" height="600" loading="eager" fetchpriority="high" decoding="async" />
+        </picture>
+      </div>
+    </div>
+  </section>
+
+  <section class="category-showcase" id="categorias" aria-labelledby="categorias-title">
+    <div class="category-showcase-head">
+      <h2 id="categorias-title">Explora por categoría</h2>
+      <p></p>
+    </div>
+    <div class="category-track" id="categoryTrack" aria-label="Categorías de prendas"></div>
+  </section>
+
+
+  <section class="filters-wrap" id="ropa" aria-label="Filtros de catálogo">
+    <div class="filters-inner">
+      <div class="filter-title">Filtrar catálogo</div>
+      <div class="pills" id="pills">
+        <button class="pill active" data-filter="__nuevo">Nuevo</button>
+        <button class="pill sale" data-filter="__menos250">Menos de Q250</button>
+        <button class="pill" data-filter="tipo::Tanga">Tanga</button>
+        <button class="pill" data-filter="tipo::Suspensorio">Suspensorio</button>
+        <button class="pill" data-filter="tipo::Brief">Brief</button>
+        <button class="pill" data-filter="tipo::Jockstrap">Jockstrap</button>
+        <button class="pill" data-filter="tipo::Bañador">Bañador</button>
+      </div>
+      <div class="filter-actions">
+        <button class="icon-btn filter-action" id="filterBtn">Filtrar <span class="chev"></span></button>
+        <div class="sort-wrap">
+          <button class="icon-btn filter-action" id="sortBtn" type="button" aria-haspopup="menu" aria-expanded="false">Ordenar: destacados <span class="chev"></span></button>
+          <div class="sort-menu" id="sortMenu" role="menu" aria-label="Ordenar productos">
+            <button class="sort-option active" data-sort="destacados" role="menuitem">Destacados</button>
+            <button class="sort-option" data-sort="precio_asc" role="menuitem">Menor precio</button>
+            <button class="sort-option" data-sort="precio_desc" role="menuitem">Mayor precio</button>
+            <button class="sort-option" data-sort="az" role="menuitem">A-Z</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <main>
+    <section id="nuevo" aria-labelledby="nuevo-title">
+      <div class="section-head">
+        <h2 id="nuevo-title">Nuevo</h2>
+        <a class="view-all" href="#nuevo">Ver todo <span class="arrow">→</span></a>
+      </div>
+      <div class="debug-box" id="debugBox"></div><div class="grid" id="grid"><div class="loading-state">Cargando prendas...</div></div>
+    </section>
+
+    <section class="story-section" id="origen" aria-labelledby="origen-title">
+      <div class="story-copy">
+        <div class="story-kicker">Origen Colombia</div>
+        <h2 class="story-title" id="origen-title">Diseño íntimo, elegido con intención.</h2>
+        <p>Nudo acerca a Guatemala una selección de ropa interior masculina colombiana: piezas cómodas, visuales y seguras para hombres que cuidan cómo se ven y cómo se sienten.</p>
+        <p>Creemos en el fit correcto, en materiales que acompañan el cuerpo y en una compra sin ruido: menos exposición, más seguridad y atención directa.</p>
+      </div>
+      <div class="story-panel">
+        <h3>Lo que cuidamos</h3>
+        <ul class="story-list">
+          <li><strong>Fit:</strong> prendas seleccionadas por comodidad, soporte y presencia visual.</li>
+          <li><strong>Materiales:</strong> telas y elásticos pensados para uso íntimo, con acabados limpios.</li>
+          <li><strong>Discreción:</strong> atención por WhatsApp y envío cuidado para comprar con tranquilidad.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="value-props" aria-label="Propuesta de valor">
+      <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3 5 5v4l-2 3 3 3v4l4 2 3-2 4 1 3-4-2-3 1-4-4-2-2-4z"/></svg><div><h3>Diseño colombiano</h3><p>Ropa interior masculina seleccionada por fit, materiales y presencia.</p></div></article>
+      <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M4 21h16M7 21V7a5 5 0 0 1 10 0v14M9 8h6M9 12h6M9 16h6"/></svg><div><h3>Materiales cómodos</h3><p>Telas, elásticos y acabados pensados para moverse contigo.</p></div></article>
+      <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/><path d="M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8"/></svg><div><h3>Atención por WhatsApp</h3><p>Te ayudamos con color, talla, fit y disponibilidad antes de comprar.</p></div></article>
+      <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 7v14M12 7H7.5A2.5 2.5 0 1 1 12 4.5M12 7h4.5A2.5 2.5 0 1 0 12 4.5"/></svg><div><h3>Envío gratis +Q250</h3><p>Envío gratis en compras mayores a Q250.</p></div></article>
+    </section>
+
+    <section class="about-section" id="nosotros" aria-labelledby="nosotros-title">
+      <div class="story-copy">
+        <div class="story-kicker">Nosotros</div>
+        <h2 class="story-title" id="nosotros-title">Una forma discreta de comprar underwear masculino.</h2>
+        <p>Nudo nace dentro de CASA JRP para conectar diseño colombiano con hombres en Guatemala que buscan ropa interior cómoda, segura y con carácter.</p>
+        <p>Puedes agregar varias prendas a tu selección y enviarlas juntas por WhatsApp. Así te ayudamos con dudas de color, fit, medidas y finalización de compra sin hacerte repetir producto por producto.</p>
+      </div>
+      <div class="story-panel">
+        <h3>Cómo comprar</h3>
+        <ul class="story-list">
+          <li>Explora el catálogo y toca <strong>Ver opciones</strong>.</li>
+          <li>Elige color y, cuando aplique, talla.</li>
+          <li>Agrega tus prendas a <strong>Selección</strong> y envíalas juntas por WhatsApp cuando estés listo.</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="brand-logo">NUDO<span class="brand-dot"></span></div>
+    <p>Guatemala · Underwear masculino colombiano · © 2026 CASA JRP</p>
+  </footer>
+
+  <nav class="bottom-nav" aria-label="Navegación inferior móvil">
+    <a href="#inicio" class="active" id="navInicio"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H5v-9"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
+    <a href="#categorias" id="navCategorias"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Categorías</a>
+    <a href="#" id="navBolsa"><svg class="icon" viewBox="0 0 24 24"><path d="M6 8h12l-1 13H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg >Selección<span class="bag-count" id="bagCountNav">0</span></a>
+    <a href="https://wa.me/50248304736?text=Hola%20Nudo%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20su%20ropa%20interior." target="_blank" rel="noopener" id="navWhatsapp"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/></svg>WhatsApp</a>
+  </nav>
+
+  <div class="sheet-backdrop" id="backdrop"></div>
+  <section class="sheet" id="productSheet" aria-modal="true" role="dialog" aria-label="Detalle de producto">
+    <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
+    <div class="product-sheet-content" id="productContent"></div>
+  </section>
+  <section class="sheet" id="noticeSheet" aria-modal="true" role="dialog" aria-label="Avisarme cuando llegue">
+    <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
+    <div class="notice-sheet" id="noticeContent"></div>
+  </section>
+
+  <section class="sheet" id="filterSheet" aria-modal="true" role="dialog" aria-label="Filtros de catálogo">
+    <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
+    <div class="filter-sheet-content" id="filterContent"></div>
+  </section>
+
+  <section class="sheet" id="searchSheet" aria-modal="true" role="dialog" aria-label="Buscar prendas">
+    <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
+    <div class="search-sheet-content">
+      <h3 class="search-title">Buscar prendas</h3>
+      <input class="search-input" id="searchInput" type="search" placeholder="Buscar tanga, brief, negro, Q199…" autocomplete="off">
+      <p class="search-help">Busca por tipo de prenda, color, precio, patrón, referencia o código interno.</p>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+  </section>
+
+
+  <section class="sheet" id="bagSheet" aria-modal="true" role="dialog" aria-label="Selección para WhatsApp">
+    <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
+    <div class="bag-sheet" id="bagContent"></div>
+  </section>
+
+
+  <div class="photo-lightbox" id="photoLightbox" aria-modal="true" role="dialog" aria-label="Foto ampliada">
+    <button class="photo-lightbox-close" id="photoLightboxClose" type="button" aria-label="Cerrar foto ampliada">×</button>
+    <button class="photo-lightbox-arrow prev" id="photoLightboxPrev" type="button" aria-label="Foto anterior">‹</button>
+    <img class="photo-lightbox-img" id="photoLightboxImg" alt="Foto ampliada de producto">
+    <button class="photo-lightbox-arrow next" id="photoLightboxNext" type="button" aria-label="Foto siguiente">›</button>
+    <div class="zoom-hint">Toca dos veces o pellizca para ampliar</div>
+    <div class="photo-lightbox-counter" id="photoLightboxCounter">1 / 1</div>
+  </div>
+
+  <script>
+    const AS_URL = 'https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec';
+    const MARCA = 'nudo';
+    const WA_NUMBER = '50248304736';
+    const UTM = new URLSearchParams(window.location.search).get('utm') || 'directo';
+    const BAG_KEY = 'nudo_seleccion_whatsapp_v1';
+    const BAG_KEY_LEGACY = 'nudo_bolsa_whatsapp_v1';
+    // v24: El catálogo visible sale únicamente de Apps Script en vivo.
+    // Apps Script ya filtra Foto_Publicada = TRUE, así el front no valida foto por foto.
+    // Se eliminaron cache local, semilla y fast slots: nunca se muestra inventario falso.
+    let allVariants = [];
+    let allProducts = [];
+    let currentFilter = '__nuevo';
+    let advancedFilters = {tipo:'', color:'', patron:'', precio:'', plus:false};
+    // v28: copia de trabajo que vive SOLO mientras el sheet de filtros está abierto.
+    // Los taps dentro del sheet mutan esto, no advancedFilters. Solo "Aplicar filtros"
+    // copia stagedFilters -> advancedFilters. Cerrar el sheet sin aplicar (backdrop, X,
+    // swipe, Escape) simplemente descarta stagedFilters sin tocar el estado real.
+    let stagedFilters = {tipo:'', color:'', patron:'', precio:'', plus:false};
+    let currentSort = 'destacados';
+    let searchTerm = '';
+    let bagItems = readBag();
+    let categoryAutoTimer = null;
+    let catalogSource = 'inicial';
+    let rawStats = {recibidos:0, urlsConFoto:0, sinUrl:0, visiblesIniciales:0, modelos:0};
+    // v26: 15s en vez de 9s. Un cold start de Apps Script (script "dormido") puede tardar
+    // 8 a 12s en responder, sobre todo con catálogos grandes (100+ productos). Con 9s el
+    // timeout se ganaba la carrera antes de que el script alcanzara a contestar.
+    const INITIAL_CATALOG_TIMEOUT_MS = 15000;
+    const MIN_INITIAL_LOADER_MS = 300;
+    const FREE_SHIPPING_THRESHOLD = 250;
+    const NUDO_PREFERRED_TYPES = ['Tanga','Tanga Hilo','Tanga Amarrar','Tanga 2cm','Suspensorio','Suspensorio Liguero','Suspensorio 2cm','Suspensorio Tanga','Brief','Bikini','Body','Jockstrap','Bañador','Arnés Aro','Arnés con Hebillas'];
+    const NUDO_SIZE_SELECTOR_TYPES = ['Jockstrap','Brief Bikini','Brief','Bikini','Bañador','Suspensorio Liguero'];
+
+    const $ = (sel, root=document) => root.querySelector(sel);
+    const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+    const money = v => 'Q' + (Number(v) || 0).toLocaleString('es-GT', {maximumFractionDigits:0});
+    const safe = v => String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    const encode = encodeURIComponent;
+    const normalize = v => String(v ?? '').trim();
+
+    let _loaderTimer = null;
+    function showNudoLoader(text='Cargando catálogo'){
+      const loader = $('#orkiaLoader');
+      const label = $('#orkiaLoaderText');
+      if(label) label.textContent = text;
+      if(loader){ loader.classList.add('show'); }
+      clearTimeout(_loaderTimer);
+    }
+    function hideNudoLoader(delay=120){
+      clearTimeout(_loaderTimer);
+      _loaderTimer = setTimeout(()=>{
+        const loader = $('#orkiaLoader');
+        if(loader) loader.classList.remove('show');
+      }, delay);
+    }
+    function releaseInitialPreload(delay=180){
+      clearTimeout(_loaderTimer);
+      _loaderTimer = setTimeout(()=>{
+        document.body.classList.remove('initial-loading');
+        document.documentElement.classList.remove('initial-loading');
+        void document.body.offsetHeight;
+        requestAnimationFrame(()=>{
+          const loader = $('#orkiaLoader');
+          if(loader) loader.classList.remove('show');
+        });
+      }, delay);
+    }
+    function nextFrame(){ return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))); }
+    // v26: los re-renders por filtro/orden/búsqueda ya NO muestran el loader opaco de
+    // pantalla completa (era un flash blanco agresivo por cada tap y, si algo fallaba,
+    // el overlay con pointer-events podía bloquear la página). Solo se atenúa el grid
+    // (.catalog-rendering). El loader completo queda exclusivo de la carga inicial.
+    // El try/finally se mantiene: pase lo que pase, la atenuación se libera.
+    async function safeRenderGrid(opts={}){
+      document.documentElement.classList.add('catalog-rendering');
+      closeSheets({keepLoader:true});
+      try{
+        await nextFrame();
+        renderGrid();
+        void document.body.offsetHeight;
+        if(opts.scroll){ document.getElementById('nuevo')?.scrollIntoView({behavior:'smooth', block:'start'}); }
+        await nextFrame();
+      }catch(err){
+        console.error('[NUDO] renderGrid falló. Se libera la atenuación para no bloquear al cliente.', err);
+      }finally{
+        document.documentElement.classList.remove('catalog-rendering');
+      }
+    }
+
+    function iconTruck(){return '<svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>'}
+    function iconHeart(){return '<svg class="icon" viewBox="0 0 24 24"><path d="M20.8 4.6a5.2 5.2 0 0 0-7.4 0L12 6l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 20.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4Z"/></svg>'}
+
+    document.addEventListener('DOMContentLoaded', ()=>{ init(); });
+    function init(){
+      // v30: sin esto, al cerrar un sheet con el gesto de atrás (trampa de historial v29)
+      // el navegador puede "restaurar" el scroll a la posición registrada al abrir el sheet,
+      // provocando un salto si la cliente scrolleó el fondo mientras el sheet estaba abierto.
+      try{ if('scrollRestoration' in history) history.scrollRestoration = 'manual'; }catch(e){}
+      clearLegacyCatalogCaches();
+      bindGlobalEvents();
+      bindCatalogDelegatedClicks();
+      updateBagUI();
+      loadInitialCatalogStable();
+    }
+
+    function clearLegacyCatalogCaches(){
+      try{
+        localStorage.removeItem('orkia_catalog_cache_v2');
+        localStorage.removeItem('orkia_catalog_cache_v1');
+        localStorage.removeItem('orkia_catalog_cache_v19_live_only');
+        localStorage.removeItem('orkia_catalog_cache_v22_foto_publicada');
+      }catch(err){}
+    }
+
+    function bindGlobalEvents(){
+      $('#backdrop').addEventListener('click', closeSheets);
+      $('#filterBtn').addEventListener('click', openFilterSheet);
+      $('#searchBtn').addEventListener('click', openSearchSheet);
+      const menuBtn = $('.menu-btn'); if(menuBtn) menuBtn.addEventListener('click', openMenuSheet);
+      const bagHeaderBtn = $('#bagHeaderBtn'); if(bagHeaderBtn) bagHeaderBtn.addEventListener('click', openBagSheet);
+      const navBolsa = $('#navBolsa'); if(navBolsa) navBolsa.addEventListener('click', e=>{ e.preventDefault(); openBagSheet(); });
+      const navCategorias = $('#navCategorias'); if(navCategorias) navCategorias.addEventListener('click', e=>{ e.preventDefault(); document.getElementById('categorias')?.scrollIntoView({behavior:'smooth', block:'start'}); });
+      $('#sortBtn').addEventListener('click', toggleSortMenu);
+      $('#sortMenu').addEventListener('click', chooseSort);
+      document.addEventListener('click', closeSortOnOutside);
+      // v26/v29: Escape cierra la capa superior. Si el lightbox está abierto, lo cierra a él
+      // primero (deja el sheet de producto de fondo intacto); si no, cierra el sheet activo;
+      // si tampoco hay sheet, cierra el menú de orden.
+      document.addEventListener('keydown', e=>{
+        if(e.key !== 'Escape') return;
+        const lb = $('#photoLightbox');
+        if(lb && lb.classList.contains('show')){ closePhotoLightbox(); return; }
+        if(activeSheet) closeSheets();
+        else closeSortMenu();
+      });
+      $$('[data-close]').forEach(b=>b.addEventListener('click', closeSheets));
+      $('#pills').addEventListener('click', e=>{
+        const btn = e.target.closest('.pill'); if(!btn) return;
+        currentFilter = btn.dataset.filter;
+        searchTerm = '';
+        advancedFilters = {tipo:'', color:'', patron:'', precio:'', plus:false};
+        $$('.pill').forEach(p=>p.classList.toggle('active', p===btn));
+        safeRenderGrid({text:'Aplicando filtro'});
+      });
+    }
+
+    // NUDO v15 bugfix: activación delegada de cards.
+    // Antes cada card recibía su propio listener después de renderGrid(). Si después de abrir/cerrar
+    // la selección el navegador quedaba con hit-testing raro, algunos clics podían no llegar al
+    // listener de la card esperada. Esta capa escucha en document en capture y resuelve la card real
+    // bajo el toque/clic, incluso después de re-renderizados o sheets.
+    let _cardPointerDown = null;
+    let _lastCardActivation = {key:'', ts:0};
+    // v24: cuando el modal se abre en pointerup (touch), el navegador dispara ~10ms
+    // después un click sintético en las mismas coordenadas, que aterriza DENTRO del
+    // sheet recién abierto (podía seleccionar un color, mover la galería o cerrar).
+    // Se suprime ese click fantasma durante una ventana corta.
+    let _suppressNextClickUntil = 0;
+
+    function bindCatalogDelegatedClicks(){
+      document.addEventListener('pointerdown', e=>{
+        const card = e.target && e.target.closest ? e.target.closest('.product-card') : null;
+        if(!card || e.target.closest('.sheet') || e.target.closest('.photo-lightbox')) return;
+        _cardPointerDown = {x:e.clientX, y:e.clientY, key:card.dataset.key || '', target:e.target};
+      }, true);
+
+      document.addEventListener('pointerup', e=>{
+        if(!_cardPointerDown) return;
+        const dx = Math.abs((e.clientX || 0) - _cardPointerDown.x);
+        const dy = Math.abs((e.clientY || 0) - _cardPointerDown.y);
+        const moved = dx > 10 || dy > 10;
+        const isTouchLike = e.pointerType === 'touch' || e.pointerType === 'pen';
+        if(isTouchLike && !moved){
+          const activated = activateCatalogCardFromEvent(e, 'pointerup');
+          if(activated) _suppressNextClickUntil = Date.now() + 500;
+        }
+        _cardPointerDown = null;
+      }, true);
+
+      document.addEventListener('click', e=>{
+        if(Date.now() < _suppressNextClickUntil){
+          _suppressNextClickUntil = 0;
+          e.preventDefault();
+          e.stopPropagation();
+          if(typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+          return;
+        }
+        activateCatalogCardFromEvent(e, 'click');
+      }, true);
+    }
+
+    function activateCatalogCardFromEvent(e, source){
+      if(!e || !e.target || !e.target.closest) return false;
+      if(e.target.closest('.sheet') || e.target.closest('.photo-lightbox')) return false;
+      const card = e.target.closest('.product-card');
+      if(!card) return false;
+      if(e.target.closest('.card-color-dot')) return false;
+
+      const key = card.dataset.key;
+      if(!key) return false;
+      const now = Date.now();
+      if(_lastCardActivation.key === key && now - _lastCardActivation.ts < 450) return true;
+      _lastCardActivation = {key, ts:now};
+
+      const group = allProducts.find(x=>String(x.sku_key)===String(key));
+      if(!group) return false;
+
+      e.preventDefault();
+      e.stopPropagation();
+      if(typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+
+      if(e.target.closest('[data-action="notice"]')) { openNotice(group); return true; }
+      // v30: un modelo completamente agotado abre directamente "Avísame". Antes abría el
+      // modal de producto con todos los colores deshabilitados y el botón de agregar muerto:
+      // un callejón sin salida. El flujo correcto para agotados es capturar demanda.
+      if(group.agotado){ openNotice(group); return true; }
+      openProductGroup(group);
+      return true;
+    }
+
+
+    function withTimeout(promise, ms){
+      return new Promise((resolve, reject)=>{
+        const timer = setTimeout(()=>reject(new Error('catalog_timeout')), ms);
+        Promise.resolve(promise).then(
+          value => { clearTimeout(timer); resolve(value); },
+          err => { clearTimeout(timer); reject(err); }
+        );
+      });
+    }
+
+    // v26: AbortController cancela la conexión real al vencer el timeout.
+    // Antes withTimeout rechazaba la promesa pero el request seguía vivo en background.
+    async function fetchLiveCatalog(timeoutMs = INITIAL_CATALOG_TIMEOUT_MS){
+      const ctrl = new AbortController();
+      const abortTimer = setTimeout(()=>ctrl.abort(), timeoutMs);
+      try{
+        const res = await fetch(`${AS_URL}?accion=get_catalogo&marca=${MARCA}`, {cache:'no-store', signal:ctrl.signal});
+        const data = await res.json();
+        if(!data.ok) throw new Error(data.error || 'Respuesta no válida');
+        return data;
+      }finally{
+        clearTimeout(abortTimer);
+      }
+    }
+
+    async function loadInitialCatalogStable(){
+      const started = Date.now();
+      showNudoLoader('Cargando catálogo');
+      try{
+        const data = await withTimeout(fetchLiveCatalog(), INITIAL_CATALOG_TIMEOUT_MS);
+        // v24: Apps Script ya devuelve únicamente productos con Foto_Publicada = TRUE.
+        // No validamos imágenes una por una en el navegador para evitar una precarga pesada.
+        const rawProducts = (data.productos || []).filter(p => p && (p.foto_publicada === true || String(p.foto_publicada).toUpperCase() === 'TRUE'));
+
+        // v23: no escribimos cache local en la carga inicial.
+        // El catálogo visible debe venir del Apps Script en vivo para evitar inventario viejo.
+        setCatalog(rawProducts, {source:'Apps Script en vivo · Foto_Publicada', total:Number(data.total || rawProducts.length || 0), keepLoader:true});
+      }catch(err){
+        console.warn('[NUDO] Carga inicial en vivo no disponible. No se muestran productos semilla para evitar inventario falso.', err);
+        showCatalogLoadError();
+      }finally{
+        const elapsed = Date.now() - started;
+        const wait = Math.max(0, MIN_INITIAL_LOADER_MS - elapsed);
+        setTimeout(()=>releaseInitialPreload(120), wait);
+      }
+    }
+
+
+
+    function showCatalogLoadError(){
+      catalogSource = 'sin catálogo en vivo';
+      allVariants = [];
+      allProducts = [];
+      rawStats = {recibidos:0, urlsConFoto:0, sinUrl:0, visiblesIniciales:0, modelos:0};
+      const grid = $('#grid');
+      if(grid){
+        grid.innerHTML = `<div class="empty-state"><strong>No pudimos preparar el catálogo en este momento.</strong><br>Revisa tu conexión e intenta de nuevo.<br><br><button class="btn" type="button" id="retryCatalogBtn">Reintentar</button></div>`;
+        const retry = $('#retryCatalogBtn');
+        if(retry) retry.addEventListener('click', loadInitialCatalogStable, {once:true});
+      }
+      const cat = $('#categoryTrack');
+      if(cat) cat.innerHTML = '';
+      buildDynamicFilters();
+      updateBagUI();
+      updateDebugBox();
+    }
+
+    function setCatalog(rawProducts, opts={}){
+      rawProducts = Array.isArray(rawProducts) ? rawProducts : [];
+      catalogSource = opts.source || catalogSource;
+      rawStats.recibidos = Number(opts.total || rawProducts.length || 0);
+      rawStats.urlsConFoto = rawProducts.filter(p => p.url_imagen || p.url_imagen_2 || p.url_imagen_3).length;
+      rawStats.sinUrl = rawProducts.filter(p => !(p.url_imagen || p.url_imagen_2 || p.url_imagen_3)).length;
+      allVariants = rawProducts.filter(p => p.url_imagen || p.url_imagen_2 || p.url_imagen_3);
+      rawStats.visiblesIniciales = allVariants.length;
+      allProducts = groupBySkuProveedor(allVariants);
+      rawStats.modelos = allProducts.length;
+      buildDynamicFilters();
+      renderGrid();
+      renderCategoryShowcase();
+      updateBagUI();
+      updateDebugBox();
+      if(!opts.keepLoader) hideNudoLoader(180);
+    }
+
+    function groupBySkuProveedor(variants){
+      const map = new Map();
+      variants.forEach(v=>{
+        const key = normalize(v.ref_proveedor) || `producto-${v.id_producto}`;
+        if(!map.has(key)){
+          map.set(key, { sku_key:key, ref_proveedor:v.ref_proveedor || '', variants:[], tipo_prenda:v.tipo_prenda || 'Prenda', patron:v.patron || '', descripcion:v.descripcion || 'Prenda Nudo' });
+        }
+        map.get(key).variants.push(v);
+      });
+      return [...map.values()].map(g=>{
+        const available = g.variants.filter(v=>!v.agotado && Number(v.stock_total||0)>0);
+        const display = available[0] || g.variants[0];
+        const prices = g.variants.map(v=>Number(v.precio_gtq)||0).filter(Boolean);
+        const colorSource = available.length ? available : g.variants;
+        const colors = [...new Set(colorSource.map(v=>normalize(v.color)).filter(Boolean))];
+        g.display = display;
+        g.id_producto = display.id_producto;
+        g.descripcion = display.descripcion || g.descripcion;
+        g.tipo_prenda = display.tipo_prenda || g.tipo_prenda;
+        g.patron = display.patron || g.patron;
+        g.precio_gtq = prices.length ? Math.min(...prices) : (display.precio_gtq || 0);
+        g.url_imagen = display.url_imagen;
+        g.url_imagen_2 = display.url_imagen_2;
+        g.url_imagen_3 = display.url_imagen_3;
+        g.stock_total = g.variants.reduce((s,v)=>s+(Number(v.stock_total)||0),0);
+        g.agotado = available.length === 0;
+        g.colors = colors;
+        g.color = colors[0] || display.color || '';
+        g.tallas = [...new Set(g.variants.flatMap(v=>v.tallas||[]))];
+        g.tallas_agotadas = [...new Set(g.variants.flatMap(v=>v.tallas_agotadas||[]))];
+        return g;
+      });
+    }
+
+
+    // v27 FIX: cuando el filtro de color activo es una FAMILIA (p.ej. "Verde" agrupa
+    // "Verde Botella", "Oliva" y "Menta"), antes se mostraba la foto de la primera variante
+    // que calzara con la familia, en el orden en que llegó desde Sheets/Apps Script, sin
+    // relación con cuál color exacto tenía la cliente en mente. Resultado: filtrar "Verde"
+    // podía enseñar la foto correcta de un SKU real, pero de un color distinto (Menta), lo
+    // que la cliente percibía como "la foto de otro SKU" aunque el archivo en R2 estuviera bien.
+    // Ahora se prioriza el color cuyo nombre exacto coincide con el filtro, y solo si ninguno
+    // coincide exacto se cae a cualquier variante de la misma familia.
+    // v28: segundo seguro. advancedFilters.color solo debe influir en qué foto se muestra
+    // cuando el filtro avanzado está realmente activo (currentFilter === '__advanced'), nunca
+    // como efecto colateral de estar simplemente "guardado" en el objeto sin haberse aplicado.
+    function variantForDisplay(g){
+      const colorFilter = (currentFilter === '__advanced' ? advancedFilters.color : '') || searchColorPreference() || '';
+      if(colorFilter){
+        const inFamily = g.variants.filter(v => colorFamily(v.color) === colorFilter);
+        if(inFamily.length){
+          const exact = inFamily.filter(v => normColor(v.color) === normColor(colorFilter));
+          const pool = exact.length ? exact : inFamily;
+          return pool.find(v => !v.agotado && Number(v.stock_total||0)>0) || pool[0];
+        }
+      }
+      return g.variants.find(v=>!v.agotado && Number(v.stock_total||0)>0) || g.variants[0];
+    }
+
+    // v30: pills rápidos dinámicos. Solo se muestran los tipos que tienen al menos un modelo
+    // visible (con foto; los agotados se mantienen a propósito para captar demanda con Avísame),
+    // en el orden de preferencia de Nudo. Menos de Q250 se oculta si quedaría
+    // vacío, para no ofrecer filtros que llevan a un grid sin resultados.
+    function buildDynamicFilters(){
+      const pills = $('#pills');
+      const preferredOrder = NUDO_PREFERRED_TYPES;
+      const presentTipos = new Set(allProducts.map(g => normalize(g.tipo_prenda)).filter(Boolean));
+      const quickTypes = [
+        ...preferredOrder.filter(t => presentTipos.has(t)),
+        ...[...presentTipos].filter(t => !preferredOrder.includes(t)).sort((a,b)=>a.localeCompare(b,'es'))
+      ];
+      const hayMenos250 = allProducts.some(g => Number(g.precio_gtq) <= FREE_SHIPPING_THRESHOLD);
+      const quick = [
+        '<button class="pill active" data-filter="__nuevo">Nuevo</button>',
+        hayMenos250 ? '<button class="pill sale" data-filter="__menos250">Menos de Q250</button>' : '',
+        ...quickTypes.map(t => `<button class="pill" data-filter="tipo::${safe(t)}">${safe(t)}</button>`)
+      ].filter(Boolean);
+      pills.innerHTML = quick.join('');
+      $$('.pill', pills).forEach(p=>p.classList.toggle('active', p.dataset.filter === currentFilter));
+    }
+
+    function hasPlusSize(item){
+      const variants = item.variants || [item];
+      return variants.some(p => [...(p.tallas || []), ...(p.tallas_agotadas || [])]
+        .map(t => String(t).toUpperCase().trim())
+        .some(t => ['XL','XXL','1XL','2XL','3XL','4XL','PLUS','TALLA PLUS','CURVY'].includes(t)));
+    }
+    function isVariantInStock(v){ return !!v && !v.agotado && Number(v.stock_total || 0) > 0; }
+    function variantHasPhoto(v){ return !!v && !!(v.url_imagen || v.url_imagen_2 || v.url_imagen_3); }
+    function visibleVariantsFor(g){ return (g.variants || []).filter(variantHasPhoto); }
+    function availableVariantsFor(g){ return (g.variants || []).filter(isVariantInStock); }
+    function groupHasValue(g, field, value){ return visibleVariantsFor(g).some(v => normalize(v[field]) === value); }
+    function groupHasColor(g, value){ return visibleVariantsFor(g).some(v => colorFamily(v.color) === value); }
+    // v27: helpers para el sheet de filtros dinámicos.
+    function variantHasPlusSize(v){
+      return [...(v.tallas || []), ...(v.tallas_agotadas || [])]
+        .map(t => String(t).toUpperCase().trim())
+        .some(t => ['XL','XXL','1XL','2XL','3XL','4XL','PLUS','TALLA PLUS','CURVY'].includes(t));
+    }
+    // Tipo activo hoy dentro del sheet, venga del pill rápido (tipo::Tanga) o del borrador.
+    // v28: usa SIEMPRE stagedFilters (el borrador), nunca advancedFilters directamente, porque
+    // esta función solo se invoca para calcular facetas mientras el sheet está abierto.
+    function activeTipoFilter(){
+      if(stagedFilters.tipo) return stagedFilters.tipo;
+      if(currentFilter.startsWith('tipo::')) return currentFilter.slice('tipo::'.length);
+      return '';
+    }
+    // v27/v28: pool de variantes con stock y foto, aplicando el BORRADOR de filtros (stagedFilters)
+    // excepto el campo indicado en excludeField. Cascada en vivo mientras se explora el sheet,
+    // sin tocar advancedFilters (el estado que de verdad afecta el catálogo detrás).
+    function facetPool(excludeField){
+      let pool = allVariants.filter(v => variantHasPhoto(v) && isVariantInStock(v));
+      const tipo = excludeField === 'tipo' ? '' : activeTipoFilter();
+      if(tipo) pool = pool.filter(v => normalize(v.tipo_prenda) === tipo);
+      if(excludeField !== 'color' && stagedFilters.color) pool = pool.filter(v => colorFamily(v.color) === stagedFilters.color);
+      if(excludeField !== 'patron' && stagedFilters.patron) pool = pool.filter(v => normalize(v.patron) === stagedFilters.patron);
+      if(excludeField !== 'precio' && stagedFilters.precio === 'menos250') pool = pool.filter(v => Number(v.precio_gtq) <= 250);
+      return pool;
+    }
+
+
+
+    function readBag(){
+      try{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }catch(err){ return []; }
+    }
+    function writeBag(){
+      try{ localStorage.setItem(BAG_KEY, JSON.stringify(bagItems)); try{ localStorage.removeItem(BAG_KEY_LEGACY); }catch(e){} }catch(err){}
+      updateBagUI();
+    }
+    function bagKeyFor(item){ return `${item.id_producto || ''}::${item.talla || ''}`; }
+    function addToBag(variant, group, size){
+      const tallaMsg = size && String(size).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().includes('unica') ? 'Por confirmar' : size;
+      const item = {
+        id_producto: variant.id_producto,
+        sku_key: group.sku_key,
+        ref_proveedor: variant.ref_proveedor || group.ref_proveedor || '',
+        descripcion: variant.descripcion || group.descripcion || 'Prenda Nudo',
+        tipo_prenda: variant.tipo_prenda || group.tipo_prenda || 'Prenda',
+        color: variant.color || '',
+        talla: tallaMsg || 'Por confirmar',
+        precio_gtq: Number(variant.precio_gtq || group.precio_gtq || 0),
+        codigo: internalCode(variant),
+        imagen: variant.url_imagen || group.url_imagen || '',
+        ts: Date.now()
+      };
+      const key = bagKeyFor(item);
+      const exists = bagItems.find(x => bagKeyFor(x) === key);
+      if(exists){ exists.qty = (exists.qty || 1) + 1; }
+      else { item.qty = 1; bagItems.push(item); }
+      writeBag();
+    }
+    function removeFromBag(key){
+      bagItems = bagItems.filter(x => bagKeyFor(x) !== key);
+      writeBag();
+      openBagSheet();
+    }
+    function updateBagUI(){
+      const total = bagItems.reduce((s,i)=>s+(Number(i.qty)||1),0);
+      ['#bagCountHeader','#bagCountNav'].forEach(sel=>{
+        const el = $(sel); if(!el) return;
+        el.textContent = total;
+        el.classList.toggle('show', total > 0);
+      });
+    }
+    function openBagSheet(){
+      const total = bagItems.reduce((s,i)=>s+(Number(i.qty)||1),0);
+      const list = bagItems.map(item=>{
+        const key = bagKeyFor(item);
+        return `<article class="bag-item">
+          <img src="${safe(item.imagen || '')}" alt="${safe(item.descripcion)}" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">
+          <div><h4>${safe(item.descripcion)}</h4><p>${safe(item.color)}${String(item.talla||'').toLowerCase().includes('única') || String(item.talla||'').toLowerCase().includes('unica') || String(item.talla||'').toLowerCase().includes('confirmar') ? '' : ' · Talla: ' + safe(item.talla)} · ${money(item.precio_gtq)}<br>Código #${safe(item.codigo)}${item.qty>1 ? ` · Cant. ${item.qty}` : ''}</p></div>
+          <button class="bag-remove" type="button" data-remove="${safe(key)}" aria-label="Quitar prenda">×</button>
+        </article>`;
+      }).join('');
+      $('#bagContent').innerHTML = `<h3 class="bag-title">Tu selección</h3>
+        <p class="bag-sub">Agrega varias prendas, sigue explorando y envía tu selección completa por WhatsApp cuando estés lista.</p>
+        ${total ? `<div class="bag-list">${list}</div><div class="bag-actions"><button class="btn" id="sendBagWa">Enviar selección por WhatsApp</button><button class="secondary-link" id="continueShopping" type="button">Seguir comprando</button></div>` : `<div class="bag-empty">Tu selección está vacía. Explora el catálogo y toca <strong>Ver opciones</strong> para agregar prendas.<br><br><button class="btn" id="continueShopping" type="button">Seguir comprando</button></div>`}`;
+      showSheet($('#bagSheet'));
+      $$('#bagContent [data-remove]').forEach(btn=>btn.addEventListener('click',()=>removeFromBag(btn.dataset.remove)));
+      const cont = $('#continueShopping'); if(cont) cont.addEventListener('click',()=>closeSheets());
+      const send = $('#sendBagWa'); if(send) send.addEventListener('click', sendBagToWhatsApp);
+    }
+    function sendBagToWhatsApp(){
+      if(!bagItems.length) return;
+      const esUnica = t => String(t||'').toLowerCase().includes('confirmar') || String(t||'').toLowerCase().includes('unica') || String(t||'').toLowerCase().includes('única');
+      const lines = bagItems.map((item,idx)=>{
+        const tallaLinea = esUnica(item.talla) ? '' : `\n📏 Talla: ${item.talla}`;
+        return `*${idx+1}. ${item.descripcion}*\n🎨 Color: ${item.color}${tallaLinea}\n💰 Precio: ${money(item.precio_gtq)}\n🏷️ Código: #${item.codigo}${item.qty>1 ? `\n🔢 Cantidad: ${item.qty}` : ''}`;
+      }).join('\n\n———\n\n');
+      const total = bagItems.reduce((s,i)=>s+(Number(i.precio_gtq)||0)*(Number(i.qty)||1),0);
+      const msg = `Hola Nudo 👋 Quiero hacer este pedido (${bagItems.length} ${bagItems.length===1?'prenda':'prendas'}):\n\n${lines}\n\n———\n\n*Total estimado: ${money(total)}*\n\n¿Me ayudas a confirmar disponibilidad y coordinar el envío discreto?`;
+      bagItems.forEach(item=>registerClick({id_producto:item.id_producto, descripcion:item.descripcion}, 'ENVIAR_BOLSA_WA'));
+      window.open(`https://wa.me/${WA_NUMBER}?text=${encode(msg)}`,'_blank','noopener');
+    }
+    function chooseCategory(tipo){
+      currentFilter = `tipo::${tipo}`;
+      searchTerm = '';
+      advancedFilters = {tipo:'', color:'', patron:'', precio:'', plus:false};
+      $$('.pill').forEach(p=>p.classList.toggle('active', p.dataset.filter === currentFilter));
+      safeRenderGrid({text:'Aplicando categoría', scroll:true});
+    }
+    function renderCategoryShowcase(){
+      const track = $('#categoryTrack'); if(!track) return;
+      const tipos = NUDO_PREFERRED_TYPES;
+      const defs = tipos.map(tipo=>{
+        const groups = allProducts
+          .filter(g=>groupHasValue(g,'tipo_prenda',tipo))
+          .sort((a,b)=>{
+            if(a.agotado && !b.agotado) return 1;
+            if(!a.agotado && b.agotado) return -1;
+            return Number(b.stock_total||0) - Number(a.stock_total||0);
+          });
+        const seen = new Set();
+        const imgs = [];
+        // v24: el showcase usa SOLO fotos frontales (máx 2 por categoría).
+        // Las fotos de lado/detalle se cargan únicamente al abrir el modal de producto.
+        groups.forEach(g=>{
+          const v = variantForDisplay(g) || g.variants?.[0] || {};
+          [v.url_imagen, g.url_imagen].forEach(url=>{
+            if(url && !seen.has(url) && imgs.length < 2){ seen.add(url); imgs.push(url); }
+          });
+        });
+        if(!imgs.length) return null;
+        return { tipo, imgs };
+      }).filter(Boolean);
+
+      track.innerHTML = defs.map(d=>`
+        <button class="category-card" type="button" data-category="${safe(d.tipo)}" aria-label="Ver ${safe(d.tipo)}s">
+          <div class="category-photo-stack" aria-hidden="true">
+            ${d.imgs.map((img,i)=>`<img class="cat-img ${i===0?'active':''}" src="${safe(img)}" alt="" loading="lazy" decoding="async" fetchpriority="low" onerror="this.remove()">`).join('')}
+          </div>
+          <div class="category-overlay">
+            <span>${safe(d.tipo)}s</span>
+            <em>Ver ${safe(d.tipo)}s</em>
+          </div>
+        </button>`).join('');
+
+      $$('.category-card', track).forEach(btn=>btn.addEventListener('click',()=>chooseCategory(btn.dataset.category)));
+
+      if(categoryAutoTimer) clearInterval(categoryAutoTimer);
+      categoryAutoTimer = setInterval(()=>{
+        if(document.hidden) return; // v24: no rotar con la pestaña oculta (batería/CPU en mobile)
+        $$('.category-card', track).forEach(card=>{
+          const imgs = $$('.cat-img', card).filter(img=>img.isConnected);
+          if(imgs.length < 2) return;
+          const active = imgs.findIndex(img=>img.classList.contains('active'));
+          const next = (active + 1) % imgs.length;
+          imgs.forEach((img,i)=>img.classList.toggle('active', i===next));
+        });
+      }, 3600);
+    }
+    function openMenuSheet(){
+      const presentTipos = new Set(allProducts.map(g => normalize(g.tipo_prenda)).filter(Boolean));
+      const menuTipos = NUDO_PREFERRED_TYPES.filter(t => presentTipos.has(t));
+      $('#filterContent').innerHTML = `<div class="filter-sheet-head"><h3 class="filter-sheet-title">Menú</h3><p class="filter-sheet-sub">Explora Nudo por categoría o escríbenos por WhatsApp.</p></div><div class="side-menu-list">
+        ${menuTipos.map(t=>`<button type="button" data-menu-cat="${t}">${t}<span>→</span></button>`).join('')}
+        <button type="button" data-menu-filter="__menos250">Menos de Q250<span>→</span></button>
+        <a href="#origen" data-close>Origen Colombia<span>→</span></a>
+        <a href="#nosotros" data-close>Nosotros<span>→</span></a>
+      </div>`;
+      showSheet($('#filterSheet'));
+      $$('#filterContent [data-menu-cat]').forEach(btn=>btn.addEventListener('click',()=>{ closeSheets(); chooseCategory(btn.dataset.menuCat); }));
+      $$('#filterContent [data-menu-filter]').forEach(btn=>btn.addEventListener('click',()=>{ currentFilter=btn.dataset.menuFilter; $$('.pill').forEach(p=>p.classList.toggle('active', p.dataset.filter===currentFilter)); safeRenderGrid({text:'Aplicando filtro', scroll:true}); }));
+    }
+
+    const opt = (group, value, label, extra='') => `<button class="filter-option ${extra}" data-group="${group}" data-value="${safe(value)}">${safe(label || value)}</button>`;
+    const colorOpt = (value) => `<button class="filter-option swatch" data-group="color" data-value="${safe(value)}"><span class="swatch-dot" style="--dot:${safe(colorToHex(value))}"></span>${safe(value)}</button>`;
+
+    // v27: recalcula y re-pinta el CUERPO del sheet (mantiene los botones Limpiar/Aplicar
+    // fuera, ya enlazados una sola vez). Se llama al abrir el sheet y después de cada tap
+    // en una opción, así el resto de facetas siempre refleja lo que aún tiene stock real
+    // dado lo que ya está seleccionado.
+    // v28: opera enteramente sobre stagedFilters (el borrador). advancedFilters (lo aplicado
+    // de verdad) no se toca aquí bajo ninguna circunstancia.
+    function renderFilterBody(){
+      const tipos = [...new Set(facetPool('tipo').map(v => normalize(v.tipo_prenda)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+      const colores = [...new Set(facetPool('color').map(v => colorFamily(v.color)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+      const patrones = [...new Set(facetPool('patron').map(v => normalize(v.patron)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+      const plusDisponible = false;
+
+      // Si el valor elegido en el borrador ya no tiene stock bajo las demás restricciones,
+      // se limpia solo (evita quedar "atascado" en un color que dejó de existir en el tipo elegido).
+      if(stagedFilters.tipo && !tipos.includes(stagedFilters.tipo)) stagedFilters.tipo = '';
+      if(stagedFilters.color && !colores.includes(stagedFilters.color)) stagedFilters.color = '';
+      if(stagedFilters.patron && !patrones.includes(stagedFilters.patron)) stagedFilters.patron = '';
+      if(stagedFilters.plus && !plusDisponible) stagedFilters.plus = false;
+
+      $('#filterBody').innerHTML = `
+        <div class="filter-group"><h4>Tipo de prenda</h4><div class="filter-options">${tipos.map(t=>opt('tipo',t,t)).join('')}</div></div>
+        <div class="filter-group"><h4>Color</h4><div class="filter-options">${colores.map(colorOpt).join('')}</div></div>
+        <div class="filter-group"><h4>Patrón</h4><div class="filter-options">${patrones.map(pt=>opt('patron',pt,pt)).join('')}</div></div>
+        <div class="filter-group"><h4>Precio</h4><div class="filter-options">${opt('precio','menos250','Menos de Q250','sale')}</div></div>`;
+
+      $$('#filterBody .filter-option').forEach(btn=>{
+        const group = btn.dataset.group;
+        const value = btn.dataset.value;
+        if(stagedFilters[group] === value || (group === 'plus' && stagedFilters.plus)) btn.classList.add('active');
+        btn.addEventListener('click',()=>{
+          if(group === 'plus'){ stagedFilters.plus = !stagedFilters.plus; }
+          else{
+            const isActive = btn.classList.contains('active');
+            stagedFilters[group] = isActive ? '' : value;
+          }
+          renderFilterBody();
+        });
+      });
+    }
+
+    // v28: cada vez que se abre el sheet, el borrador arranca como copia de lo que esté
+    // realmente aplicado (así si ya habías aplicado un filtro antes, lo ves marcado al reabrir).
+    function openFilterSheet(){
+      stagedFilters = {...advancedFilters};
+      $('#filterContent').innerHTML = `
+        <div class="filter-sheet-head">
+          <h3 class="filter-sheet-title">Filtrar catálogo</h3>
+          <p class="filter-sheet-sub">Usa estos filtros para encontrar más rápido una prenda por tipo, paleta de color, patrón o precio. Las opciones se ajustan según lo que sigue disponible.</p>
+        </div>
+        <div id="filterBody"></div>
+        <div class="filter-sheet-actions"><button class="clear-filter" id="clearAdvanced">Limpiar</button><button class="btn apply-filter" id="applyAdvanced">Aplicar filtros</button></div>`;
+      renderFilterBody();
+      $('#clearAdvanced').addEventListener('click',()=>{
+        stagedFilters = {tipo:'',color:'',patron:'',precio:'',plus:false};
+        advancedFilters = {tipo:'',color:'',patron:'',precio:'',plus:false};
+        currentFilter = '__nuevo';
+        $$('.pill').forEach((p,i)=>p.classList.toggle('active', i===0));
+        safeRenderGrid({text:'Limpiando filtros', scroll:true});
+      });
+      $('#applyAdvanced').addEventListener('click',()=>{
+        // v28: recién AQUÍ el borrador se vuelve real. Antes de este clic, nada de lo tocado
+        // en el sheet afectaba el catálogo ni las fotos mostradas.
+        advancedFilters = {...stagedFilters};
+        currentFilter = '__advanced';
+        $$('.pill').forEach(p=>p.classList.remove('active'));
+        safeRenderGrid({text:'Aplicando filtros', scroll:true});
+      });
+      showSheet($('#filterSheet'));
+    }
+
+
+    function toggleSortMenu(e){
+      e.stopPropagation();
+      const menu = $('#sortMenu');
+      const open = !menu.classList.contains('show');
+      menu.classList.toggle('show', open);
+      $('#sortBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function closeSortOnOutside(e){
+      if(!e.target.closest('.sort-wrap')) closeSortMenu();
+    }
+
+    function closeSortMenu(){
+      const menu = $('#sortMenu');
+      if(menu){ menu.classList.remove('show'); $('#sortBtn').setAttribute('aria-expanded','false'); }
+    }
+
+    function chooseSort(e){
+      const btn = e.target.closest('.sort-option'); if(!btn) return;
+      currentSort = btn.dataset.sort || 'destacados';
+      updateSortLabel();
+      closeSortMenu();
+      safeRenderGrid({text:'Ordenando catálogo'});
+    }
+
+    function updateSortLabel(){
+      const labels = {destacados:'destacados', precio_asc:'menor precio', precio_desc:'mayor precio', az:'A-Z'};
+      $('#sortBtn').innerHTML = `Ordenar: ${labels[currentSort]} <span class="chev"></span>`;
+      $$('.sort-option').forEach(b=>b.classList.toggle('active', b.dataset.sort === currentSort));
+    }
+
+    function applySort(list){
+      const sorted = list.slice();
+      sorted.sort((a,b)=>{
+        if(a.agotado && !b.agotado) return 1;
+        if(!a.agotado && b.agotado) return -1;
+        if(currentSort === 'precio_asc') return Number(a.precio_gtq || 0) - Number(b.precio_gtq || 0);
+        if(currentSort === 'precio_desc') return Number(b.precio_gtq || 0) - Number(a.precio_gtq || 0);
+        if(currentSort === 'az') return String(a.descripcion || '').localeCompare(String(b.descripcion || ''),'es');
+        return Number(b.stock_total || 0) - Number(a.stock_total || 0);
+      });
+      return sorted;
+    }
+
+    function updateDebugBox(){
+      const box = $('#debugBox');
+      if(!box) return;
+      const show = new URLSearchParams(window.location.search).get('debug') === '1';
+      box.classList.toggle('show', show);
+      if(show){
+        box.innerHTML = `<strong>Debug catálogo:</strong> <span class="debug-source">${safe(catalogSource)}</span> · ${rawStats.recibidos} SKUs recibidos · ${rawStats.urlsConFoto} SKUs con URL de foto · ${rawStats.visiblesIniciales} SKUs renderizados inicialmente · ${rawStats.sinUrl} SKUs sin URL ocultos · ${rawStats.modelos} modelos visibles agrupados por SKU proveedor. Las imágenes rotas se ocultan en tiempo real sin bloquear al cliente.`;
+      }
+      console.info('[NUDO catálogo]', rawStats);
+    }
+
+    function getFiltered(){
+      let list = allProducts.slice();
+      // Los productos agotados con foto se mantienen visibles para medir demanda con “Avísame”.
+      // Los productos sin foto ya se excluyen antes de agrupar.
+      if(currentFilter === '__nuevo') list = list;
+      else if(currentFilter === '__menos250') list = list.filter(g=>Number(g.precio_gtq) <= 250);
+      else if(currentFilter === '__plus') list = list.filter(g=>hasPlusSize(g));
+      else if(currentFilter.includes('::')){
+        const [kind, ...rest] = currentFilter.split('::'); const value = rest.join('::');
+        if(kind === 'tipo') list = list.filter(g => groupHasValue(g, 'tipo_prenda', value));
+      } else if(currentFilter === '__advanced'){
+        if(advancedFilters.tipo) list = list.filter(g => groupHasValue(g, 'tipo_prenda', advancedFilters.tipo));
+        // v30: el color del filtro avanzado exige STOCK real en esa familia. Antes un modelo
+        // cuyo único verde estaba agotado igual pasaba el filtro Verde, mostrando una foto
+        // verde de algo que no se podía comprar en verde. Coherente con la promesa del sheet
+        // de filtros dinámicos: lo que se ofrece como opción, existe con existencias.
+        if(advancedFilters.color) list = list.filter(g => availableVariantsFor(g).some(v => colorFamily(v.color) === advancedFilters.color));
+        if(advancedFilters.patron) list = list.filter(g => groupHasValue(g, 'patron', advancedFilters.patron));
+        if(advancedFilters.precio === 'menos250') list = list.filter(g => Number(g.precio_gtq) <= 250);
+        if(advancedFilters.plus) list = list.filter(hasPlusSize);
+      }
+      if(searchTerm){
+        list = list.filter(g => groupMatchesSearch(g));
+      }
+      return applySort(list);
+    }
+
+    function renderGrid(){
+      const grid = $('#grid'); const list = getFiltered();
+      if(!list.length){
+        // v30: el estado vacío ofrece una salida de un toque en vez de dejar a la cliente
+        // frente a un mensaje sin acción posible.
+        grid.innerHTML = '<div class="empty-state">No encontramos prendas con ese criterio.<br><br><button class="btn" type="button" id="emptyResetBtn">Ver todo el catálogo</button></div>';
+        const resetBtn = $('#emptyResetBtn');
+        if(resetBtn) resetBtn.addEventListener('click', ()=>{
+          searchTerm = '';
+          currentFilter = '__nuevo';
+          advancedFilters = {tipo:'', color:'', patron:'', precio:'', plus:false};
+          $$('.pill').forEach(p=>p.classList.toggle('active', p.dataset.filter === '__nuevo'));
+          safeRenderGrid({scroll:true});
+        });
+        renderSearchBadge(); return;
+      }
+      grid.innerHTML = (searchTerm ? activeSearchMarkup() : '') + list.map((g,i)=>productCard(g,i)).join('');
+      $$('.product-card', grid).forEach(card=>{
+        $$('.card-color-dot', card).forEach(dot=>dot.addEventListener('click', e=>{
+          e.stopPropagation();
+          const img = dot.dataset.img;
+          const imageEl = card.querySelector('img');
+          if(img && imageEl){
+            // v26 FIX: si la foto anterior falló, handleImgError la dejó oculta y sin onerror.
+            // Al cambiar de color hay que restaurar visibilidad, placeholder y manejador de error.
+            imageEl.style.visibility = '';
+            imageEl.onerror = function(){ handleImgError(this); };
+            const box = imageEl.closest('.imgbox'); if(box) box.classList.remove('is-image-missing');
+            imageEl.dataset.fallbacks = [dot.dataset.img2, dot.dataset.img3].filter(Boolean).join('|');
+            imageEl.src = img;
+          }
+          const codeEl = card.querySelector('.card-code'); if(codeEl && dot.dataset.code) codeEl.textContent = `Código #${dot.dataset.code}`;
+          const priceEl = card.querySelector('.price'); if(priceEl && dot.dataset.price) priceEl.textContent = dot.dataset.price;
+          $$('.card-color-dot', card).forEach(d=>d.classList.toggle('active', d===dot));
+        }));
+        card.addEventListener('keydown', e=>{
+          if(e.key !== 'Enter' && e.key !== ' ') return;
+          const key = card.dataset.key;
+          const group = allProducts.find(x=>String(x.sku_key)===key);
+          if(!group) return;
+          e.preventDefault();
+          if(group.agotado){ openNotice(group); return; } // v30: mismo flujo que el tap
+          openProductGroup(group);
+        });
+      });
+    }
+
+    function handleImgError(img){
+      const fallbacks = (img.dataset.fallbacks || '').split('|').filter(Boolean);
+      if(fallbacks.length){
+        const next = fallbacks.shift();
+        img.dataset.fallbacks = fallbacks.join('|');
+        img.src = next;
+      } else {
+        // v22: no removemos cards ni slides por error de imagen para evitar saltos de layout.
+        // Si una foto falta por operación, dejamos el espacio estable y la marca de imagen pendiente.
+        img.onerror = null;
+        const box = img.closest('.imgbox') || img.closest('.gallery-slide');
+        if(box) box.classList.add('is-image-missing');
+        img.style.visibility = 'hidden';
+      }
+    }
+
+
+    function buildCardFallbacks(g, display){
+      const first = display && display.url_imagen ? display.url_imagen : '';
+      const urls = [];
+      if(display){ urls.push(display.url_imagen_2, display.url_imagen_3); }
+      (g.variants || []).forEach(v=>urls.push(v.url_imagen, v.url_imagen_2, v.url_imagen_3));
+      return [...new Set(urls.filter(Boolean).filter(u=>u!==first))];
+    }
+
+    function productCard(g,i){
+      const sold = !!g.agotado;
+      const display = variantForDisplay(g);
+      const colors = g.colors || [];
+      const dotVariants = colors.slice(0,4).map(c=>g.variants.find(v=>normalize(v.color)===c && v.url_imagen) || g.variants.find(v=>normalize(v.color)===c) || {});
+      // v26 FIX: el dot activo es el del color de la foto mostrada (que puede no ser el primero
+      // cuando hay filtro de color activo), no siempre el índice 0.
+      let activeDotIdx = dotVariants.findIndex(v=>normalize(v.color) === normalize(display.color));
+      if(activeDotIdx < 0) activeDotIdx = 0;
+      const colorDots = dotVariants.map((v,idx)=>`<button type="button" class="card-color-dot ${idx===activeDotIdx?'active':''}" style="--dot:${safe(colorToHex(v.color))}" title="${safe(v.color||'Color')}${internalCode(v) ? ' · Código #' + internalCode(v) : ''}" data-img="${safe(v.url_imagen || '')}" data-img2="${safe(v.url_imagen_2 || '')}" data-img3="${safe(v.url_imagen_3 || '')}" data-code="${safe(internalCode(v))}" data-price="${safe(money(v.precio_gtq || g.precio_gtq))}" data-color="${safe(v.color||'')}"></button>`).join('') + (colors.length>4 ? `<span class="card-more-colors">+${colors.length-4}</span>` : '');
+      return `<article class="product-card ${sold?'is-soldout':''}" data-key="${safe(g.sku_key)}" tabindex="0" role="button" aria-label="Ver ${safe(g.descripcion)}">
+        <div class="imgbox">
+          ${sold ? '<div class="badge">Agotado</div>' : ''}
+          <img src="${safe(display.url_imagen || g.url_imagen)}" alt="${safe(g.descripcion)}" loading="${i<4?'eager':'lazy'}" ${i<4?'fetchpriority="high"':''} decoding="async" data-fallbacks="${safe(buildCardFallbacks(g, display).join('|'))}" onerror="handleImgError(this)">
+        </div>
+        <div class="card-body">
+          <div class="type">${safe(g.tipo_prenda || 'Prenda')}</div>
+          <h3 class="product-name">${safe(g.descripcion || 'Prenda Nudo')}</h3>
+          <div class="card-code">Código #${safe(internalCode(display || g.display || g))}</div>
+          ${colors.length>1 ? `<div class="card-colors" aria-label="Colores disponibles">${colorDots}</div>` : ''}
+          <div class="price">${money(g.precio_gtq)}</div>
+          ${sold ? `<button class="btn ghost card-btn" data-action="notice">Avísame</button>` : `<button class="btn card-btn">Ver opciones</button><div class="shipping-note">${iconTruck()} <span>Envío gratis +Q250</span></div>`}
+        </div>
+      </article>`;
+    }
+
+
+    function openSearchSheet(){
+      renderSearchResults('');
+      showSheet($('#searchSheet'));
+      const input = $('#searchInput');
+      input.value = searchTerm;
+      if(window.matchMedia && window.matchMedia('(pointer:fine)').matches){ setTimeout(()=>input.focus(), 80); }
+      input.oninput = () => renderSearchResults(input.value);
+      trackLight('SEARCH_OPEN');
+    }
+
+    function renderSearchResults(q){
+      const term = normalize(q);
+      const results = term ? applySort(allProducts.filter(g => groupMatchesSearch(g, term))).slice(0, 12) : applySort(allProducts.slice()).slice(0, 8);
+      // v30: si la cliente escribió un color ("vestido verde"), las miniaturas de resultados
+      // muestran la variante de esa familia. Antes variantForDisplay leía el searchTerm global,
+      // que no se actualiza mientras se teclea, así que las fotos ignoraban el color escrito.
+      const termNorm = searchNormalize(term);
+      const typedFamily = ['Negro','Blanco','Beige','Café','Rojo','Azul','Verde','Gris','Rosa','Morado','Amarillo','Naranja']
+        .find(f => termNorm.includes(searchNormalize(f))) || '';
+      $('#searchResults').innerHTML = results.length ? results.map(g=>{
+        let display = variantForDisplay(g) || g.display || g.variants[0];
+        if(typedFamily){
+          const fam = g.variants.filter(v => colorFamily(v.color) === typedFamily);
+          if(fam.length) display = fam.find(v => !v.agotado && Number(v.stock_total||0)>0) || fam[0];
+        }
+        return `<button class="search-result" type="button" data-key="${safe(g.sku_key)}">
+          <img src="${safe(display.url_imagen || g.url_imagen || '')}" alt="${safe(g.descripcion)}" loading="lazy" decoding="async" onerror="handleImgError(this)">
+          <span><span class="result-type">${safe(g.tipo_prenda || 'Prenda')}</span><span class="result-name">${safe(g.descripcion || 'Prenda Nudo')}</span><span class="result-meta">${money(g.precio_gtq)} · Código #${safe(internalCode(display || g.display || g))}${g.colors && g.colors.length ? ' · ' + safe(g.colors.slice(0,3).join(', ')) : ''}</span></span>
+        </button>`;
+      }).join('') : '<div class="empty-state">No encontramos prendas con esa búsqueda.</div>';
+      $$('.search-result', $('#searchResults')).forEach(btn=>btn.addEventListener('click',()=>{
+        const g = allProducts.find(x=>String(x.sku_key)===btn.dataset.key);
+        if(!g) return;
+        searchTerm = term;
+        currentFilter = '__search';
+        advancedFilters = {tipo:'', color:'', patron:'', precio:'', plus:false};
+        $$('.pill').forEach(p=>p.classList.remove('active'));
+        closeSheets({keepLoader:true});
+        safeRenderGrid({text:'Preparando resultado'}).then(()=>setTimeout(()=>openProductGroup(g), 80));
+        trackLight('SEARCH_RESULT_CLICK');
+      }));
+    }
+
+    function activeSearchMarkup(){
+      return `<div class="active-search">Búsqueda: <strong>${safe(searchTerm)}</strong> <button type="button" onclick="clearSearch()">Limpiar</button></div>`;
+    }
+    function renderSearchBadge(){
+      const grid = $('#grid');
+      if(searchTerm && !grid.querySelector('.active-search')) grid.insertAdjacentHTML('afterbegin', activeSearchMarkup());
+    }
+    function clearSearch(){
+      searchTerm = '';
+      currentFilter = '__nuevo';
+      $$('.pill').forEach(p=>p.classList.toggle('active', p.dataset.filter === '__nuevo'));
+      safeRenderGrid({text:'Limpiando búsqueda', scroll:true});
+    }
+
+    function groupMatchesSearch(g, overrideTerm){
+      const term = searchNormalize(overrideTerm || searchTerm);
+      if(!term) return true;
+      const fields = [g.descripcion, g.tipo_prenda, g.patron, g.ref_proveedor, g.precio_gtq, g.sku_key, money(g.precio_gtq)];
+      (g.variants || []).forEach(v=>fields.push(v.descripcion, v.tipo_prenda, v.patron, v.color, v.ref_proveedor, v.id_producto, v.precio_gtq, money(v.precio_gtq)));
+      return searchNormalize(fields.join(' ')).includes(term);
+    }
+
+    function searchColorPreference(){
+      if(!searchTerm) return '';
+      const term = searchNormalize(searchTerm);
+      const families = ['Negro','Blanco','Beige','Café','Rojo','Azul','Verde','Gris','Rosa','Morado','Amarillo','Naranja'];
+      return families.find(f => term.includes(searchNormalize(f))) || '';
+    }
+
+    function searchNormalize(v){ return String(v ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+    function trackLight(action){
+      const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=&nombre_producto=${encode(action)}&utm_origen=${encode(UTM)}&accion_detalle=${encode(action)}`;
+      fetch(url).catch(()=>{});
+    }
+
+    function registerClick(p, accion){
+      const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&utm_origen=${encode(UTM)}&accion_detalle=${encode(accion)}`;
+      fetch(url).catch(()=>{});
+    }
+    function registerDemand(item){
+      const p = item.variants ? (item.variants[0] || item.display || item) : item;
+      const url = `${AS_URL}?accion=registrar_demanda&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&color=${encode(p.color||'')}&canal_origen=${encode(UTM)}`;
+      fetch(url).catch(()=>{});
+    }
+
+    function internalCode(p){ return p && p.id_producto ? String(p.id_producto) : ''; }
+    function uniqueUrls(list){ return [...new Set((list || []).filter(Boolean))]; }
+    function modalImageUrls(selected, group){
+      const primary = selected || (group.display || group.variants[0] || {});
+      const ownUrls = uniqueUrls([primary.url_imagen, primary.url_imagen_2, primary.url_imagen_3]);
+      if(ownUrls.length) return ownUrls;
+      const fallbackUrls = [];
+      (group.variants || []).forEach(v=>fallbackUrls.push(v.url_imagen, v.url_imagen_2, v.url_imagen_3));
+      return uniqueUrls(fallbackUrls);
+    }
+    function imgFallbackAttr(urls, current){ return safe(uniqueUrls(urls).filter(u=>u !== current).join('|')); }
+    function normColor(color){ return String(color||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+    function colorFamily(color){
+      const c = normColor(color);
+      if(/negro|black/.test(c)) return 'Negro';
+      if(/blanco|hueso|ivory|marfil|crema|perla/.test(c)) return 'Blanco';
+      if(/beige|arena|nude|champana|champagne/.test(c)) return 'Beige';
+      if(/cafe|marron|camel|chocolate|taupe|moka|mocha/.test(c)) return 'Café';
+      if(/rojo|vino|vinotinto|borgona|burdeos|corinto|oxblood/.test(c)) return 'Rojo';
+      if(/azul|navy|celeste|turquesa/.test(c)) return 'Azul';
+      if(/verde|oliva|menta/.test(c)) return 'Verde';
+      if(/gris|plomo|plateado/.test(c)) return 'Gris';
+      if(/rosa|rosado|fucsia|pink/.test(c)) return 'Rosa';
+      if(/morado|lila|violeta|purpura/.test(c)) return 'Morado';
+      if(/amarillo|mostaza|dorado|oro/.test(c)) return 'Amarillo';
+      if(/naranja|terracota|ladrillo|coral/.test(c)) return 'Naranja';
+      return color ? String(color).trim() : 'Otros';
+    }
+    function colorToHex(color){
+      const c = normColor(color);
+      const family = colorFamily(color).toLowerCase();
+      const map = {negro:'#111111', blanco:'#FFFFFF', hueso:'#F4F0E8', beige:'#D8C7B4', cafe:'#7A5236', 'café':'#7A5236', marron:'#7A5236', camel:'#B98A5B', rojo:'#8A1F2D', vino:'#4A1F2C', oxblood:'#4A1F2C', corinto:'#4A1F2C', azul:'#2F4F73', verde:'#556B4A', gris:'#A3A09B', rosa:'#D8A6A6', rosado:'#D8A6A6', morado:'#705A7A', lila:'#B7A4C6', amarillo:'#D6B45A', naranja:'#C4714A', terracota:'#C4714A'};
+      return map[c] || map[family] || '#D8D2CC';
+    }
+
+    function nudoUsesSizeSelector(item){
+      const tipo = searchNormalize((item && item.tipo_prenda) || '');
+      return NUDO_SIZE_SELECTOR_TYPES.some(t => tipo === searchNormalize(t));
+    }
+
+
+
+    let lightboxState = { urls: [], idx: 0, scale: 1, x: 0, y: 0, startX: 0, startY: 0, startDist: 0, startScale: 1, lastTap: 0, dragging: false };
+    function currentGalleryUrls(){
+      return $$('#galleryTrack img').map(img => img.currentSrc || img.src).filter(Boolean);
+    }
+    function applyLightboxTransform(){
+      const img = $('#photoLightboxImg');
+      if(!img) return;
+      img.style.transform = `translate3d(${lightboxState.x}px, ${lightboxState.y}px, 0) scale(${lightboxState.scale})`;
+    }
+    function renderLightbox(){
+      const urls = lightboxState.urls || [];
+      const img = $('#photoLightboxImg');
+      if(!urls.length || !img) return;
+      lightboxState.idx = Math.max(0, Math.min(lightboxState.idx, urls.length - 1));
+      lightboxState.scale = 1; lightboxState.x = 0; lightboxState.y = 0;
+      img.src = urls[lightboxState.idx];
+      $('#photoLightboxCounter').textContent = `${lightboxState.idx + 1} / ${urls.length}`;
+      ['#photoLightboxPrev','#photoLightboxNext'].forEach(sel=>{ const el=$(sel); if(el) el.style.display = urls.length > 1 ? '' : 'none'; });
+      applyLightboxTransform();
+    }
+    // v25: inicialización perezosa. Los listeners de wheel/touch no pasivos del lightbox
+    // solo se registran la primera vez que una cliente amplía una foto.
+    let _lightboxInited = false;
+    function openPhotoLightbox(urls, idx){
+      if(!_lightboxInited){ initPhotoLightbox(); _lightboxInited = true; }
+      lightboxState.urls = uniqueUrls(urls || currentGalleryUrls());
+      lightboxState.idx = idx || 0;
+      if(!lightboxState.urls.length) return;
+      $('#photoLightbox').classList.add('show');
+      document.body.style.overflow = 'hidden';
+      renderLightbox();
+      // v29: el lightbox es una segunda capa encima del sheet de producto. Si la cliente
+      // desliza para atrás estando en el lightbox, debe cerrar SOLO el lightbox y dejarla
+      // de vuelta en la ficha del producto, no sacarla del catálogo entero.
+      if(!lightboxHasHistoryLayer){ pushHistoryLayer(); lightboxHasHistoryLayer = true; }
+    }
+    function closePhotoLightbox(opts={}){
+      $('#photoLightbox').classList.remove('show');
+      document.body.style.overflow = '';
+      if(lightboxHasHistoryLayer){
+        lightboxHasHistoryLayer = false;
+        if(!opts.viaHistory) consumeHistoryLayer();
+      }
+    }
+    function moveLightbox(delta){
+      if(!lightboxState.urls.length) return;
+      lightboxState.idx = (lightboxState.idx + delta + lightboxState.urls.length) % lightboxState.urls.length;
+      renderLightbox();
+    }
+    function initPhotoLightbox(){
+      const lb = $('#photoLightbox');
+      const img = $('#photoLightboxImg');
+      if(!lb || !img) return;
+      $('#photoLightboxClose').addEventListener('click', closePhotoLightbox);
+      $('#photoLightboxPrev').addEventListener('click', ()=>moveLightbox(-1));
+      $('#photoLightboxNext').addEventListener('click', ()=>moveLightbox(1));
+      lb.addEventListener('click', e=>{ if(e.target === lb) closePhotoLightbox(); });
+      document.addEventListener('keydown', e=>{
+        if(!lb.classList.contains('show')) return;
+        if(e.key === 'Escape') closePhotoLightbox();
+        if(e.key === 'ArrowLeft') moveLightbox(-1);
+        if(e.key === 'ArrowRight') moveLightbox(1);
+      });
+      img.addEventListener('dblclick', ()=>{
+        if(lightboxState.scale > 1){ lightboxState.scale = 1; lightboxState.x = 0; lightboxState.y = 0; }
+        else { lightboxState.scale = 2.35; }
+        applyLightboxTransform();
+      });
+      lb.addEventListener('wheel', e=>{
+        if(!lb.classList.contains('show')) return;
+        e.preventDefault();
+        const next = Math.max(1, Math.min(4, lightboxState.scale + (e.deltaY < 0 ? .18 : -.18)));
+        if(next === 1){ lightboxState.x = 0; lightboxState.y = 0; }
+        lightboxState.scale = next;
+        applyLightboxTransform();
+      }, {passive:false});
+      lb.addEventListener('pointerdown', e=>{
+        if(e.target !== img || lightboxState.scale <= 1) return;
+        lightboxState.dragging = true; img.classList.add('dragging'); img.setPointerCapture(e.pointerId);
+        lightboxState.startX = e.clientX - lightboxState.x; lightboxState.startY = e.clientY - lightboxState.y;
+      });
+      lb.addEventListener('pointermove', e=>{
+        if(!lightboxState.dragging) return;
+        lightboxState.x = e.clientX - lightboxState.startX; lightboxState.y = e.clientY - lightboxState.startY;
+        applyLightboxTransform();
+      });
+      lb.addEventListener('pointerup', e=>{ lightboxState.dragging = false; img.classList.remove('dragging'); });
+      lb.addEventListener('touchstart', e=>{
+        if(e.touches.length === 2){
+          const [a,b] = e.touches; lightboxState.startDist = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); lightboxState.startScale = lightboxState.scale;
+        } else if(e.touches.length === 1){
+          const now = Date.now();
+          if(now - lightboxState.lastTap < 280){
+            e.preventDefault();
+            if(lightboxState.scale > 1){ lightboxState.scale = 1; lightboxState.x = 0; lightboxState.y = 0; }
+            else { lightboxState.scale = 2.35; }
+            applyLightboxTransform();
+          }
+          lightboxState.lastTap = now;
+        }
+      }, {passive:false});
+      lb.addEventListener('touchmove', e=>{
+        if(e.touches.length === 2 && lightboxState.startDist){
+          e.preventDefault();
+          const [a,b] = e.touches; const dist = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+          lightboxState.scale = Math.max(1, Math.min(4, lightboxState.startScale * (dist / lightboxState.startDist)));
+          if(lightboxState.scale === 1){ lightboxState.x = 0; lightboxState.y = 0; }
+          applyLightboxTransform();
+        }
+      }, {passive:false});
+    }
+
+    function openProductGroup(g){
+      registerClick(g.display || g.variants[0], 'ABRIR_MODAL');
+      let selectedVariant = null;
+      let selectedSize = '';
+      let slide = 0;
+      const availableVariants = g.variants.filter(v=>!v.agotado && Number(v.stock_total||0)>0);
+      if(availableVariants.length === 1) selectedVariant = availableVariants[0];
+      const sheet = $('#productSheet');
+      $('#productContent').innerHTML = `
+        <div class="modal-gallery" id="gallery"><button class="gallery-arrow prev" id="galleryPrev" type="button" aria-label="Foto anterior">‹</button><div class="gallery-track" id="galleryTrack"></div><button class="gallery-arrow next" id="galleryNext" type="button" aria-label="Foto siguiente">›</button></div>
+        <div class="dots" id="dots"></div>
+        <div class="modal-info">
+          <div class="type">${safe(g.tipo_prenda || 'Prenda')}</div>
+          <h3 class="modal-name">${safe(g.descripcion || 'Prenda Nudo')}</h3>
+          <div class="modal-price" id="modalPrice">${money(g.precio_gtq)}</div>
+          <div class="color-title">Selecciona color</div>
+          <div class="color-options" id="colorBtns">
+            ${g.variants.map(v=>`<button class="color-btn ${selectedVariant===v?'active':''} ${v.agotado?'disabled':''}" data-id="${safe(v.id_producto)}" ${v.agotado?'aria-disabled="true"':''}><span class="color-dot" style="--dot:${safe(colorToHex(v.color))}"></span>${safe(v.color || 'Color')} ${internalCode(v) ? `<span class="color-code">#${safe(internalCode(v))}</span>` : ''}</button>`).join('')}
+          </div>
+          <div class="variant-hint" id="variantHint">${selectedVariant ? 'Color seleccionado. Agrega esta prenda a tu selección.' : 'Elige un color para ver sus fotos y agregarlo a tu selección.'}</div>
+          <div class="modal-meta" id="modalMeta"></div>
+          <div class="size-block" id="sizeBlock"><div class="size-title">Selecciona tu talla</div>
+          <div class="sizes" id="sizeBtns"></div></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn" id="waProduct" disabled>Agregar a selección</button>
+          <div class="selection-warning" id="selectionWarning">Selecciona color para continuar.</div>
+          <button class="secondary-link" data-close>Seguir viendo</button>
+        </div>`;
+      showSheet(sheet);
+      const productContentEl = $('#productContent');
+      if(productContentEl) productContentEl.scrollTop = 0;
+      $('#productContent [data-close]').addEventListener('click', closeSheets);
+
+      function renderVariant(){
+        selectedSize = '';
+        const p = selectedVariant || (availableVariants[0] || g.variants[0]);
+        const imgs = modalImageUrls(p, g).slice(0,3);
+        $('#galleryTrack').innerHTML = imgs.map(src=>`<div class="gallery-slide"><img src="${safe(src)}" data-fallbacks="${imgFallbackAttr(imgs, src)}" alt="${safe(g.descripcion)}" onerror="handleImgError(this)"></div>`).join('');
+        $('#dots').innerHTML = imgs.length > 1 ? imgs.map((_,i)=>`<span class="dot ${i===0?'active':''}"></span>`).join('') : '';
+        ['#galleryPrev','#galleryNext'].forEach(sel=>{ const el=$(sel); if(el) el.style.display = imgs.length > 1 ? '' : 'none'; });
+        const dotsEl = $('#dots'); if(dotsEl) dotsEl.style.display = imgs.length > 1 ? '' : 'none';
+        slide = 0;
+        $('#galleryTrack').style.transform = 'translateX(0)';
+        $('#modalPrice').textContent = money(p.precio_gtq || g.precio_gtq);
+        $('#modalMeta').textContent = selectedVariant ? `${p.color || ''}${internalCode(p) ? ' · Código #' + internalCode(p) : ''}` : `${g.colors.length} colores disponibles`;
+        const available = selectedVariant ? (p.tallas || []) : [];
+        const unavailable = selectedVariant ? (p.tallas_agotadas || []) : [];
+        const needsSizeSelector = selectedVariant && nudoUsesSizeSelector(p);
+        const uniqueOnly = selectedVariant && available.length === 1 && String(available[0]).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim().includes('unica') && unavailable.length === 0;
+        $('#sizeBlock').classList.toggle('hidden', !needsSizeSelector || !!uniqueOnly || !selectedVariant);
+        if(selectedVariant && (!needsSizeSelector || uniqueOnly)){
+          selectedSize = available[0] || 'Única';
+          $('#sizeBtns').innerHTML = '';
+          $('#waProduct').disabled = false;
+          $('#selectionWarning').textContent = 'Listo para agregar a tu selección.';
+        } else {
+          $('#sizeBtns').innerHTML = selectedVariant ? `${available.map(t=>`<button class="size-btn" data-size="${safe(t)}">${safe(t)}</button>`).join('')}${unavailable.map(t=>`<button class="size-btn disabled" disabled>${safe(t)}</button>`).join('')}` : '';
+          $('#waProduct').disabled = true;
+          $('#selectionWarning').textContent = selectedVariant ? 'Selecciona talla para continuar.' : 'Selecciona color para continuar.';
+          $$('#sizeBtns .size-btn:not(.disabled)').forEach(btn=>btn.addEventListener('click',()=>{
+            selectedSize = btn.dataset.size;
+            $$('#sizeBtns .size-btn').forEach(b=>b.classList.toggle('active', b===btn));
+            $('#waProduct').disabled = false;
+            $('#selectionWarning').textContent = 'Listo para agregar a tu selección.';
+          }));
+        }
+      }
+
+      $$('#colorBtns .color-btn').forEach(btn=>btn.addEventListener('click',()=>{
+        const id = Number(btn.dataset.id);
+        const variant = g.variants.find(v=>Number(v.id_producto)===id);
+        if(!variant || variant.agotado) return;
+        selectedVariant = variant;
+        $$('#colorBtns .color-btn').forEach(b=>b.classList.toggle('active', b===btn));
+        $('#variantHint').textContent = 'Color seleccionado. Agrega esta prenda a tu selección.';
+        renderVariant();
+      }));
+      renderVariant();
+      $('#waProduct').addEventListener('click',()=>{
+        if(!selectedVariant || !selectedSize) return;
+        registerClick(selectedVariant,'AGREGAR_BOLSA');
+        addToBag(selectedVariant, g, selectedSize);
+        closeSheets({keepLoader:true});
+        requestAnimationFrame(()=>requestAnimationFrame(()=>openBagSheet()));
+      });
+
+      const gallery = $('#gallery'); let startX=0;
+      function move(idx){ const dots = $$('#dots .dot'); if(dots.length < 2) return; const max = dots.length-1; slide=Math.max(0,Math.min(idx,max)); $('#galleryTrack').style.transform=`translateX(-${slide*100}%)`; dots.forEach((d,i)=>d.classList.toggle('active',i===slide)); }
+      $('#galleryPrev').addEventListener('click',()=>move(slide-1));
+      $('#galleryNext').addEventListener('click',()=>move(slide+1));
+      $('#dots').addEventListener('click',e=>{ const dot=e.target.closest('.dot'); if(!dot) return; move($$('#dots .dot').indexOf(dot)); });
+      gallery.addEventListener('touchstart', e=>{startX=e.touches[0].clientX},{passive:true});
+      gallery.addEventListener('touchend', e=>{const diff=startX-e.changedTouches[0].clientX; if(Math.abs(diff)>40){ if(diff>0) move(slide+1); if(diff<0) move(slide-1); }},{passive:true});
+
+      // v25: tap (sin arrastre) sobre la foto abre el lightbox con zoom.
+      // Umbral de 10px para no chocar con el swipe de la galería, y supresión del click
+      // sintético que el navegador dispara después del pointerup (mismo patrón de las cards).
+      let galleryTapStart = null;
+      gallery.addEventListener('pointerdown', e=>{
+        if(e.target && e.target.tagName === 'IMG') galleryTapStart = {x:e.clientX, y:e.clientY};
+        else galleryTapStart = null;
+      }, {passive:true});
+      gallery.addEventListener('pointerup', e=>{
+        if(!galleryTapStart) return;
+        const moved = Math.abs((e.clientX||0) - galleryTapStart.x) > 10 || Math.abs((e.clientY||0) - galleryTapStart.y) > 10;
+        galleryTapStart = null;
+        if(moved || !e.target || e.target.tagName !== 'IMG') return;
+        if(e.target.closest('.photo-lightbox')) return;
+        _suppressNextClickUntil = Date.now() + 500;
+        const zoomVariant = selectedVariant || availableVariants[0] || g.variants[0];
+        registerClick(zoomVariant, 'ZOOM_FOTO');
+        openPhotoLightbox(currentGalleryUrls(), slide);
+      }, {passive:true});
+    }
+
+    function openNotice(item){
+      registerDemand(item);
+      const g = item.variants ? item : null;
+      const p = g ? (g.variants[0] || g.display) : item;
+      $('#noticeContent').innerHTML = `
+        <div class="eyebrow">Avísame</div>
+        <h3 class="notice-title">Te avisamos cuando llegue</h3>
+        <p class="notice-text">Déjanos tu WhatsApp para avisarte cuando vuelva <strong>${safe((g && g.descripcion) || p.descripcion || 'esta prenda')}</strong>${g && g.colors.length ? ' en alguno de sus colores' : (p.color ? ' en color ' + safe(p.color) : '')}.</p>
+        <input class="phone-input" id="noticePhone" type="tel" inputmode="tel" placeholder="Tu WhatsApp, opcional">
+        <button class="btn" id="noticeWa">Avísame por WhatsApp</button>
+        <button class="secondary-link" data-close>Seguir viendo</button>`;
+      showSheet($('#noticeSheet'));
+      $('#noticeContent [data-close]').addEventListener('click', closeSheets);
+      $('#noticeWa').addEventListener('click',()=>{
+        const tel = $('#noticePhone').value.trim();
+        const msg = `Hola Nudo 👋 Quiero que me avisen cuando llegue: *${(g && g.descripcion) || p.descripcion || 'Prenda Nudo'}*\nColor: ${g ? (g.colors.join(', ') || '') : (p.color || '')}\nCódigo interno: #${internalCode(p)}\nMi número: ${tel}`;
+        window.open(`https://wa.me/${WA_NUMBER}?text=${encode(msg)}`,'_blank','noopener');
+      });
+    }
+
+    // NUDO v17: administrador seguro de sheets/modales.
+    // Un solo sheet activo, cierre fuerte inmediato y limpieza de capas para evitar
+    // modales fantasma, cursor zoom fuera del modal y fallas de hit-testing en Android/Safari.
+    let activeSheet = null;
+    // v29: estado de la "trampa" de historial. Cada sheet y el lightbox pueden empujar UNA
+    // entrada de historial mientras están abiertos. popstateSuppressCount evita que nuestros
+    // propios history.back() (al cerrar por X/backdrop/Aplicar/etc.) disparen el manejador de
+    // popstate como si fueran un gesto real de la cliente.
+    let sheetHasHistoryLayer = false;
+    let lightboxHasHistoryLayer = false;
+    let popstateSuppressCount = 0;
+    function pushHistoryLayer(){
+      try{ history.pushState({orkiaLayer:true}, '', location.href); }catch(e){}
+    }
+    function consumeHistoryLayer(){
+      popstateSuppressCount++;
+      try{ history.back(); }catch(e){ popstateSuppressCount--; }
+    }
+    window.addEventListener('popstate', ()=>{
+      if(popstateSuppressCount > 0){ popstateSuppressCount--; return; }
+      // Gesto real de "atrás" (swipe de borde en iOS, gesto/botón atrás en Android) con un
+      // sheet o el lightbox abiertos: cerramos la capa superior en vez de dejar que el
+      // navegador saque a la cliente del catálogo.
+      if(lightboxHasHistoryLayer){
+        lightboxHasHistoryLayer = false;
+        closePhotoLightbox({viaHistory:true});
+        return;
+      }
+      if(sheetHasHistoryLayer){
+        sheetHasHistoryLayer = false;
+        closeSheets({viaHistory:true});
+        return;
+      }
+    });
+
+    function lockScroll(){
+      document.documentElement.classList.add('sheet-open');
+    }
+    function unlockScroll(){
+      document.documentElement.classList.remove('sheet-open');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+    }
+    function hardHideSheet(s, opts={}){
+      if(!s) return;
+      s.classList.remove('show');
+      s.setAttribute('aria-hidden','true');
+      try{s.inert = true;}catch(e){}
+      s.style.pointerEvents = 'none';
+      s.style.visibility = 'hidden';
+      s.style.opacity = '0';
+      s.style.display = 'none';
+      if(s.id === 'productSheet' && !opts.keepProductContent){
+        const pc = $('#productContent');
+        if(pc) pc.innerHTML = '';
+      }
+    }
+    function hardShowSheet(sheet){
+      if(!sheet) return;
+      sheet.style.display = 'flex';
+      sheet.style.visibility = 'visible';
+      sheet.style.pointerEvents = 'auto';
+      sheet.style.opacity = '';
+      sheet.setAttribute('aria-hidden','false');
+      try{sheet.inert = false;}catch(e){}
+      void sheet.offsetHeight;
+      sheet.classList.add('show');
+      activeSheet = sheet;
+    }
+    function showSheet(sheet){
+      if(!sheet) return;
+      closePhotoLightboxSafe();
+      $$('.sheet').forEach(s=>{ if(s !== sheet) hardHideSheet(s); });
+      const backdrop = $('#backdrop');
+      if(backdrop){
+        backdrop.style.display = 'block';
+        void backdrop.offsetHeight;
+        backdrop.classList.add('show');
+      }
+      hardShowSheet(sheet);
+      lockScroll();
+      // v29: si no había ya una capa de sheet empujada, la agregamos. El backdrop bloquea
+      // interacción con cualquier otro sheet mientras uno está abierto, así que en la práctica
+      // esto nunca se duplica entre sheets distintos.
+      if(!sheetHasHistoryLayer){ pushHistoryLayer(); sheetHasHistoryLayer = true; }
+    }
+    function closePhotoLightboxSafe(opts){
+      try{ closePhotoLightbox(opts); }catch(e){}
+    }
+    function closeSheets(opts={}){
+      const backdrop = $('#backdrop');
+      if(backdrop){
+        backdrop.classList.remove('show');
+        backdrop.style.display = 'none';
+      }
+      $$('.sheet').forEach(s=>hardHideSheet(s, opts));
+      activeSheet = null;
+      closePhotoLightboxSafe();
+      unlockScroll();
+      closeSortMenu();
+      if(!opts.keepLoader) hideNudoLoader(0);
+      // v29: si este cierre lo disparó la cliente (X, backdrop, Aplicar, Escape, etc.) hay que
+      // consumir la entrada de historial que se empujó al abrir. Si en cambio llegamos aquí
+      // PORQUE el navegador ya hizo "atrás" (opts.viaHistory), la entrada ya se consumió sola.
+      if(sheetHasHistoryLayer){
+        sheetHasHistoryLayer = false;
+        if(!opts.viaHistory) consumeHistoryLayer();
+      }
+      requestAnimationFrame(()=>{
+        void document.documentElement.offsetHeight;
+        void document.body.offsetHeight;
+      });
+    }
+  </script>
+</body>
+</html>
