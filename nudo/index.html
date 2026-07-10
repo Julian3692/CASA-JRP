@@ -19,6 +19,9 @@
        Ajuste v1.1: dirección premium queer/lifestyle para convertirse en primera alternativa:
        tipografía Playfair Display + DM Sans, fondo cálido más limpio, más peso visual vino/carbón
        y copy orientado a seguridad, deseo, discreción y pertenencia sin caer en tono explícito.
+       NUDO v1.2 (fix): applySort() ahora agrupa por Tipo_Prenda (orden NUDO_PREFERRED_TYPES)
+       bajo el criterio de orden "destacados", que era el que se perdía porque el front
+       reordenaba en el navegador sin mirar Tipo_Prenda, aunque el backend ya lo mandara agrupado.
   -->
   <!-- ORKIA Producción v30: auditoría integral UX/UI + optimización.
        Cambios v30: (1) card agotada abre directamente "Avísame" en vez del modal sin salida,
@@ -141,14 +144,9 @@
     main{max-width:none;margin:0 auto;padding:28px 42px 0}.section-head{display:flex;align-items:flex-end;justify-content:space-between;margin:4px 0 18px}.section-head h2{font-family:'Playfair Display',Georgia,serif;font-weight:600;font-size:34px;line-height:1;margin:0;letter-spacing:-.02em;text-transform:uppercase}.section-head .view-all{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:10px;color:var(--dark)}.arrow{color:var(--terracota);font-size:17px;line-height:1}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border)}.product-card{background:var(--surface);border:0;display:flex;flex-direction:column;min-width:0;text-align:left;position:relative;overflow:hidden}.product-card .imgbox{position:relative;background:#EAE2D9;aspect-ratio:3/4.15;overflow:hidden}.product-card img{width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .35s ease,filter .2s ease}.product-card .imgbox.is-image-missing::after,.gallery-slide.is-image-missing::after{content:'Foto pendiente';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8A837B;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;background:#EEE7DF}.product-card:hover img{transform:scale(1.015)}.product-card.is-soldout img{filter:saturate(.12) contrast(.92);opacity:.86}.badge{position:absolute;left:14px;top:14px;background:rgba(255,255,255,.92);color:#57514C;padding:7px 12px;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;z-index:2}.heart{position:absolute;right:12px;top:12px;color:#fff;text-shadow:0 1px 8px rgba(0,0,0,.18);z-index:2}.card-body{padding:15px 17px 16px;display:flex;flex-direction:column;gap:7px;flex:1}.type{font-size:10px;line-height:1;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--terracota)}.product-name{font-family:'Playfair Display',Georgia,serif;font-size:24px;line-height:1.02;letter-spacing:-.02em;color:var(--dark);margin:0;min-height:34px}.card-code{font-size:10px;color:#7A746E;letter-spacing:.08em;text-transform:uppercase;margin-top:-2px}.price{font-size:18px;font-weight:600;color:var(--terracota);line-height:1}.card-btn{height:38px;margin-top:5px;width:100%;font-size:10px;letter-spacing:.16em}.shipping-note{margin-top:auto;display:flex;align-items:center;gap:7px;color:#5E5954;font-size:11px;line-height:1.2}.shipping-note .icon{width:16px;height:16px;color:var(--terracota)}.empty-state,.loading-state{grid-column:1/-1;background:#fff;padding:50px 22px;text-align:center;color:var(--mid);font-size:14px}.debug-source{color:var(--terracota);font-weight:600}.value-props{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:36px 0;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}.value-item{background:var(--bg);display:grid;grid-template-columns:42px 1fr;gap:18px;padding:22px 24px;align-items:start}.value-item .icon{width:34px;height:34px;color:var(--dark);stroke-width:1.2}.value-item h3{margin:0 0 7px;font-size:11px;letter-spacing:.16em;text-transform:uppercase}.value-item p{margin:0;color:#625B55;font-size:13px;line-height:1.55}.footer{background:linear-gradient(180deg,var(--terracota-dark),var(--carbon));color:#fff;margin-top:0;padding:34px 28px 90px;text-align:center}.footer .brand-logo{font-size:34px}.footer p{margin:8px 0 0;color:rgba(255,255,255,.62);font-size:11px;letter-spacing:.14em;text-transform:uppercase}.bottom-nav{display:none}.debug-box{display:none;margin:0 42px 18px;padding:12px 14px;background:#fff;border:1px solid var(--border);font-size:12px;color:#625B55}.debug-box.show{display:block}.debug-box strong{color:#111}
     
     .filter-sheet-content{overflow:auto;padding:0 22px calc(24px + env(safe-area-inset-bottom))}.filter-sheet-head{padding:8px 0 18px;border-bottom:1px solid var(--border)}.filter-sheet-title{font-family:'Playfair Display',Georgia,serif;font-size:34px;line-height:1;margin:0;color:var(--dark)}.filter-sheet-sub{margin:8px 0 0;color:var(--mid);font-size:13px;line-height:1.5}.filter-group{padding:18px 0;border-bottom:1px solid var(--border)}.filter-group h4{margin:0 0 12px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dark)}.filter-options{display:flex;flex-wrap:wrap;gap:8px}.filter-option{height:34px;border:1px solid var(--border);background:#fff;border-radius:999px;padding:0 14px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#272727}.filter-option.active{background:var(--terracota-dark);border-color:var(--terracota-dark);color:#fff}.filter-option.sale{background:#F1E4DB;border-color:#F1E4DB;color:var(--terracota)}.filter-option.sale.active{background:var(--terracota);border-color:var(--terracota);color:#fff}.filter-option.swatch{height:auto;min-height:42px;padding:7px 12px 7px 8px;gap:8px;display:inline-flex;align-items:center}.filter-option.swatch .swatch-dot{width:22px;height:22px;border-radius:50%;background:var(--dot,#D8D2CC);border:1px solid rgba(0,0,0,.18);box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}.filter-option.swatch.active .swatch-dot{border-color:rgba(255,255,255,.65)}.filter-sheet-actions{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(255,255,255,.88),#fff 30%);display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 0 0;margin-top:4px}.clear-filter{border:1px solid var(--border);background:#fff;color:var(--dark);height:40px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}.apply-filter{height:40px}
-
     .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.42);z-index:200;opacity:0;pointer-events:none;transition:.2s ease}.sheet-backdrop.show{opacity:1;pointer-events:auto}.sheet{position:fixed;left:50%;bottom:0;transform:translate(-50%,105%);z-index:210;width:min(720px,100%);max-height:92dvh;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -18px 50px rgba(0,0,0,.2);transition:.24s ease;overflow:hidden;display:flex;flex-direction:column}.sheet.show{transform:translate(-50%,0)}.sheet-handle{width:40px;height:4px;border-radius:100px;background:#D8D2CC;margin:10px auto 8px}.sheet-close{position:absolute;right:14px;top:12px;width:34px;height:34px;border:0;border-radius:50%;background:#F3EFEA;color:#111;font-size:20px;line-height:1;z-index:8}.product-sheet-content{overflow:auto;padding-bottom:calc(16px + env(safe-area-inset-bottom))}.modal-gallery{position:relative;overflow:hidden;background:#EEE7DF;height:clamp(360px,52dvh,560px);width:100%;flex:0 0 auto}.gallery-track{display:flex;height:100%;transition:transform .25s ease}.gallery-slide{min-width:100%;height:100%;background:#EEE7DF}.gallery-slide img{width:100%;height:100%;object-fit:cover;object-position:center top}.dots{display:flex;justify-content:center;gap:7px;margin:10px 0}.dot{width:6px;height:6px;border-radius:50%;background:#D8D2CC}.dot.active{background:var(--terracota)}.modal-info{padding:6px 20px 0}.modal-name{font-family:'Playfair Display',Georgia,serif;font-size:34px;line-height:1;margin:5px 0 8px}.modal-meta{color:#625B55;font-size:13px;margin-bottom:12px}.modal-price{font-size:22px;font-weight:600;margin-bottom:18px;color:var(--terracota)}.size-title{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}.sizes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}.size-btn{width:42px;height:42px;border:1px solid #D9D2CC;background:#fff;color:#111}.size-btn.active{background:var(--terracota-dark);color:#fff;border-color:var(--terracota-dark)}.size-btn.disabled{color:#B2ABA4;text-decoration:line-through;background:#F6F3EF}.modal-actions{position:sticky;bottom:0;background:#fff;padding:12px 20px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border)}.modal-actions .btn{width:100%;height:46px}.modal-actions .btn:disabled{background:#D0CBC5;color:#fff;cursor:not-allowed;transform:none}.secondary-link{width:100%;border:0;background:transparent;margin-top:10px;color:#625B55;font-size:12px;letter-spacing:.1em;text-transform:uppercase}.notice-sheet{padding:0 22px 26px}.notice-title{font-family:'Playfair Display',Georgia,serif;font-size:32px;margin:8px 0 8px;line-height:1}.notice-text{font-size:14px;line-height:1.55;color:#625B55;margin:0 0 18px}.phone-input{width:100%;height:44px;border:1px solid var(--border);padding:0 12px;margin-bottom:12px;background:#FAF8F6;color:#111}.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-
     .color-title{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;margin:12px 0 10px}.color-options{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.color-btn{min-height:38px;border:1px solid #D9D2CC;background:#fff;color:#111;border-radius:999px;padding:0 13px;display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}.color-btn.active{background:var(--terracota-dark);color:#fff;border-color:var(--terracota-dark)}.color-btn .color-code{font-size:9px;opacity:.72;margin-left:2px}.color-btn.disabled{opacity:.45;text-decoration:line-through}.color-dot{width:13px;height:13px;border-radius:50%;border:1px solid rgba(0,0,0,.18);background:var(--dot,#D8D2CC);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25)}.variant-hint{font-size:12px;color:#77736F;margin:-4px 0 14px}.card-colors{display:flex;align-items:center;gap:5px;min-height:16px;margin-top:1px}.card-color-dot{width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.15);background:var(--dot,#D8D2CC);padding:0;display:inline-block;cursor:pointer}.card-color-dot.active{outline:1px solid #111;outline-offset:2px}.gallery-arrow{position:absolute;top:50%;transform:translateY(-50%);z-index:3;width:34px;height:34px;border:0;border-radius:999px;background:rgba(255,255,255,.88);color:#111;box-shadow:0 4px 18px rgba(0,0,0,.10);display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1}.gallery-arrow.prev{left:10px}.gallery-arrow.next{right:10px}.size-block.hidden{display:none}.card-more-colors{font-size:10px;color:#77736F;margin-left:3px}.modal-ref{font-size:11px;color:#77736F;margin:2px 0 14px}.selection-warning{font-size:12px;color:#77736F;margin-top:8px;text-align:center}
-
-
     .story-section{margin:36px 0 0;background:#fff;border:1px solid var(--border);display:grid;grid-template-columns:minmax(280px,.9fr) 1.1fr;gap:1px}.story-kicker{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--terracota);margin-bottom:14px}.story-title{font-family:'Playfair Display',Georgia,serif;font-size:42px;line-height:1;margin:0 0 18px;color:var(--dark);letter-spacing:-.025em}.story-copy{padding:42px 44px}.story-copy p{font-size:15px;line-height:1.7;color:#4D4741;margin:0 0 16px;max-width:610px}.story-panel{background:#F8F4EF;padding:42px 44px;display:flex;flex-direction:column;justify-content:center}.story-panel h3{margin:0 0 14px;font-size:11px;letter-spacing:.17em;text-transform:uppercase;color:var(--dark)}.story-list{display:grid;gap:14px;margin:0;padding:0;list-style:none}.story-list li{font-size:14px;line-height:1.55;color:#5F5851;border-bottom:1px solid var(--border);padding-bottom:12px}.story-list li:last-child{border-bottom:0;padding-bottom:0}.about-section{margin:0 0 36px;background:var(--terracota-dark);color:#fff;display:grid;grid-template-columns:1fr 1fr;gap:1px;border:1px solid rgba(255,255,255,.08)}.about-section .story-copy{background:var(--terracota-dark)}.about-section .story-title{color:#fff}.about-section .story-copy p{color:rgba(255,255,255,.72)}.about-section .story-panel{background:#120509}.about-section .story-panel h3{color:#fff}.about-section .story-list li{border-color:rgba(255,255,255,.10);color:rgba(255,255,255,.70)}.search-sheet-content{padding:0 22px calc(24px + env(safe-area-inset-bottom));overflow:auto}.search-title{font-family:'Playfair Display',Georgia,serif;font-size:34px;line-height:1;margin:8px 0 12px;color:var(--dark)}.search-input{width:100%;height:48px;border:1px solid var(--border);background:#FAF8F6;padding:0 14px;color:#111;font-size:16px;outline:none}.search-input:focus{border-color:#B8B2AC;background:#fff}.search-help{margin:10px 0 16px;color:#77736F;font-size:12px;line-height:1.45}.search-results{display:grid;gap:1px;background:var(--border);border:1px solid var(--border);margin-top:12px}.search-result{border:0;background:#fff;display:grid;grid-template-columns:76px 1fr;gap:14px;text-align:left;padding:10px;align-items:center}.search-result img{width:76px;height:96px;object-fit:cover;background:#EEE7DF}.search-result .result-type{font-size:9px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota)}.search-result .result-name{font-family:'Playfair Display',Georgia,serif;font-size:22px;line-height:1;margin:2px 0;color:#111}.search-result .result-meta{font-size:11px;color:#77736F}.active-search{grid-column:1/-1;display:inline-flex;align-items:center;gap:8px;margin:0 0 14px;padding:8px 10px;background:#fff;border:1px solid var(--border);font-size:11px;color:#625B55}.active-search button{border:0;background:transparent;color:var(--terracota);font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:0}
-
     /* Desktop product modal: large image without cropping + details on the right */
     @media (min-width:721px){
       #productSheet.sheet{
@@ -224,14 +222,11 @@
       #productSheet .gallery-arrow.prev{left:16px}
       #productSheet .gallery-arrow.next{right:16px}
     }
-
     @media (max-width:1024px){:root{--header-h:64px}.header-inner{grid-template-columns:210px 1fr 130px}.desktop-nav{gap:28px}.grid{grid-template-columns:repeat(2,1fr)}.hero-inner{min-height:290px}.hero h1{font-size:44px}.hero-picture{height:290px}.value-props{grid-template-columns:repeat(2,1fr)}}
     @media (max-width:720px){:root{--header-h:58px}.top-shipping{height:32px;font-size:11px}.site-header{height:var(--header-h)}.header-inner{padding:0 12px;display:grid;grid-template-columns:42px 1fr 78px;gap:4px}.menu-btn{display:inline-flex}.desktop-nav{display:none}.brand{text-align:center}.brand-logo{font-size:29px;letter-spacing:.12em}.brand-sub{display:none}.header-actions{gap:4px}.header-actions .icon-btn:nth-child(2){display:none}.hero-inner{padding:0;min-height:0;display:grid;grid-template-columns:1fr 41%;gap:0;align-items:stretch}.hero-copy{padding:17px 0 15px 14px}.eyebrow{display:none}.hero h1{font-size:27px;line-height:1.02;margin:0 0 8px;max-width:225px}.hero p{font-size:12px;line-height:1.35;margin-bottom:10px;max-width:175px}.hero .btn{height:32px;padding:0 15px;font-size:9px}.hero-meta{font-size:10px;margin-top:9px}.hero-image-wrap{align-items:stretch}.hero-picture{height:100%;min-height:145px}.hero-img{width:100%;height:100%;object-position:68% center}.filters-wrap{top:var(--header-h)}.filters-inner{padding:10px 12px 9px;display:block}.filter-title{display:none}.pills{gap:7px;padding-bottom:2px}.pill{height:31px;padding:0 12px;font-size:9.5px}.filter-actions{display:flex;justify-content:space-between;gap:12px;margin-top:8px}.filter-action{height:28px;padding:0;font-size:10px}.sort-menu{left:auto;right:0;top:calc(100% + 6px);min-width:170px}main{padding:14px 0 0}.section-head{margin:2px 0 12px;padding:0 12px}.debug-box{margin:0 12px 12px}.section-head h2{font-size:24px}.section-head .view-all{font-size:10px}.grid{grid-template-columns:repeat(2,1fr);border:0;background:var(--border);gap:1px}.product-card{border:0}.product-card .imgbox{aspect-ratio:3/4.2}.card-body{padding:9px 10px 10px;gap:5px}.type{font-size:9px}.product-name{font-size:19px;min-height:32px}.price{font-size:16px}.card-btn{height:31px;font-size:8.5px}.shipping-note{display:none}.badge{left:8px;top:8px;font-size:9px;padding:6px 9px}.heart{right:8px;top:8px}.heart .icon{width:18px;height:18px}.value-props{grid-template-columns:1fr;gap:0;margin:24px 0 0;border-bottom:0}.value-item{padding:18px 20px}.footer{padding-bottom:calc(86px + env(safe-area-inset-bottom))}.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:120;height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:#fff;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);box-shadow:0 -10px 30px rgba(17,17,17,.06)}.bottom-nav a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:9px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:#252525}.bottom-nav a.active{color:var(--terracota)}.bottom-nav .icon{width:21px;height:21px}.sheet{width:100%;max-height:96dvh;border-radius:14px 14px 0 0}.modal-gallery{height:min(50dvh,460px);min-height:330px}.modal-name{font-size:31px}.modal-info{padding-left:18px;padding-right:18px}.modal-actions{padding-left:18px;padding-right:18px}}
-
     @media (max-width:720px){.story-section,.about-section{grid-template-columns:1fr;margin:24px 0 0;border-left:0;border-right:0}.story-copy,.story-panel{padding:26px 20px}.story-title{font-size:32px}.story-copy p{font-size:14px}.about-section{margin-bottom:0}.search-title{font-size:31px}.search-result{grid-template-columns:64px 1fr}.search-result img{width:64px;height:82px}.search-result .result-name{font-size:20px}}
     @media (max-width:380px){.hero h1{font-size:26px}.hero p{font-size:12px}.hero-copy{padding-left:14px}.product-name{font-size:18px}.card-body{padding:11px 10px}.shipping-note{display:none}.card-btn{margin-top:3px}.pill{padding:0 13px}.brand-logo{font-size:27px}}
   
-
     /* NUDO v3: UX compradora */
     .bag-btn{display:inline-flex;position:relative}
     .bag-count{position:absolute;right:2px;top:1px;min-width:17px;height:17px;border-radius:999px;background:var(--terracota);color:#fff;font-size:10px;font-weight:700;line-height:17px;text-align:center;display:none}
@@ -259,10 +254,7 @@
     .zoom-hint{position:absolute;left:50%;bottom:46px;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.72);text-align:center}.photo-lightbox-counter{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.82)}
     .bag-sheet{padding:0 20px 22px;overflow:auto}.bag-title{font-family:'Playfair Display',Georgia,serif;font-size:34px;line-height:1;margin:6px 0 8px}.bag-sub{font-size:14px;line-height:1.55;color:#625B55;margin:0 0 16px}.bag-list{display:grid;gap:10px;margin:16px 0}.bag-item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;border:1px solid var(--border);padding:9px;background:#FAF8F6}.bag-item img{width:58px;height:76px;object-fit:cover;background:#EEE7DF}.bag-item h4{margin:0 0 3px;font-family:'Playfair Display',Georgia,serif;font-size:20px;line-height:1}.bag-item p{margin:0;color:#625B55;font-size:12px;line-height:1.35}.bag-remove{border:0;background:transparent;font-size:20px;color:#7A746E;padding:6px}.bag-actions{position:sticky;bottom:0;background:#fff;padding-top:12px;border-top:1px solid var(--border)}.bag-actions .btn{width:100%;height:46px}.bag-empty{padding:28px 0;color:#625B55;font-size:14px;text-align:center}.side-menu-list{display:grid;gap:8px;margin:16px 0 0}.side-menu-list button,.side-menu-list a{height:42px;border:1px solid var(--border);background:#fff;color:var(--dark);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
     @media (max-width:720px){.top-shipping{font-weight:500}.filters-wrap{position:relative!important;top:auto!important;z-index:20}.filter-title{display:block!important;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin-bottom:9px}.category-showcase{padding:18px 0 18px}.category-showcase-head{padding:0 12px;display:block;margin-bottom:10px}.category-showcase h2{font-size:25px}.category-showcase p{display:none}.category-track{border-left:0;border-right:0;grid-auto-columns:72%;gap:1px}.category-card{min-height:190px}.header-actions .icon-btn[aria-label="WhatsApp"]{display:none!important}.bag-btn{display:inline-flex!important}.bottom-nav{grid-template-columns:repeat(4,1fr)!important}.bottom-nav .icon{width:20px;height:20px}.bottom-nav a{font-size:8.2px}.zoom-hint{display:none}.photo-lightbox-arrow{display:none}.photo-lightbox-close{right:14px;top:14px}.photo-lightbox-img{max-height:82dvh}.bag-sheet{padding-left:18px;padding-right:18px}.bag-title{font-size:31px}}
-
     @media (max-width:720px){.filters-wrap{position:relative!important;top:auto!important}.top-shipping{position:relative!important}.category-showcase{border-top:1px solid var(--border)}}
-
-
     /* NUDO v7: categorías visuales solo mobile, desktop simple */
     .category-showcase{background:var(--bg);padding:24px 42px 22px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
     .category-showcase-head{margin-bottom:14px}.category-showcase h2{font-size:32px}
@@ -285,9 +277,6 @@
       .category-overlay{padding:46px 16px 16px}
       .category-overlay span{font-size:12px}.category-overlay em{font-size:9.5px}
     }
-
-
-
     /* v7: En desktop el catálogo queda simple: filtros + grid. Las categorías visuales solo aparecen en mobile. */
     @media (min-width:721px){
       .category-showcase{display:none!important}
@@ -306,8 +295,6 @@
       .category-overlay em{font-size:10px;letter-spacing:.15em;background:rgba(255,255,255,.94);color:#111;padding:10px 12px;border-radius:999px;margin-top:4px}
     }
     @media (max-width:390px){.category-track{grid-auto-columns:88%}.category-card{aspect-ratio:4/5}}
-
-
     /* v11 QA: filtros avanzados más limpios en mobile */
     @media (max-width:720px){
       .filter-sheet-content{padding-left:18px;padding-right:18px}
@@ -319,15 +306,11 @@
       .filter-sheet-title{font-size:31px}
       .filter-sheet-sub{font-size:12.5px}
     }
-
-
     /* NUDO v15 bugfix: los sheets cerrados quedan realmente inertes.
        Evita que un drawer fuera de pantalla pueda capturar hit-testing/clics. */
     .sheet:not(.show){pointer-events:none!important;visibility:hidden!important}
     .sheet.show{pointer-events:auto!important;visibility:visible!important}
     .sheet-backdrop:not(.show){pointer-events:none!important}
-
-
     /* v16 BUGFIX: ningún sheet cerrado puede quedar sobre el catálogo.
        Antes el productSheet desktop quedaba centrado con opacity:0 y su imagen
        podía conservar cursor zoom-in / capturar hit-testing. */
@@ -337,9 +320,6 @@
     .sheet:not(.show) *{pointer-events:none!important;cursor:auto!important}
     .photo-lightbox:not(.show){display:none!important;pointer-events:none!important;visibility:hidden!important}
     .photo-lightbox:not(.show) *{pointer-events:none!important;cursor:auto!important}
-
-
-
     /* NUDO v18: capas estables, precarga inicial y proporción 4:5 */
     html.sheet-open{overflow:auto!important}
     body{cursor:auto!important}
@@ -381,7 +361,6 @@
     body.initial-loading #orkiaLoader{display:flex!important}
     @keyframes orkiaPulse{0%,100%{opacity:.28;transform:translateY(0) scale(.82)}45%{opacity:1;transform:translateY(-5px) scale(1.08)}}
     .catalog-rendering #grid{opacity:.72;transition:opacity .12s ease}
-
     /* NUDO v24: fallback vh para navegadores sin soporte dvh (WebViews Android viejos).
        El segundo valor (dvh) gana en navegadores modernos; el primero (vh) queda como respaldo. */
     .sheet{max-height:92vh;max-height:92dvh}
@@ -392,7 +371,6 @@
     }
     /* NUDO v24: el scroll interno de un sheet no encadena al fondo de la página. */
     .product-sheet-content,.bag-sheet,.filter-sheet-content,.search-sheet-content,.notice-sheet{overscroll-behavior:contain}
-
     /* NUDO v1.1: mayor contraste premium sin volver la marca explícita ni agresiva. */
     .hero{background:linear-gradient(90deg,#FAF8F5 0%,#FAF8F5 52%,#EFE5DD 100%)}
     .top-shipping{background:#F0E7DF}
@@ -400,7 +378,6 @@
     .value-item{background:#fff}
     .story-section{box-shadow:0 18px 54px rgba(17,17,17,.04)}
     .about-section{box-shadow:0 22px 70px rgba(43,15,22,.18)}
-
   </style>
 </head>
 <body class="initial-loading">
@@ -411,7 +388,6 @@
       <div class="orkia-loader-text" id="orkiaLoaderText">Cargando catálogo</div>
     </div>
   </div>
-
   <header class="site-header" id="inicio">
     <div class="header-inner">
       <button class="icon-btn menu-btn" aria-label="Abrir menú">
@@ -431,12 +407,10 @@
       </div>
     </div>
   </header>
-
   <div class="top-shipping" role="note">
     <svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
     <span>Envío gratis desde <span class="q">Q250</span></span>
   </div>
-
   <section class="hero" aria-labelledby="hero-title">
     <div class="hero-inner">
       <div class="hero-copy">
@@ -454,7 +428,6 @@
       </div>
     </div>
   </section>
-
   <section class="category-showcase" id="categorias" aria-labelledby="categorias-title">
     <div class="category-showcase-head">
       <h2 id="categorias-title">Explora por categoría</h2>
@@ -462,8 +435,6 @@
     </div>
     <div class="category-track" id="categoryTrack" aria-label="Categorías de prendas"></div>
   </section>
-
-
   <section class="filters-wrap" id="ropa" aria-label="Filtros de catálogo">
     <div class="filters-inner">
       <div class="filter-title">Filtrar catálogo</div>
@@ -490,7 +461,6 @@
       </div>
     </div>
   </section>
-
   <main>
     <section id="nuevo" aria-labelledby="nuevo-title">
       <div class="section-head">
@@ -499,7 +469,6 @@
       </div>
       <div class="debug-box" id="debugBox"></div><div class="grid" id="grid"><div class="loading-state">Cargando prendas...</div></div>
     </section>
-
     <section class="story-section" id="origen" aria-labelledby="origen-title">
       <div class="story-copy">
         <div class="story-kicker">Origen Colombia</div>
@@ -516,14 +485,12 @@
         </ul>
       </div>
     </section>
-
     <section class="value-props" aria-label="Propuesta de valor">
       <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3 5 5v4l-2 3 3 3v4l4 2 3-2 4 1 3-4-2-3 1-4-4-2-2-4z"/></svg><div><h3>Presencia visual</h3><p>Underwear masculino seleccionado por fit, materiales y carácter.</p></div></article>
       <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M4 21h16M7 21V7a5 5 0 0 1 10 0v14M9 8h6M9 12h6M9 16h6"/></svg><div><h3>Fit cómodo</h3><p>Telas, elásticos y acabados pensados para acompañar tu cuerpo.</p></div></article>
       <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/><path d="M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8"/></svg><div><h3>Compra discreta</h3><p>Te atendemos por WhatsApp con color, talla, fit y disponibilidad.</p></div></article>
       <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 7v14M12 7H7.5A2.5 2.5 0 1 1 12 4.5M12 7h4.5A2.5 2.5 0 1 0 12 4.5"/></svg><div><h3>Envío gratis +Q250</h3><p>Envío gratis en compras mayores a Q250.</p></div></article>
     </section>
-
     <section class="about-section" id="nosotros" aria-labelledby="nosotros-title">
       <div class="story-copy">
         <div class="story-kicker">Nosotros</div>
@@ -541,19 +508,16 @@
       </div>
     </section>
   </main>
-
   <footer class="footer">
     <div class="brand-logo">NUDO<span class="brand-dot"></span></div>
     <p>Guatemala · Underwear masculino premium · © 2026 CASA JRP</p>
   </footer>
-
   <nav class="bottom-nav" aria-label="Navegación inferior móvil">
     <a href="#inicio" class="active" id="navInicio"><svg class="icon" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7v9H5v-9"/><path d="M9 20v-6h6v6"/></svg>Inicio</a>
     <a href="#categorias" id="navCategorias"><svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>Categorías</a>
     <a href="#" id="navBolsa"><svg class="icon" viewBox="0 0 24 24"><path d="M6 8h12l-1 13H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg >Selección<span class="bag-count" id="bagCountNav">0</span></a>
     <a href="https://wa.me/50248304736?text=Hola%20Nudo%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20su%20ropa%20interior." target="_blank" rel="noopener" id="navWhatsapp"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/></svg>WhatsApp</a>
   </nav>
-
   <div class="sheet-backdrop" id="backdrop"></div>
   <section class="sheet" id="productSheet" aria-modal="true" role="dialog" aria-label="Detalle de producto">
     <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
@@ -563,12 +527,10 @@
     <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
     <div class="notice-sheet" id="noticeContent"></div>
   </section>
-
   <section class="sheet" id="filterSheet" aria-modal="true" role="dialog" aria-label="Filtros de catálogo">
     <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
     <div class="filter-sheet-content" id="filterContent"></div>
   </section>
-
   <section class="sheet" id="searchSheet" aria-modal="true" role="dialog" aria-label="Buscar prendas">
     <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
     <div class="search-sheet-content">
@@ -578,14 +540,10 @@
       <div class="search-results" id="searchResults"></div>
     </div>
   </section>
-
-
   <section class="sheet" id="bagSheet" aria-modal="true" role="dialog" aria-label="Selección para WhatsApp">
     <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
     <div class="bag-sheet" id="bagContent"></div>
   </section>
-
-
   <div class="photo-lightbox" id="photoLightbox" aria-modal="true" role="dialog" aria-label="Foto ampliada">
     <button class="photo-lightbox-close" id="photoLightboxClose" type="button" aria-label="Cerrar foto ampliada">×</button>
     <button class="photo-lightbox-arrow prev" id="photoLightboxPrev" type="button" aria-label="Foto anterior">‹</button>
@@ -594,7 +552,6 @@
     <div class="zoom-hint">Toca dos veces o pellizca para ampliar</div>
     <div class="photo-lightbox-counter" id="photoLightboxCounter">1 / 1</div>
   </div>
-
   <script>
     const AS_URL = 'https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec';
     const MARCA = 'nudo';
@@ -628,14 +585,12 @@
     const FREE_SHIPPING_THRESHOLD = 250;
     const NUDO_PREFERRED_TYPES = ['Tanga','Tanga Hilo','Tanga Amarrar','Tanga 2cm','Suspensorio','Suspensorio Liguero','Suspensorio 2cm','Suspensorio Tanga','Brief','Bikini','Body','Jockstrap','Bañador','Arnés Aro','Arnés con Hebillas'];
     const NUDO_SIZE_SELECTOR_TYPES = ['Jockstrap','Brief Bikini','Brief','Bikini','Bañador','Suspensorio Liguero'];
-
     const $ = (sel, root=document) => root.querySelector(sel);
     const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
     const money = v => 'Q' + (Number(v) || 0).toLocaleString('es-GT', {maximumFractionDigits:0});
     const safe = v => String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
     const encode = encodeURIComponent;
     const normalize = v => String(v ?? '').trim();
-
     let _loaderTimer = null;
     function showNudoLoader(text='Cargando catálogo'){
       const loader = $('#orkiaLoader');
@@ -684,10 +639,8 @@
         document.documentElement.classList.remove('catalog-rendering');
       }
     }
-
     function iconTruck(){return '<svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>'}
     function iconHeart(){return '<svg class="icon" viewBox="0 0 24 24"><path d="M20.8 4.6a5.2 5.2 0 0 0-7.4 0L12 6l-1.4-1.4a5.2 5.2 0 0 0-7.4 7.4L12 20.8l8.8-8.8a5.2 5.2 0 0 0 0-7.4Z"/></svg>'}
-
     document.addEventListener('DOMContentLoaded', ()=>{ init(); });
     function init(){
       // v30: sin esto, al cerrar un sheet con el gesto de atrás (trampa de historial v29)
@@ -700,7 +653,6 @@
       updateBagUI();
       loadInitialCatalogStable();
     }
-
     function clearLegacyCatalogCaches(){
       try{
         localStorage.removeItem('orkia_catalog_cache_v2');
@@ -709,7 +661,6 @@
         localStorage.removeItem('orkia_catalog_cache_v22_foto_publicada');
       }catch(err){}
     }
-
     function bindGlobalEvents(){
       $('#backdrop').addEventListener('click', closeSheets);
       $('#filterBtn').addEventListener('click', openFilterSheet);
@@ -741,7 +692,6 @@
         safeRenderGrid({text:'Aplicando filtro'});
       });
     }
-
     // NUDO v15 bugfix: activación delegada de cards.
     // Antes cada card recibía su propio listener después de renderGrid(). Si después de abrir/cerrar
     // la selección el navegador quedaba con hit-testing raro, algunos clics podían no llegar al
@@ -754,14 +704,12 @@
     // sheet recién abierto (podía seleccionar un color, mover la galería o cerrar).
     // Se suprime ese click fantasma durante una ventana corta.
     let _suppressNextClickUntil = 0;
-
     function bindCatalogDelegatedClicks(){
       document.addEventListener('pointerdown', e=>{
         const card = e.target && e.target.closest ? e.target.closest('.product-card') : null;
         if(!card || e.target.closest('.sheet') || e.target.closest('.photo-lightbox')) return;
         _cardPointerDown = {x:e.clientX, y:e.clientY, key:card.dataset.key || '', target:e.target};
       }, true);
-
       document.addEventListener('pointerup', e=>{
         if(!_cardPointerDown) return;
         const dx = Math.abs((e.clientX || 0) - _cardPointerDown.x);
@@ -774,7 +722,6 @@
         }
         _cardPointerDown = null;
       }, true);
-
       document.addEventListener('click', e=>{
         if(Date.now() < _suppressNextClickUntil){
           _suppressNextClickUntil = 0;
@@ -786,27 +733,22 @@
         activateCatalogCardFromEvent(e, 'click');
       }, true);
     }
-
     function activateCatalogCardFromEvent(e, source){
       if(!e || !e.target || !e.target.closest) return false;
       if(e.target.closest('.sheet') || e.target.closest('.photo-lightbox')) return false;
       const card = e.target.closest('.product-card');
       if(!card) return false;
       if(e.target.closest('.card-color-dot')) return false;
-
       const key = card.dataset.key;
       if(!key) return false;
       const now = Date.now();
       if(_lastCardActivation.key === key && now - _lastCardActivation.ts < 450) return true;
       _lastCardActivation = {key, ts:now};
-
       const group = allProducts.find(x=>String(x.sku_key)===String(key));
       if(!group) return false;
-
       e.preventDefault();
       e.stopPropagation();
       if(typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
-
       if(e.target.closest('[data-action="notice"]')) { openNotice(group); return true; }
       // v30: un modelo completamente agotado abre directamente "Avísame". Antes abría el
       // modal de producto con todos los colores deshabilitados y el botón de agregar muerto:
@@ -815,8 +757,6 @@
       openProductGroup(group);
       return true;
     }
-
-
     function withTimeout(promise, ms){
       return new Promise((resolve, reject)=>{
         const timer = setTimeout(()=>reject(new Error('catalog_timeout')), ms);
@@ -826,7 +766,6 @@
         );
       });
     }
-
     // v26: AbortController cancela la conexión real al vencer el timeout.
     // Antes withTimeout rechazaba la promesa pero el request seguía vivo en background.
     async function fetchLiveCatalog(timeoutMs = INITIAL_CATALOG_TIMEOUT_MS){
@@ -841,7 +780,6 @@
         clearTimeout(abortTimer);
       }
     }
-
     async function loadInitialCatalogStable(){
       const started = Date.now();
       showNudoLoader('Cargando catálogo');
@@ -850,7 +788,6 @@
         // v24: Apps Script ya devuelve únicamente productos con Foto_Publicada = TRUE.
         // No validamos imágenes una por una en el navegador para evitar una precarga pesada.
         const rawProducts = (data.productos || []).filter(p => p && (p.foto_publicada === true || String(p.foto_publicada).toUpperCase() === 'TRUE'));
-
         // v23: no escribimos cache local en la carga inicial.
         // El catálogo visible debe venir del Apps Script en vivo para evitar inventario viejo.
         setCatalog(rawProducts, {source:'Apps Script en vivo · Foto_Publicada', total:Number(data.total || rawProducts.length || 0), keepLoader:true});
@@ -863,9 +800,6 @@
         setTimeout(()=>releaseInitialPreload(120), wait);
       }
     }
-
-
-
     function showCatalogLoadError(){
       catalogSource = 'sin catálogo en vivo';
       allVariants = [];
@@ -883,7 +817,6 @@
       updateBagUI();
       updateDebugBox();
     }
-
     function setCatalog(rawProducts, opts={}){
       rawProducts = Array.isArray(rawProducts) ? rawProducts : [];
       catalogSource = opts.source || catalogSource;
@@ -901,7 +834,6 @@
       updateDebugBox();
       if(!opts.keepLoader) hideNudoLoader(180);
     }
-
     function groupBySkuProveedor(variants){
       const map = new Map();
       variants.forEach(v=>{
@@ -935,8 +867,6 @@
         return g;
       });
     }
-
-
     // v27 FIX: cuando el filtro de color activo es una FAMILIA (p.ej. "Verde" agrupa
     // "Verde Botella", "Oliva" y "Menta"), antes se mostraba la foto de la primera variante
     // que calzara con la familia, en el orden en que llegó desde Sheets/Apps Script, sin
@@ -960,7 +890,6 @@
       }
       return g.variants.find(v=>!v.agotado && Number(v.stock_total||0)>0) || g.variants[0];
     }
-
     // v30: pills rápidos dinámicos. Solo se muestran los tipos que tienen al menos un modelo
     // visible (con foto; los agotados se mantienen a propósito para captar demanda con Avísame),
     // en el orden de preferencia de Nudo. Menos de Q250 se oculta si quedaría
@@ -982,7 +911,6 @@
       pills.innerHTML = quick.join('');
       $$('.pill', pills).forEach(p=>p.classList.toggle('active', p.dataset.filter === currentFilter));
     }
-
     function hasPlusSize(item){
       const variants = item.variants || [item];
       return variants.some(p => [...(p.tallas || []), ...(p.tallas_agotadas || [])]
@@ -1021,9 +949,6 @@
       if(excludeField !== 'precio' && stagedFilters.precio === 'menos250') pool = pool.filter(v => Number(v.precio_gtq) <= 250);
       return pool;
     }
-
-
-
     function readBag(){
       try{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }catch(err){ return []; }
     }
@@ -1127,7 +1052,6 @@
         if(!imgs.length) return null;
         return { tipo, imgs };
       }).filter(Boolean);
-
       track.innerHTML = defs.map(d=>`
         <button class="category-card" type="button" data-category="${safe(d.tipo)}" aria-label="Ver ${safe(d.tipo)}s">
           <div class="category-photo-stack" aria-hidden="true">
@@ -1138,9 +1062,7 @@
             <em>Ver ${safe(d.tipo)}s</em>
           </div>
         </button>`).join('');
-
       $$('.category-card', track).forEach(btn=>btn.addEventListener('click',()=>chooseCategory(btn.dataset.category)));
-
       if(categoryAutoTimer) clearInterval(categoryAutoTimer);
       categoryAutoTimer = setInterval(()=>{
         if(document.hidden) return; // v24: no rotar con la pestaña oculta (batería/CPU en mobile)
@@ -1166,10 +1088,8 @@
       $$('#filterContent [data-menu-cat]').forEach(btn=>btn.addEventListener('click',()=>{ closeSheets(); chooseCategory(btn.dataset.menuCat); }));
       $$('#filterContent [data-menu-filter]').forEach(btn=>btn.addEventListener('click',()=>{ currentFilter=btn.dataset.menuFilter; $$('.pill').forEach(p=>p.classList.toggle('active', p.dataset.filter===currentFilter)); safeRenderGrid({text:'Aplicando filtro', scroll:true}); }));
     }
-
     const opt = (group, value, label, extra='') => `<button class="filter-option ${extra}" data-group="${group}" data-value="${safe(value)}">${safe(label || value)}</button>`;
     const colorOpt = (value) => `<button class="filter-option swatch" data-group="color" data-value="${safe(value)}"><span class="swatch-dot" style="--dot:${safe(colorToHex(value))}"></span>${safe(value)}</button>`;
-
     // v27: recalcula y re-pinta el CUERPO del sheet (mantiene los botones Limpiar/Aplicar
     // fuera, ya enlazados una sola vez). Se llama al abrir el sheet y después de cada tap
     // en una opción, así el resto de facetas siempre refleja lo que aún tiene stock real
@@ -1181,20 +1101,17 @@
       const colores = [...new Set(facetPool('color').map(v => colorFamily(v.color)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
       const patrones = [...new Set(facetPool('patron').map(v => normalize(v.patron)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
       const plusDisponible = false;
-
       // Si el valor elegido en el borrador ya no tiene stock bajo las demás restricciones,
       // se limpia solo (evita quedar "atascado" en un color que dejó de existir en el tipo elegido).
       if(stagedFilters.tipo && !tipos.includes(stagedFilters.tipo)) stagedFilters.tipo = '';
       if(stagedFilters.color && !colores.includes(stagedFilters.color)) stagedFilters.color = '';
       if(stagedFilters.patron && !patrones.includes(stagedFilters.patron)) stagedFilters.patron = '';
       if(stagedFilters.plus && !plusDisponible) stagedFilters.plus = false;
-
       $('#filterBody').innerHTML = `
         <div class="filter-group"><h4>Tipo de prenda</h4><div class="filter-options">${tipos.map(t=>opt('tipo',t,t)).join('')}</div></div>
         <div class="filter-group"><h4>Color</h4><div class="filter-options">${colores.map(colorOpt).join('')}</div></div>
         <div class="filter-group"><h4>Patrón</h4><div class="filter-options">${patrones.map(pt=>opt('patron',pt,pt)).join('')}</div></div>
         <div class="filter-group"><h4>Precio</h4><div class="filter-options">${opt('precio','menos250','Menos de Q250','sale')}</div></div>`;
-
       $$('#filterBody .filter-option').forEach(btn=>{
         const group = btn.dataset.group;
         const value = btn.dataset.value;
@@ -1209,7 +1126,6 @@
         });
       });
     }
-
     // v28: cada vez que se abre el sheet, el borrador arranca como copia de lo que esté
     // realmente aplicado (así si ya habías aplicado un filtro antes, lo ves marcado al reabrir).
     function openFilterSheet(){
@@ -1239,8 +1155,6 @@
       });
       showSheet($('#filterSheet'));
     }
-
-
     function toggleSortMenu(e){
       e.stopPropagation();
       const menu = $('#sortMenu');
@@ -1248,16 +1162,13 @@
       menu.classList.toggle('show', open);
       $('#sortBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
     }
-
     function closeSortOnOutside(e){
       if(!e.target.closest('.sort-wrap')) closeSortMenu();
     }
-
     function closeSortMenu(){
       const menu = $('#sortMenu');
       if(menu){ menu.classList.remove('show'); $('#sortBtn').setAttribute('aria-expanded','false'); }
     }
-
     function chooseSort(e){
       const btn = e.target.closest('.sort-option'); if(!btn) return;
       currentSort = btn.dataset.sort || 'destacados';
@@ -1265,16 +1176,28 @@
       closeSortMenu();
       safeRenderGrid({text:'Ordenando catálogo'});
     }
-
     function updateSortLabel(){
       const labels = {destacados:'destacados', precio_asc:'menor precio', precio_desc:'mayor precio', az:'A-Z'};
       $('#sortBtn').innerHTML = `Ordenar: ${labels[currentSort]} <span class="chev"></span>`;
       $$('.sort-option').forEach(b=>b.classList.toggle('active', b.dataset.sort === currentSort));
     }
-
+    // NUDO v1.2 FIX: applySort agrupa por Tipo_Prenda (orden NUDO_PREFERRED_TYPES) bajo el
+    // orden "destacados", que es el default al entrar y el que usan los pills rápidos. Antes,
+    // este sort solo miraba agotado/stock y pisaba por completo el orden que ya mandaba
+    // agrupado el backend (getCatalogo), por eso los SKU aparecían revueltos en pantalla aunque
+    // el fix de backend ya estuviera deployado. Los otros criterios de orden (precio, A-Z), que
+    // el cliente elige explícitamente, se respetan sin forzar la agrupación por tipo.
     function applySort(list){
       const sorted = list.slice();
+      const tipoRank = t => {
+        const idx = NUDO_PREFERRED_TYPES.indexOf(normalize(t));
+        return idx === -1 ? NUDO_PREFERRED_TYPES.length : idx;
+      };
       sorted.sort((a,b)=>{
+        if(currentSort === 'destacados'){
+          const ta = tipoRank(a.tipo_prenda), tb = tipoRank(b.tipo_prenda);
+          if(ta !== tb) return ta - tb;
+        }
         if(a.agotado && !b.agotado) return 1;
         if(!a.agotado && b.agotado) return -1;
         if(currentSort === 'precio_asc') return Number(a.precio_gtq || 0) - Number(b.precio_gtq || 0);
@@ -1284,7 +1207,6 @@
       });
       return sorted;
     }
-
     function updateDebugBox(){
       const box = $('#debugBox');
       if(!box) return;
@@ -1295,7 +1217,6 @@
       }
       console.info('[NUDO catálogo]', rawStats);
     }
-
     function getFiltered(){
       let list = allProducts.slice();
       // Los productos agotados con foto se mantienen visibles para medir demanda con “Avísame”.
@@ -1322,7 +1243,6 @@
       }
       return applySort(list);
     }
-
     function renderGrid(){
       const grid = $('#grid'); const list = getFiltered();
       if(!list.length){
@@ -1369,7 +1289,6 @@
         });
       });
     }
-
     function handleImgError(img){
       const fallbacks = (img.dataset.fallbacks || '').split('|').filter(Boolean);
       if(fallbacks.length){
@@ -1385,8 +1304,6 @@
         img.style.visibility = 'hidden';
       }
     }
-
-
     function buildCardFallbacks(g, display){
       const first = display && display.url_imagen ? display.url_imagen : '';
       const urls = [];
@@ -1394,7 +1311,6 @@
       (g.variants || []).forEach(v=>urls.push(v.url_imagen, v.url_imagen_2, v.url_imagen_3));
       return [...new Set(urls.filter(Boolean).filter(u=>u!==first))];
     }
-
     function productCard(g,i){
       const sold = !!g.agotado;
       const display = variantForDisplay(g);
@@ -1420,8 +1336,6 @@
         </div>
       </article>`;
     }
-
-
     function openSearchSheet(){
       renderSearchResults('');
       showSheet($('#searchSheet'));
@@ -1431,7 +1345,6 @@
       input.oninput = () => renderSearchResults(input.value);
       trackLight('SEARCH_OPEN');
     }
-
     function renderSearchResults(q){
       const term = normalize(q);
       const results = term ? applySort(allProducts.filter(g => groupMatchesSearch(g, term))).slice(0, 12) : applySort(allProducts.slice()).slice(0, 8);
@@ -1464,7 +1377,6 @@
         trackLight('SEARCH_RESULT_CLICK');
       }));
     }
-
     function activeSearchMarkup(){
       return `<div class="active-search">Búsqueda: <strong>${safe(searchTerm)}</strong> <button type="button" onclick="clearSearch()">Limpiar</button></div>`;
     }
@@ -1478,7 +1390,6 @@
       $$('.pill').forEach(p=>p.classList.toggle('active', p.dataset.filter === '__nuevo'));
       safeRenderGrid({text:'Limpiando búsqueda', scroll:true});
     }
-
     function groupMatchesSearch(g, overrideTerm){
       const term = searchNormalize(overrideTerm || searchTerm);
       if(!term) return true;
@@ -1486,20 +1397,17 @@
       (g.variants || []).forEach(v=>fields.push(v.descripcion, v.tipo_prenda, v.patron, v.color, v.ref_proveedor, v.id_producto, v.precio_gtq, money(v.precio_gtq)));
       return searchNormalize(fields.join(' ')).includes(term);
     }
-
     function searchColorPreference(){
       if(!searchTerm) return '';
       const term = searchNormalize(searchTerm);
       const families = ['Negro','Blanco','Beige','Café','Rojo','Azul','Verde','Gris','Rosa','Morado','Amarillo','Naranja'];
       return families.find(f => term.includes(searchNormalize(f))) || '';
     }
-
     function searchNormalize(v){ return String(v ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
     function trackLight(action){
       const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=&nombre_producto=${encode(action)}&utm_origen=${encode(UTM)}&accion_detalle=${encode(action)}`;
       fetch(url).catch(()=>{});
     }
-
     function registerClick(p, accion){
       const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&utm_origen=${encode(UTM)}&accion_detalle=${encode(accion)}`;
       fetch(url).catch(()=>{});
@@ -1509,7 +1417,6 @@
       const url = `${AS_URL}?accion=registrar_demanda&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&color=${encode(p.color||'')}&canal_origen=${encode(UTM)}`;
       fetch(url).catch(()=>{});
     }
-
     function internalCode(p){ return p && p.id_producto ? String(p.id_producto) : ''; }
     function uniqueUrls(list){ return [...new Set((list || []).filter(Boolean))]; }
     function modalImageUrls(selected, group){
@@ -1544,14 +1451,10 @@
       const map = {negro:'#111111', blanco:'#FFFFFF', hueso:'#F4F0E8', beige:'#D8C7B4', cafe:'#7A5236', 'café':'#7A5236', marron:'#7A5236', camel:'#B98A5B', rojo:'#8A1F2D', vino:'#4A1F2C', oxblood:'#4A1F2C', corinto:'#4A1F2C', azul:'#2F4F73', verde:'#556B4A', gris:'#A3A09B', rosa:'#D8A6A6', rosado:'#D8A6A6', morado:'#705A7A', lila:'#B7A4C6', amarillo:'#D6B45A', naranja:'#C4714A', terracota:'#C4714A'};
       return map[c] || map[family] || '#D8D2CC';
     }
-
     function nudoUsesSizeSelector(item){
       const tipo = searchNormalize((item && item.tipo_prenda) || '');
       return NUDO_SIZE_SELECTOR_TYPES.some(t => tipo === searchNormalize(t));
     }
-
-
-
     let lightboxState = { urls: [], idx: 0, scale: 1, x: 0, y: 0, startX: 0, startY: 0, startDist: 0, startScale: 1, lastTap: 0, dragging: false };
     function currentGalleryUrls(){
       return $$('#galleryTrack img').map(img => img.currentSrc || img.src).filter(Boolean);
@@ -1663,7 +1566,6 @@
         }
       }, {passive:false});
     }
-
     function openProductGroup(g){
       registerClick(g.display || g.variants[0], 'ABRIR_MODAL');
       let selectedVariant = null;
@@ -1697,7 +1599,6 @@
       const productContentEl = $('#productContent');
       if(productContentEl) productContentEl.scrollTop = 0;
       $('#productContent [data-close]').addEventListener('click', closeSheets);
-
       function renderVariant(){
         selectedSize = '';
         const p = selectedVariant || (availableVariants[0] || g.variants[0]);
@@ -1732,7 +1633,6 @@
           }));
         }
       }
-
       $$('#colorBtns .color-btn').forEach(btn=>btn.addEventListener('click',()=>{
         const id = Number(btn.dataset.id);
         const variant = g.variants.find(v=>Number(v.id_producto)===id);
@@ -1750,7 +1650,6 @@
         closeSheets({keepLoader:true});
         requestAnimationFrame(()=>requestAnimationFrame(()=>openBagSheet()));
       });
-
       const gallery = $('#gallery'); let startX=0;
       function move(idx){ const dots = $$('#dots .dot'); if(dots.length < 2) return; const max = dots.length-1; slide=Math.max(0,Math.min(idx,max)); $('#galleryTrack').style.transform=`translateX(-${slide*100}%)`; dots.forEach((d,i)=>d.classList.toggle('active',i===slide)); }
       $('#galleryPrev').addEventListener('click',()=>move(slide-1));
@@ -1758,7 +1657,6 @@
       $('#dots').addEventListener('click',e=>{ const dot=e.target.closest('.dot'); if(!dot) return; move($$('#dots .dot').indexOf(dot)); });
       gallery.addEventListener('touchstart', e=>{startX=e.touches[0].clientX},{passive:true});
       gallery.addEventListener('touchend', e=>{const diff=startX-e.changedTouches[0].clientX; if(Math.abs(diff)>40){ if(diff>0) move(slide+1); if(diff<0) move(slide-1); }},{passive:true});
-
       // v25: tap (sin arrastre) sobre la foto abre el lightbox con zoom.
       // Umbral de 10px para no chocar con el swipe de la galería, y supresión del click
       // sintético que el navegador dispara después del pointerup (mismo patrón de las cards).
@@ -1779,7 +1677,6 @@
         openPhotoLightbox(currentGalleryUrls(), slide);
       }, {passive:true});
     }
-
     function openNotice(item){
       registerDemand(item);
       const g = item.variants ? item : null;
@@ -1799,7 +1696,6 @@
         window.open(`https://wa.me/${WA_NUMBER}?text=${encode(msg)}`,'_blank','noopener');
       });
     }
-
     // NUDO v17: administrador seguro de sheets/modales.
     // Un solo sheet activo, cierre fuerte inmediato y limpieza de capas para evitar
     // modales fantasma, cursor zoom fuera del modal y fallas de hit-testing en Android/Safari.
@@ -1834,7 +1730,6 @@
         return;
       }
     });
-
     function lockScroll(){
       document.documentElement.classList.add('sheet-open');
     }
