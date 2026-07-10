@@ -846,12 +846,16 @@
     // Tanga Celeste y Tanga Gris salían como 3 tarjetas sueltas en vez de una con selector
     // de color. Ahora se agrupa por Tipo_Prenda + Patron + Material (todo igual salvo el
     // color), que es el criterio real de "mismo modelo, distinto color".
+    // NUDO v1.5: revertido a agrupar por Ref_Proveedor (control explícito, decidido por
+    // Julián a mano en el Sheet), en vez de Tipo_Prenda+Patron+Material (v1.4), que resultó
+    // fragil: dependía de que esos campos coincidieran exactamente entre colores del mismo
+    // modelo, y en la práctica agrupó mal (inconsistencias de tipeo/campos vacíos en algunas
+    // filas). El fix real es de datos, no de código: en DIM_PRODUCTOS_NUDO, todo color que
+    // sea el mismo modelo debe compartir el MISMO valor de Ref_Proveedor.
     function groupBySkuProveedor(variants){
       const map = new Map();
       variants.forEach(v=>{
-        const tipo = normalize(v.tipo_prenda);
-        const composite = [tipo, normalize(v.patron), normalize(v.material)].join('||');
-        const key = tipo ? composite : `producto-${v.id_producto}`;
+        const key = normalize(v.ref_proveedor) || `producto-${v.id_producto}`;
         if(!map.has(key)){
           map.set(key, { sku_key:key, ref_proveedor:v.ref_proveedor || '', variants:[], tipo_prenda:v.tipo_prenda || 'Prenda', patron:v.patron || '', descripcion:v.descripcion || 'Prenda Nudo' });
         }
