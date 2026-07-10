@@ -839,10 +839,19 @@
       updateDebugBox();
       if(!opts.keepLoader) hideNudoLoader(180);
     }
+    // NUDO v1.4 FIX: agrupar por Ref_Proveedor asumía que JR Underwear usa la misma
+    // referencia de proveedor para el mismo modelo en todos los colores, algo que nunca
+    // se confirmó (y no coincide con la regla de reconciliación: SKU = Tipo_Prenda +
+    // Material + Color, cada combinación como fila independiente). Por eso Tanga Piel,
+    // Tanga Celeste y Tanga Gris salían como 3 tarjetas sueltas en vez de una con selector
+    // de color. Ahora se agrupa por Tipo_Prenda + Patron + Material (todo igual salvo el
+    // color), que es el criterio real de "mismo modelo, distinto color".
     function groupBySkuProveedor(variants){
       const map = new Map();
       variants.forEach(v=>{
-        const key = normalize(v.ref_proveedor) || `producto-${v.id_producto}`;
+        const tipo = normalize(v.tipo_prenda);
+        const composite = [tipo, normalize(v.patron), normalize(v.material)].join('||');
+        const key = tipo ? composite : `producto-${v.id_producto}`;
         if(!map.has(key)){
           map.set(key, { sku_key:key, ref_proveedor:v.ref_proveedor || '', variants:[], tipo_prenda:v.tipo_prenda || 'Prenda', patron:v.patron || '', descripcion:v.descripcion || 'Prenda Nudo' });
         }
