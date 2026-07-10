@@ -777,7 +777,13 @@
       const ctrl = new AbortController();
       const abortTimer = setTimeout(()=>ctrl.abort(), timeoutMs);
       try{
-        const res = await fetch(`${AS_URL}?accion=get_catalogo&marca=${MARCA}`, {cache:'no-store', signal:ctrl.signal});
+        // NUDO v1.6 FIX: Google cachea en su borde de red las respuestas del endpoint de
+        // Apps Script cuando la URL de request es siempre idéntica (mismo accion+marca).
+        // {cache:'no-store'} solo controla el caché del navegador, no ese caché de Google,
+        // por eso el catálogo podía quedar mostrando datos viejos incluso en pestañas nuevas
+        // o incógnito. Agregar un parámetro que cambia en cada carga (timestamp) fuerza a
+        // que Google trate cada request como distinta y vuelva a ejecutar el script real.
+        const res = await fetch(`${AS_URL}?accion=get_catalogo&marca=${MARCA}&_ts=${Date.now()}`, {cache:'no-store', signal:ctrl.signal});
         const data = await res.json();
         if(!data.ok) throw new Error(data.error || 'Respuesta no válida');
         return data;
