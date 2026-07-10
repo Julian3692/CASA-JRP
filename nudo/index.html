@@ -442,9 +442,9 @@
         <button class="pill active" data-filter="__nuevo">Nuevo</button>
         <button class="pill sale" data-filter="__menos250">Menos de Q250</button>
         <button class="pill" data-filter="tipo::Tanga">Tanga</button>
-        <button class="pill" data-filter="tipo::Suspensorio">Suspensorio</button>
-        <button class="pill" data-filter="tipo::Brief">Brief</button>
         <button class="pill" data-filter="tipo::Jockstrap">Jockstrap</button>
+        <button class="pill" data-filter="tipo::Suspensorio Liguero">Suspensorio</button>
+        <button class="pill" data-filter="tipo::Brief Bikini">Brief Bikini</button>
         <button class="pill" data-filter="tipo::Bañador">Bañador</button>
       </div>
       <div class="filter-actions">
@@ -583,7 +583,12 @@
     const INITIAL_CATALOG_TIMEOUT_MS = 15000;
     const MIN_INITIAL_LOADER_MS = 300;
     const FREE_SHIPPING_THRESHOLD = 250;
-    const NUDO_PREFERRED_TYPES = ['Tanga','Tanga Hilo','Tanga Amarrar','Tanga 2cm','Suspensorio','Suspensorio Liguero','Suspensorio 2cm','Suspensorio Tanga','Brief','Bikini','Body','Jockstrap','Bañador','Arnés Aro','Arnés con Hebillas'];
+    // NUDO v1.3 FIX: lista alineada con las 12 categorías reales de Tipo_Prenda que sobrevivieron
+    // en el DIM_PRODUCTOS_NUDO final reconciliado (antes tenía nombres viejos como "Bikini",
+    // "Suspensorio", "Arnés Aro" que ya no existen, y le faltaban "Hilo Tanga" y "Hilo con
+    // Liguero 2cm", que sí existen; esos productos caían todos en el mismo rango "no encontrado"
+    // y por eso el agrupamiento por tipo no se veía en pantalla pese al fix de applySort).
+    const NUDO_PREFERRED_TYPES = ['Tanga','Tanga Hilo','Tanga Amarrar','Hilo Tanga','Hilo con Liguero 2cm','Jockstrap','Suspensorio Tanga','Suspensorio Liguero','Brief','Brief Bikini','Body','Bañador'];
     const NUDO_SIZE_SELECTOR_TYPES = ['Jockstrap','Brief Bikini','Brief','Bikini','Bañador','Suspensorio Liguero'];
     const $ = (sel, root=document) => root.querySelector(sel);
     const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
