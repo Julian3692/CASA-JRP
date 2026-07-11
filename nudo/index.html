@@ -588,7 +588,7 @@
     // Liguero 2cm", que sí existen; esos productos caían todos en el mismo rango "no encontrado"
     // y por eso el agrupamiento por tipo no se veía en pantalla pese al fix de applySort).
     const NUDO_PREFERRED_TYPES = ['Tanga','Tanga Hilo','Tanga Amarrar','Hilo Tanga','Hilo con Liguero 2cm','Jockstrap','Suspensorio Tanga','Suspensorio Liguero','Brief','Brief Bikini','Body','Bañador'];
-    const NUDO_SIZE_SELECTOR_TYPES = ['Jockstrap','Brief Bikini','Brief','Bikini','Bañador','Suspensorio Liguero'];
+    const NUDO_SIZE_SELECTOR_TYPES = ['Jockstrap','Brief Bikini','Brief','Bañador','Suspensorio Liguero'];
     const $ = (sel, root=document) => root.querySelector(sel);
     const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
     const money = v => 'Q' + (Number(v) || 0).toLocaleString('es-GT', {maximumFractionDigits:0});
@@ -1029,7 +1029,7 @@
         </article>`;
       }).join('');
       $('#bagContent').innerHTML = `<h3 class="bag-title">Tu selección</h3>
-        <p class="bag-sub">Agrega varias prendas, sigue explorando y envía tu selección completa por WhatsApp cuando estés lista.</p>
+        <p class="bag-sub">Agrega varias prendas, sigue explorando y envía tu selección completa por WhatsApp cuando estés listo.</p>
         ${total ? `<div class="bag-list">${list}</div><div class="bag-actions"><button class="btn" id="sendBagWa">Enviar selección por WhatsApp</button><button class="secondary-link" id="continueShopping" type="button">Seguir comprando</button></div>` : `<div class="bag-empty">Tu selección está vacía. Explora el catálogo y toca <strong>Ver opciones</strong> para agregar prendas.<br><br><button class="btn" id="continueShopping" type="button">Seguir comprando</button></div>`}`;
       showSheet($('#bagSheet'));
       $$('#bagContent [data-remove]').forEach(btn=>btn.addEventListener('click',()=>removeFromBag(btn.dataset.remove)));
@@ -1080,13 +1080,13 @@
         return { tipo, imgs };
       }).filter(Boolean);
       track.innerHTML = defs.map(d=>`
-        <button class="category-card" type="button" data-category="${safe(d.tipo)}" aria-label="Ver ${safe(d.tipo)}s">
+        <button class="category-card" type="button" data-category="${safe(d.tipo)}" aria-label="Ver ${safe(d.tipo)}">
           <div class="category-photo-stack" aria-hidden="true">
             ${d.imgs.map((img,i)=>`<img class="cat-img ${i===0?'active':''}" src="${safe(img)}" alt="" loading="lazy" decoding="async" fetchpriority="low" onerror="this.remove()">`).join('')}
           </div>
           <div class="category-overlay">
-            <span>${safe(d.tipo)}s</span>
-            <em>Ver ${safe(d.tipo)}s</em>
+            <span>${safe(d.tipo)}</span>
+            <em>Ver ${safe(d.tipo)}</em>
           </div>
         </button>`).join('');
       $$('.category-card', track).forEach(btn=>btn.addEventListener('click',()=>chooseCategory(btn.dataset.category)));
@@ -1432,16 +1432,16 @@
     }
     function searchNormalize(v){ return String(v ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
     function trackLight(action){
-      const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=&nombre_producto=${encode(action)}&utm_origen=${encode(UTM)}&accion_detalle=${encode(action)}`;
+      const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=&nombre_producto=${encode(action)}&utm_origen=${encode(UTM)}&accion_detalle=${encode(action)}&_ts=${Date.now()}`;
       fetch(url).catch(()=>{});
     }
     function registerClick(p, accion){
-      const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&utm_origen=${encode(UTM)}&accion_detalle=${encode(accion)}`;
+      const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&utm_origen=${encode(UTM)}&accion_detalle=${encode(accion)}&_ts=${Date.now()}`;
       fetch(url).catch(()=>{});
     }
     function registerDemand(item){
       const p = item.variants ? (item.variants[0] || item.display || item) : item;
-      const url = `${AS_URL}?accion=registrar_demanda&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&color=${encode(p.color||'')}&canal_origen=${encode(UTM)}`;
+      const url = `${AS_URL}?accion=registrar_demanda&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&color=${encode(p.color||'')}&canal_origen=${encode(UTM)}&_ts=${Date.now()}`;
       fetch(url).catch(()=>{});
     }
     function internalCode(p){ return p && p.id_producto ? String(p.id_producto) : ''; }
