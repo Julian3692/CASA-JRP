@@ -776,7 +776,10 @@
       const ctrl = new AbortController();
       const abortTimer = setTimeout(()=>ctrl.abort(), timeoutMs);
       try{
-        const res = await fetch(`${AS_URL}?accion=get_catalogo&marca=${MARCA}`, {cache:'no-store', signal:ctrl.signal});
+        // ORKIA v31 FIX: Google cachea en su borde las respuestas del endpoint de Apps Script
+        // cuando la URL es siempre idéntica; {cache:'no-store'} solo controla el caché del navegador.
+        // El parámetro _ts fuerza a que cada carga sea una request distinta y ejecute el script real.
+        const res = await fetch(`${AS_URL}?accion=get_catalogo&marca=${MARCA}&_ts=${Date.now()}`, {cache:'no-store', signal:ctrl.signal});
         const data = await res.json();
         if(!data.ok) throw new Error(data.error || 'Respuesta no válida');
         return data;
@@ -1413,17 +1416,17 @@
 
     function searchNormalize(v){ return String(v ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
     function trackLight(action){
-      const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=&nombre_producto=${encode(action)}&utm_origen=${encode(UTM)}&accion_detalle=${encode(action)}`;
+      const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=&nombre_producto=${encode(action)}&utm_origen=${encode(UTM)}&accion_detalle=${encode(action)}&_ts=${Date.now()}`;
       fetch(url).catch(()=>{});
     }
 
     function registerClick(p, accion){
-      const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&utm_origen=${encode(UTM)}&accion_detalle=${encode(accion)}`;
+      const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&utm_origen=${encode(UTM)}&accion_detalle=${encode(accion)}&_ts=${Date.now()}`;
       fetch(url).catch(()=>{});
     }
     function registerDemand(item){
       const p = item.variants ? (item.variants[0] || item.display || item) : item;
-      const url = `${AS_URL}?accion=registrar_demanda&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&color=${encode(p.color||'')}&canal_origen=${encode(UTM)}`;
+      const url = `${AS_URL}?accion=registrar_demanda&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&color=${encode(p.color||'')}&canal_origen=${encode(UTM)}&_ts=${Date.now()}`;
       fetch(url).catch(()=>{});
     }
 
