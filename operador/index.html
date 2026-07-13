@@ -19,10 +19,15 @@
 <body>
   <div id="root"></div>
   <script type="text/babel" data-presets="react">
-const { useState, useMemo, useEffect } = React;
+const { useState, useMemo } = React;
 
 // CAMBIO: nueva URL del AS bajo julian@casajrp.com
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec";
+
+// Envío gratis desde este monto (subtotal, antes de cupón), igual que en Code.gs.
+// Solo se usa acá para que el resumen en pantalla coincida con lo que el
+// backend va a calcular al confirmar — el backend es la fuente real del cobro.
+const UMBRAL_ENVIO_GRATIS_GTQ = 300;
 
 // Paleta por marca — sin cambios
 const TEMA = {
@@ -327,12 +332,15 @@ function NadiaApp() {
   const tallasDisp = prod ? (prod.tallas || []) : [];
 
   // CAMBIO: costo de envío dinámico desde zonasList
-  const zonaSelObj = zonasList.find(z => z.nombre === zonaGT || z.id_zona === zonaGT) || null;
-  const costoEnvio = zonaSelObj ? zonaSelObj.costo_envio_gtq : 0;
-  const nseInf     = NSE_POR_ZONA[zonaGT] ?? null;
+  const zonaSelObj     = zonasList.find(z => z.nombre === zonaGT || z.id_zona === zonaGT) || null;
+  const costoEnvioZona = zonaSelObj ? zonaSelObj.costo_envio_gtq : 0;
+  const nseInf         = NSE_POR_ZONA[zonaGT] ?? null;
 
   // CAMBIO: totales en GTQ
   const subtotalGTQ = precioGTQ * Number(cantidad || 1);
+  // Envío gratis desde Q300 (subtotal antes de cupón) — igual regla que Code.gs.
+  const envioGratis = subtotalGTQ >= UMBRAL_ENVIO_GRATIS_GTQ;
+  const costoEnvio  = envioGratis ? 0 : costoEnvioZona;
   const totalGTQ    = subtotalGTQ + costoEnvio;
 
   // Opciones zona para Sel — dinámicas desde AS
@@ -385,11 +393,9 @@ function NadiaApp() {
         cantidad:    Number(cantidad),
       }],
       codigo_descuento: cupon,
-      descuento_cop:    0,
       metodo_pago:     pago,
       banco:           banco,
       comprobante:     comp,
-      motivo_compra:   "",
     };
     try {
       const res  = await fetch(APPS_SCRIPT_URL, {
@@ -535,7 +541,7 @@ function NadiaApp() {
             {prod&&(
               <div style={{background:"#FFF",borderRadius:12,padding:14,border:`1.5px solid ${T.gold}`,display:"flex",gap:12,alignItems:"center",marginBottom:14}}>
                 <div style={{width:46,height:46,borderRadius:10,background:T.light,display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}>
-                  {(prod.tipo_prenda||prod.tipo||"")===("Set"||"Body")?"👗":"👕"}
+                  {["Set","Body"].includes(prod.tipo_prenda||prod.tipo||"")?"👗":"👕"}
                 </div>
                 <div>
                   <p style={{margin:"0 0 5px",fontWeight:700,fontSize:14,color:T.dark}}>{prod.descripcion||prod.nombre}</p>
@@ -614,7 +620,7 @@ function NadiaApp() {
                 {cupon&&<SummaryRow k="Cupón" v={cupon} T={T}/>}
                 {/* CAMBIO: todo en GTQ */}
                 <SummaryRow k="Subtotal" v={fmtGTQ(subtotalGTQ)} T={T}/>
-                {costoEnvio>0&&<SummaryRow k="Envío" v={fmtGTQ(costoEnvio)} T={T}/>}
+                {zonaSelObj&&<SummaryRow k="Envío" v={envioGratis?"Gratis":fmtGTQ(costoEnvio)} T={T}/>}
                 <div style={{display:"flex",justifyContent:"space-between",marginTop:12,alignItems:"baseline"}}>
                   <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>TOTAL A COBRAR</span>
                   <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2"}}>{fmtGTQ(totalGTQ)}</span>
