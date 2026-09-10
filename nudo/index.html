@@ -5,6 +5,24 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
   <title>NUDO — Catálogo</title>
+  <!-- Facebook Pixel Code -->
+  <script>
+  !function(f,b,e,v,n,t,s)
+  {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+  n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+  if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+  n.queue=[];t=b.createElement(e);t.async=!0;
+  t.src=v;s=b.getElementsByTagName(e)[0];
+  s.parentNode.insertBefore(t,s)}(window,document,'script',
+  'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '1778753106585555');
+  fbq('track', 'PageView');
+  </script>
+  <noscript>
+  <img height="1" width="1" style="display:none"
+  src="https://www.facebook.com/tr?id=1778753106585555&ev=PageView&noscript=1"/>
+  </noscript>
+  <!-- End Facebook Pixel Code -->
   <!-- NUDO Producción v1.1: catálogo masculino basado en ORKIA Producción v30.
        Heredado tal cual de Orkia v30: arquitectura SPA vanilla JS, fetch al Apps Script
        compartido (getCatalogo, registrarClic, registrarDemanda), parámetros accion/marca/
@@ -1030,6 +1048,13 @@
       const total = bagItems.reduce((s,i)=>s+(Number(i.precio_gtq)||0)*(Number(i.qty)||1),0);
       const msg = `Hola Nudo 👋 Quiero hacer este pedido (${bagItems.length} ${bagItems.length===1?'prenda':'prendas'}):\n\n${lines}\n\n———\n\n*Total estimado: ${money(total)}*\n\n¿Me ayudas a confirmar disponibilidad y coordinar el envío discreto?`;
       bagItems.forEach(item=>registerClick({id_producto:item.id_producto, descripcion:item.descripcion}, 'ENVIAR_BOLSA_WA'));
+      if(typeof fbq === 'function') fbq('track', 'InitiateCheckout', {
+        content_ids: bagItems.map(i=>String(i.id_producto||'')),
+        content_type: 'product',
+        num_items: bagItems.length,
+        currency: 'GTQ',
+        value: total
+      });
       window.open(`https://wa.me/${WA_NUMBER}?text=${encode(msg)}`,'_blank','noopener');
     }
     function chooseCategory(tipo){
@@ -1412,14 +1437,32 @@
       const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=&nombre_producto=${encode(action)}&utm_origen=${encode(UTM)}&accion_detalle=${encode(action)}&_ts=${Date.now()}`;
       fetch(url).catch(()=>{});
     }
+    // Mapeo de acciones internas -> eventos estandar de Meta Pixel, para
+    // alimentar la optimizacion de la pauta con las mismas senales que ya
+    // trackeamos hacia el Sheet (Jul 2026).
+    function trackPixelEvent(accion, p){
+      if(typeof fbq !== 'function') return;
+      const params = {
+        content_ids: [String(p.id_producto || '')],
+        content_type: 'product',
+        content_name: p.descripcion || '',
+        currency: 'GTQ',
+        value: Number(p.precio_gtq || 0)
+      };
+      if(accion === 'ABRIR_MODAL') fbq('track', 'ViewContent', params);
+      else if(accion === 'AGREGAR_BOLSA') fbq('track', 'AddToCart', params);
+    }
+
     function registerClick(p, accion){
       const url = `${AS_URL}?accion=registrar_clic&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&utm_origen=${encode(UTM)}&accion_detalle=${encode(accion)}&_ts=${Date.now()}`;
       fetch(url).catch(()=>{});
+      trackPixelEvent(accion, p);
     }
     function registerDemand(item){
       const p = item.variants ? (item.variants[0] || item.display || item) : item;
       const url = `${AS_URL}?accion=registrar_demanda&marca=${MARCA}&id_producto=${encode(p.id_producto||'')}&nombre_producto=${encode(p.descripcion||'')}&color=${encode(p.color||'')}&canal_origen=${encode(UTM)}&_ts=${Date.now()}`;
       fetch(url).catch(()=>{});
+      if(typeof fbq === 'function') fbq('track', 'Lead', {content_ids:[String(p.id_producto||'')], content_type:'product', content_name:p.descripcion||''});
     }
     function internalCode(p){ return p && p.id_producto ? String(p.id_producto) : ''; }
     function uniqueUrls(list){ return [...new Set((list || []).filter(Boolean))]; }
