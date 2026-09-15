@@ -571,6 +571,7 @@
     const MARCA = 'orkia';
     const WA_NUMBER = '50248304736';
     const UTM = new URLSearchParams(window.location.search).get('utm') || 'directo';
+    const SKU_PARAM = new URLSearchParams(window.location.search).get('sku') || '';
     const BAG_KEY = 'orkia_seleccion_whatsapp_v1';
     const BAG_KEY_LEGACY = 'orkia_bolsa_whatsapp_v1';
     // v24: El catálogo visible sale únicamente de Apps Script en vivo.
@@ -821,8 +822,20 @@
       }finally{
         const elapsed = Date.now() - started;
         const wait = Math.max(0, MIN_INITIAL_LOADER_MS - elapsed);
-        setTimeout(()=>releaseInitialPreload(120), wait);
+        setTimeout(()=>{ releaseInitialPreload(120); openProductBySkuParam(); }, wait);
       }
+    }
+
+    // Sep 2026: soporte de deep-link por producto via ?sku=ID (ej. desde un
+    // anuncio dinamico de Meta). Se corre una sola vez, despues de la carga
+    // inicial del catalogo, para que allProducts ya este armado.
+    function openProductBySkuParam(){
+      if(!SKU_PARAM) return;
+      const targetId = Number(SKU_PARAM);
+      if(!targetId) return;
+      const group = allProducts.find(g => g.variants.some(v => Number(v.id_producto) === targetId));
+      if(!group) return;
+      openProductGroup(group, targetId);
     }
 
 
@@ -1594,13 +1607,19 @@
       }, {passive:false});
     }
 
-    function openProductGroup(g){
+    function openProductGroup(g, preselectId){
       registerClick(g.display || g.variants[0], 'ABRIR_MODAL');
       let selectedVariant = null;
       let selectedSize = '';
       let slide = 0;
       const availableVariants = g.variants.filter(v=>!v.agotado && Number(v.stock_total||0)>0);
       if(availableVariants.length === 1) selectedVariant = availableVariants[0];
+      // Sep 2026: deep-link por ?sku=ID -> preseleccionar el color/variante exacto
+      // que se anuncio (ej. en un feed de Meta), no solo abrir el diseno generico.
+      if(preselectId != null){
+        const match = g.variants.find(v => Number(v.id_producto) === Number(preselectId));
+        if(match) selectedVariant = match;
+      }
       const sheet = $('#productSheet');
       $('#productContent').innerHTML = `
         <div class="modal-gallery" id="gallery"><button class="gallery-arrow prev" id="galleryPrev" type="button" aria-label="Foto anterior">‹</button><div class="gallery-track" id="galleryTrack"></div><button class="gallery-arrow next" id="galleryNext" type="button" aria-label="Foto siguiente">›</button></div>
