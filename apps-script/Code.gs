@@ -703,3 +703,121 @@ function registrarFeedback(marca, body) {
 
   return { ok: true, id_feedback: id };
 }
+
+// ============================================================
+// auditarIntegridadCatalogo (Sep 2026)
+//
+// Control de integridad entre DIM_PRODUCTOS y FACT_STOCK_ACTUAL, para
+// ambas marcas. Nace del hallazgo de que 10212/10228/10242 (Orkia)
+// tenian stock real, fotos reales y hasta pedidos confirmados, pero
+// su fila en DIM_PRODUCTOS habia desaparecido sin que nada lo avisara
+// (Sheets no valida esto solo). Esta funcion NO se llama desde doGet/
+// doPost -> se corre a mano desde el editor (seleccionar la funcion
+// en el dropdown de arriba y darle "Ejecutar"), no requiere una
+// nueva implementacion/deploy.
+//
+// Que revisa, por marca:
+//   1. SIN_FICHA_DIM_PRODUCTOS: ID_Producto con stock en
+//      FACT_STOCK_ACTUAL pero SIN fila en DIM_PRODUCTOS.
+//   2. SIN_STOCK_REGISTRADO: fila en DIM_PRODUCTOS que nunca aparece
+//      en FACT_STOCK_ACTUAL (puede ser normal si es un producto que
+//      todavia no recibio su primera entrada).
+//   3. STOCK_NEGATIVO: Stock_Actual < 0 (salida registrada sin su
+//      entrada correspondiente).
+//   4. FOTO_ROTA: productos con Foto_Publicada=TRUE cuya foto
+//      "_frente" ya no responde 200 en el CDN.
+//
+// Escribe el resultado en una pestaña nueva "AUDITORIA_INTEGRIDAD"
+// dentro del Sheet de cada marca (se recrea cada vez que se corre,
+// para que siempre refleje el estado actual).
+// ============================================================
+
+function auditarIntegridadCatalogo() {
+  const resumen = {};
+
+  Object.keys(SHEETS).forEach(marca => {
+    const ss = _ss(marca);
+    const problemas = [];
+
+    // --- Leer DIM_PRODUCTOS ---
+    const dim = ss.getSheetByName("DIM_PRODUCTOS").getDataRange().getValues();
+    const dimHeader = dim[0];
+    const dimIdx = {};
+    dimHeader.forEach((c, i) => { if (c) dimIdx[String(c).trim()] = i; });
+
+    const dimIds = new Set();
+    const fotoPublicadaById = {};
+    for (let r = 1; r < dim.length; r++) {
+      const id = dim[r][dimIdx["ID_Producto"]];
+      if (!id) continue;
+      const idStr = String(id);
+      dimIds.add(idStr);
+      const raw = dim[r][dimIdx["Foto_Publicada"]];
+      fotoPublicadaById[idStr] = (raw === true || raw === 1 || String(raw).toUpperCase().trim() === "TRUE");
+    }
+
+    // --- Leer FACT_STOCK_ACTUAL ---
+    const stock = ss.getSheetByName("FACT_STOCK_ACTUAL").getDataRange().getValues();
+    const stockHeader = stock[0];
+    const sIdx = {};
+    stockHeader.forEach((c, i) => { if (c) sIdx[String(c).trim()] = i; });
+
+    const stockByProduct = {};
+    for (let r = 1; r < stock.length; r++) {
+      const id = String(stock[r][sIdx["ID_Producto"]] || "");
+      if (!id) continue;
+      const cantidad = Number(stock[r][sIdx["Stock_Actual"]]) || 0;
+      stockByProduct[id] = (stockByProduct[id] || 0) + cantidad;
+    }
+
+    // 1. SIN_FICHA_DIM_PRODUCTOS
+    Object.keys(stockByProduct).forEach(id => {
+      if (!dimIds.has(id)) {
+        problemas.push([id, "SIN_FICHA_DIM_PRODUCTOS", stockByProduct[id], "Tiene stock pero no existe fila en DIM_PRODUCTOS"]);
+      }
+    });
+
+    // 2. SIN_STOCK_REGISTRADO
+    dimIds.forEach(id => {
+      if (!(id in stockByProduct)) {
+        problemas.push([id, "SIN_STOCK_REGISTRADO", "", "Existe en DIM_PRODUCTOS pero nunca aparece en FACT_STOCK_ACTUAL"]);
+      }
+    });
+
+    // 3. STOCK_NEGATIVO
+    Object.keys(stockByProduct).forEach(id => {
+      if (stockByProduct[id] < 0) {
+        problemas.push([id, "STOCK_NEGATIVO", stockByProduct[id], "Salida registrada sin entrada suficiente"]);
+      }
+    });
+
+    // 4. FOTO_ROTA (solo productos marcados como publicados)
+    Object.keys(fotoPublicadaById).forEach(id => {
+      if (!fotoPublicadaById[id]) return;
+      const url = "https://img.casajrp.com/" + marca + "/" + id + "_frente.webp";
+      try {
+        const resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+        if (resp.getResponseCode() !== 200) {
+          problemas.push([id, "FOTO_ROTA", resp.getResponseCode(), "Foto_Publicada=TRUE pero " + url + " no responde 200"]);
+        }
+      } catch (err) {
+        problemas.push([id, "FOTO_ROTA", "ERROR", "No se pudo verificar " + url + ": " + err.message]);
+      }
+    });
+
+    // --- Escribir resultado en pestaña de auditoria propia del Sheet ---
+    let outSheet = ss.getSheetByName("AUDITORIA_INTEGRIDAD");
+    if (!outSheet) outSheet = ss.insertSheet("AUDITORIA_INTEGRIDAD");
+    outSheet.clear();
+    const fecha = _timestamp();
+    outSheet.appendRow(["ID_Producto", "Tipo_Problema", "Valor", "Detalle", "Fecha_Auditoria"]);
+    problemas.forEach(p => outSheet.appendRow([p[0], p[1], p[2], p[3], fecha]));
+    if (problemas.length === 0) {
+      outSheet.appendRow(["(ninguno)", "OK", "", "Sin problemas detectados en esta corrida", fecha]);
+    }
+
+    resumen[marca] = { total_problemas: problemas.length, problemas: problemas };
+  });
+
+  return resumen;
+}
