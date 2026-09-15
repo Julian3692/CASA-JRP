@@ -37,6 +37,14 @@ function doGet(e) {
         return _json(registrarClic(marca, params));
       case "registrar_demanda":
         return _json(registrarDemanda(marca, params));
+      case "auditar_integridad":
+        // FIX (Sep 2026): expuesta como accion HTTP ademas de funcion manual,
+        // para poder consultarla via fetch sin depender de exportar el Sheet
+        // a mano (esa exportacion perdia filas en archivos grandes). Lee
+        // SpreadsheetApp directo, sin conversion con perdidas. Requiere
+        // "marca" igual que las demas acciones, pero internamente audita
+        // las dos marcas sin importar cual se mande.
+        return _json(auditarIntegridadCatalogo());
       default:
         return _json({ error: "accion_no_reconocida", accion: accion });
     }
