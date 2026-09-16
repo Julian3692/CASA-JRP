@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
   <title>ORKIA — Catálogo</title>
+  <!-- Conexiones/precarga primero: el navegador debe empezar a conectar con el
+       CDN de fotos y descubrir la imagen critica (LCP) antes de gastar tiempo
+       ejecutando el script del Pixel, que no es visual y puede esperar. -->
+  <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
+  <link rel="preload" as="image" href="https://img.casajrp.com/orkia/banners/home-hero-desktop.webp" media="(min-width: 721px)" fetchpriority="high">
+  <link rel="preload" as="image" href="https://img.casajrp.com/orkia/banners/home-hero-mobile.webp" media="(max-width: 720px)" fetchpriority="high">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Facebook Pixel Code -->
   <script>
   !function(f,b,e,v,n,t,s)
@@ -73,11 +81,6 @@
   <meta property="og:url" content="https://casajrp.com/orkia/" />
   <meta property="og:locale" content="es_GT" />
   <link rel="canonical" href="https://casajrp.com/orkia/" />
-  <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
-  <link rel="preload" as="image" href="https://img.casajrp.com/orkia/banners/home-hero-desktop.webp" media="(min-width: 721px)" fetchpriority="high">
-  <link rel="preload" as="image" href="https://img.casajrp.com/orkia/banners/home-hero-mobile.webp" media="(max-width: 720px)" fetchpriority="high">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- v26: recorte de 9 a 5 variantes. Itálicas y peso 300 no se usan en ningún selector.
        Se conserva Cormorant 500 porque es el peso al que resuelven los títulos serif en bold. -->
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">

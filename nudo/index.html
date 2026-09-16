@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#111111" />
   <title>NUDO — Catálogo</title>
+  <!-- Conexiones/precarga primero: el navegador debe empezar a conectar con el
+       CDN de fotos y descubrir la imagen critica (LCP) antes de gastar tiempo
+       ejecutando el script del Pixel, que no es visual y puede esperar. -->
+  <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
+  <link rel="preload" as="image" href="https://img.casajrp.com/nudo/banners/home-hero-desktop.webp" media="(min-width: 721px)" fetchpriority="high">
+  <link rel="preload" as="image" href="https://img.casajrp.com/nudo/banners/home-hero-mobile.webp" media="(max-width: 720px)" fetchpriority="high">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- Facebook Pixel Code -->
   <script>
   !function(f,b,e,v,n,t,s)
@@ -113,11 +121,6 @@
   <meta property="og:url" content="https://casajrp.com/nudo/" />
   <meta property="og:locale" content="es_GT" />
   <link rel="canonical" href="https://casajrp.com/nudo/" />
-  <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
-  <link rel="preload" as="image" href="https://img.casajrp.com/nudo/banners/home-hero-desktop.webp" media="(min-width: 721px)" fetchpriority="high">
-  <link rel="preload" as="image" href="https://img.casajrp.com/nudo/banners/home-hero-mobile.webp" media="(max-width: 720px)" fetchpriority="high">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <!-- NUDO v1.1: títulos/editorial en Playfair Display para un tono más premium, nocturno y aspiracional.
        DM Sans se conserva para legibilidad funcional en navegación, filtros, botones y precios. -->
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Playfair+Display:wght@500;600&display=swap" rel="stylesheet">
