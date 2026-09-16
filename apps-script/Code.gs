@@ -168,7 +168,34 @@ function _fecha() {
 // aparecian mezclados sin agrupar por tipo de prenda.
 // ============================================================
 
+// Sep 2026: cada get_catalogo leia DIM_PRODUCTOS + DIM_TALLAS_PRODUCTO +
+// FACT_STOCK_ACTUAL enteros en cada visita (3 llamadas a Sheets sin cache),
+// lo que media entre 2 y 4.5s de forma consistente en TODAS las cargas del
+// catalogo. CacheService guarda el JSON ya calculado por CATALOGO_CACHE_SEG
+// segundos: casi todas las visitas devuelven el resultado al instante, y el
+// inventario nunca queda mas viejo que ese margen.
+const CATALOGO_CACHE_SEG = 180;
+
 function getCatalogo(marca) {
+  const cache = CacheService.getScriptCache();
+  const cacheKey = "catalogo_" + marca;
+  const cacheado = cache.get(cacheKey);
+  if (cacheado) return JSON.parse(cacheado);
+
+  const resultado = _calcularCatalogo(marca);
+
+  try {
+    cache.put(cacheKey, JSON.stringify(resultado), CATALOGO_CACHE_SEG);
+  } catch (err) {
+    // Si el JSON supera el limite de tamano de CacheService (100KB por
+    // clave), seguimos sirviendo la respuesta en vivo sin cache en vez
+    // de fallar el request.
+  }
+
+  return resultado;
+}
+
+function _calcularCatalogo(marca) {
   const ss = _ss(marca);
 
   // --- DIM_PRODUCTOS ---
