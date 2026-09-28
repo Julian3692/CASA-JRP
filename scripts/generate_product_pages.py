@@ -265,8 +265,8 @@ def page_html(marca, brand, group, p, canonical_url):
     .top-shipping .q{{color:var(--terracota);font-weight:700}}
     main{{max-width:1440px;margin:0 auto;padding:0;width:100%;flex:1 0 auto}}
     .layout{{display:grid;grid-template-columns:minmax(0,58%) 1fr;gap:0;align-items:start}}
-    .gallery{{position:relative;background:var(--border)}}
-    .photo{{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;background:var(--border);display:block}}
+    .gallery{{position:relative;background:var(--border);height:min(78vh,720px)}}
+    .photo{{width:100%;height:100%;object-fit:cover;background:var(--border);display:block}}
     .gallery-nav{{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);border:0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#111}}
     .gallery-nav.prev{{left:10px}}
     .gallery-nav.next{{right:10px}}
@@ -313,7 +313,7 @@ def page_html(marca, brand, group, p, canonical_url):
     @media (max-width:800px){{
       .layout{{grid-template-columns:1fr;gap:0}}
       main{{padding:0 0 50px}}
-      .photo{{aspect-ratio:auto;height:min(58vh,480px);width:100%}}
+      .gallery{{height:min(58vh,480px)}}
       .thumbs{{padding:8px 18px 0}}
       .info-pad{{padding:20px 18px 0}}
       .eyebrow{{font-size:9px}}
