@@ -69,14 +69,15 @@
     .bag-count{position:absolute;top:-2px;right:-2px;background:var(--terracota);color:#fff;font-size:9px;font-weight:700;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center}
     .top-shipping{height:34px;background:#EFE8E0;color:var(--text);display:flex;align-items:center;justify-content:center;gap:9px;font-size:12px}
     .top-shipping .q{color:var(--terracota);font-weight:600}
-    main{max-width:1080px;margin:0 auto;padding:36px 24px 60px}
-    .layout{display:grid;grid-template-columns:minmax(0,480px) 1fr;gap:48px;align-items:start}
-    .photo{width:100%;height:auto;aspect-ratio:3/4;object-fit:cover;background:var(--border)}
-    .thumbs{display:flex;gap:8px;margin-top:8px}
+    main{max-width:820px;margin:0 auto;padding:0}
+    .layout{display:grid;grid-template-columns:420px 1fr;gap:0;align-items:start}
+    .photo{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;background:var(--border);max-height:70vh}
+    .thumbs{display:flex;gap:8px;margin-top:8px;padding:0 0 0 0}
     .thumb{width:72px;height:90px;object-fit:cover;background:var(--border)}
-    .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota);font-weight:600;margin:0 0 10px}
-    h1{font-family:'Playfair Display',Georgia,serif;font-size:34px;line-height:1.05;letter-spacing:-.02em;margin:0 0 12px;color:var(--dark)}
-    .price{font-size:20px;font-weight:600;margin:0 0 22px;color:var(--dark)}
+    .info-pad{padding:48px 34px 30px}
+    .eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota);font-weight:600;margin:0 0 10px}
+    h1{font-family:'Playfair Display',Georgia,serif;font-size:38px;line-height:1.05;letter-spacing:-.02em;margin:6px 0 8px;color:var(--dark)}
+    .price{font-size:24px;font-weight:600;margin:0 0 20px;color:var(--dark)}
     .color-title,.size-title{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text);margin-bottom:10px}
     .color-options{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:24px}
     .color-btn{min-height:38px;border:1px solid #D9D2CC;background:#fff;color:#111;border-radius:999px;padding:0 13px;display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
@@ -101,10 +102,14 @@
     .footer .brand-logo{font-size:30px}
     .footer p{margin:8px 0 0;color:rgba(255,255,255,.62);font-size:11px;letter-spacing:.14em;text-transform:uppercase}
     @media (max-width:800px){
-      .layout{grid-template-columns:1fr;gap:24px}
+      .layout{grid-template-columns:1fr;gap:0}
       main{padding:0 0 50px}
-      .info-pad{padding:24px 20px 0}
-      h1{font-size:28px}
+      .photo{max-height:60vh;aspect-ratio:4/5}
+      .thumbs{padding:8px 18px 0}
+      .info-pad{padding:20px 18px 0}
+      .eyebrow{font-size:9px}
+      h1{font-size:31px;line-height:1.08;margin:5px 0 8px}
+      .price{font-size:22px;margin:0 0 18px}
       .site-header{height:58px}
       .header-inner{padding:0 16px}
       .brand-logo{font-size:22px}
