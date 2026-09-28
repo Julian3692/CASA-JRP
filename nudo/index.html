@@ -537,10 +537,6 @@
     <a href="https://wa.me/50248304736?text=Hola%20Nudo%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20su%20ropa%20interior." target="_blank" rel="noopener" id="navWhatsapp"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/></svg>WhatsApp</a>
   </nav>
   <div class="sheet-backdrop" id="backdrop"></div>
-  <section class="sheet" id="productSheet" aria-modal="true" role="dialog" aria-label="Detalle de producto">
-    <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
-    <div class="product-sheet-content" id="productContent"></div>
-  </section>
   <section class="sheet" id="noticeSheet" aria-modal="true" role="dialog" aria-label="Avisarme cuando llegue">
     <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
     <div class="notice-sheet" id="noticeContent"></div>
@@ -562,14 +558,6 @@
     <div class="sheet-handle"></div><button class="sheet-close" data-close aria-label="Cerrar">×</button>
     <div class="bag-sheet" id="bagContent"></div>
   </section>
-  <div class="photo-lightbox" id="photoLightbox" aria-modal="true" role="dialog" aria-label="Foto ampliada">
-    <button class="photo-lightbox-close" id="photoLightboxClose" type="button" aria-label="Cerrar foto ampliada">×</button>
-    <button class="photo-lightbox-arrow prev" id="photoLightboxPrev" type="button" aria-label="Foto anterior">‹</button>
-    <img class="photo-lightbox-img" id="photoLightboxImg" alt="Foto ampliada de producto">
-    <button class="photo-lightbox-arrow next" id="photoLightboxNext" type="button" aria-label="Foto siguiente">›</button>
-    <div class="zoom-hint">Toca dos veces o pellizca para ampliar</div>
-    <div class="photo-lightbox-counter" id="photoLightboxCounter">1 / 1</div>
-  </div>
   <script>
     const AS_URL = 'https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec';
     const MARCA = 'nudo';
@@ -789,7 +777,7 @@
     function goToProductPage(g, preselectId){
       const variant = (preselectId != null && g.variants.find(v => Number(v.id_producto) === Number(preselectId)))
         || g.display || g.variants[0];
-      if(!variant){ openProductGroup(g, preselectId); return; }
+      if(!variant){ console.warn('[NUDO] Grupo sin variante valida, no se puede navegar', g); return; }
       location.href = `/nudo/producto/${encodeURIComponent(variant.id_producto)}/`;
     }
     function withTimeout(promise, ms){
@@ -1530,234 +1518,6 @@
     function nudoUsesSizeSelector(item){
       const tipo = searchNormalize((item && item.tipo_prenda) || '');
       return NUDO_SIZE_SELECTOR_TYPES.some(t => tipo === searchNormalize(t));
-    }
-    let lightboxState = { urls: [], idx: 0, scale: 1, x: 0, y: 0, startX: 0, startY: 0, startDist: 0, startScale: 1, lastTap: 0, dragging: false };
-    function currentGalleryUrls(){
-      return $$('#galleryTrack img').map(img => img.currentSrc || img.src).filter(Boolean);
-    }
-    function applyLightboxTransform(){
-      const img = $('#photoLightboxImg');
-      if(!img) return;
-      img.style.transform = `translate3d(${lightboxState.x}px, ${lightboxState.y}px, 0) scale(${lightboxState.scale})`;
-    }
-    function renderLightbox(){
-      const urls = lightboxState.urls || [];
-      const img = $('#photoLightboxImg');
-      if(!urls.length || !img) return;
-      lightboxState.idx = Math.max(0, Math.min(lightboxState.idx, urls.length - 1));
-      lightboxState.scale = 1; lightboxState.x = 0; lightboxState.y = 0;
-      img.src = urls[lightboxState.idx];
-      $('#photoLightboxCounter').textContent = `${lightboxState.idx + 1} / ${urls.length}`;
-      ['#photoLightboxPrev','#photoLightboxNext'].forEach(sel=>{ const el=$(sel); if(el) el.style.display = urls.length > 1 ? '' : 'none'; });
-      applyLightboxTransform();
-    }
-    // v25: inicialización perezosa. Los listeners de wheel/touch no pasivos del lightbox
-    // solo se registran la primera vez que una cliente amplía una foto.
-    let _lightboxInited = false;
-    function openPhotoLightbox(urls, idx){
-      if(!_lightboxInited){ initPhotoLightbox(); _lightboxInited = true; }
-      lightboxState.urls = uniqueUrls(urls || currentGalleryUrls());
-      lightboxState.idx = idx || 0;
-      if(!lightboxState.urls.length) return;
-      $('#photoLightbox').classList.add('show');
-      document.body.style.overflow = 'hidden';
-      renderLightbox();
-      // v29: el lightbox es una segunda capa encima del sheet de producto. Si la cliente
-      // desliza para atrás estando en el lightbox, debe cerrar SOLO el lightbox y dejarla
-      // de vuelta en la ficha del producto, no sacarla del catálogo entero.
-      if(!lightboxHasHistoryLayer){ pushHistoryLayer(); lightboxHasHistoryLayer = true; }
-    }
-    function closePhotoLightbox(opts={}){
-      $('#photoLightbox').classList.remove('show');
-      document.body.style.overflow = '';
-      if(lightboxHasHistoryLayer){
-        lightboxHasHistoryLayer = false;
-        if(!opts.viaHistory) consumeHistoryLayer();
-      }
-    }
-    function moveLightbox(delta){
-      if(!lightboxState.urls.length) return;
-      lightboxState.idx = (lightboxState.idx + delta + lightboxState.urls.length) % lightboxState.urls.length;
-      renderLightbox();
-    }
-    function initPhotoLightbox(){
-      const lb = $('#photoLightbox');
-      const img = $('#photoLightboxImg');
-      if(!lb || !img) return;
-      $('#photoLightboxClose').addEventListener('click', closePhotoLightbox);
-      $('#photoLightboxPrev').addEventListener('click', ()=>moveLightbox(-1));
-      $('#photoLightboxNext').addEventListener('click', ()=>moveLightbox(1));
-      lb.addEventListener('click', e=>{ if(e.target === lb) closePhotoLightbox(); });
-      document.addEventListener('keydown', e=>{
-        if(!lb.classList.contains('show')) return;
-        if(e.key === 'Escape') closePhotoLightbox();
-        if(e.key === 'ArrowLeft') moveLightbox(-1);
-        if(e.key === 'ArrowRight') moveLightbox(1);
-      });
-      img.addEventListener('dblclick', ()=>{
-        if(lightboxState.scale > 1){ lightboxState.scale = 1; lightboxState.x = 0; lightboxState.y = 0; }
-        else { lightboxState.scale = 2.35; }
-        applyLightboxTransform();
-      });
-      lb.addEventListener('wheel', e=>{
-        if(!lb.classList.contains('show')) return;
-        e.preventDefault();
-        const next = Math.max(1, Math.min(4, lightboxState.scale + (e.deltaY < 0 ? .18 : -.18)));
-        if(next === 1){ lightboxState.x = 0; lightboxState.y = 0; }
-        lightboxState.scale = next;
-        applyLightboxTransform();
-      }, {passive:false});
-      lb.addEventListener('pointerdown', e=>{
-        if(e.target !== img || lightboxState.scale <= 1) return;
-        lightboxState.dragging = true; img.classList.add('dragging'); img.setPointerCapture(e.pointerId);
-        lightboxState.startX = e.clientX - lightboxState.x; lightboxState.startY = e.clientY - lightboxState.y;
-      });
-      lb.addEventListener('pointermove', e=>{
-        if(!lightboxState.dragging) return;
-        lightboxState.x = e.clientX - lightboxState.startX; lightboxState.y = e.clientY - lightboxState.startY;
-        applyLightboxTransform();
-      });
-      lb.addEventListener('pointerup', e=>{ lightboxState.dragging = false; img.classList.remove('dragging'); });
-      lb.addEventListener('touchstart', e=>{
-        if(e.touches.length === 2){
-          const [a,b] = e.touches; lightboxState.startDist = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY); lightboxState.startScale = lightboxState.scale;
-        } else if(e.touches.length === 1){
-          const now = Date.now();
-          if(now - lightboxState.lastTap < 280){
-            e.preventDefault();
-            if(lightboxState.scale > 1){ lightboxState.scale = 1; lightboxState.x = 0; lightboxState.y = 0; }
-            else { lightboxState.scale = 2.35; }
-            applyLightboxTransform();
-          }
-          lightboxState.lastTap = now;
-        }
-      }, {passive:false});
-      lb.addEventListener('touchmove', e=>{
-        if(e.touches.length === 2 && lightboxState.startDist){
-          e.preventDefault();
-          const [a,b] = e.touches; const dist = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
-          lightboxState.scale = Math.max(1, Math.min(4, lightboxState.startScale * (dist / lightboxState.startDist)));
-          if(lightboxState.scale === 1){ lightboxState.x = 0; lightboxState.y = 0; }
-          applyLightboxTransform();
-        }
-      }, {passive:false});
-    }
-    function openProductGroup(g, preselectId){
-      registerClick(g.display || g.variants[0], 'ABRIR_MODAL');
-      let selectedVariant = null;
-      let selectedSize = '';
-      let slide = 0;
-      const availableVariants = g.variants.filter(v=>!v.agotado && Number(v.stock_total||0)>0);
-      if(availableVariants.length === 1) selectedVariant = availableVariants[0];
-      // Sep 2026: deep-link por ?sku=ID -> preseleccionar el color/variante exacto
-      // que se anuncio (ej. en un feed de Meta), no solo abrir el diseno generico.
-      if(preselectId != null){
-        const match = g.variants.find(v => Number(v.id_producto) === Number(preselectId));
-        if(match) selectedVariant = match;
-      }
-      const sheet = $('#productSheet');
-      $('#productContent').innerHTML = `
-        <div class="modal-gallery" id="gallery"><button class="gallery-arrow prev" id="galleryPrev" type="button" aria-label="Foto anterior">‹</button><div class="gallery-track" id="galleryTrack"></div><button class="gallery-arrow next" id="galleryNext" type="button" aria-label="Foto siguiente">›</button></div>
-        <div class="dots" id="dots"></div>
-        <div class="modal-info">
-          <div class="type">${safe(g.tipo_prenda || 'Prenda')}</div>
-          <h3 class="modal-name">${safe(g.descripcion || 'Prenda Nudo')}</h3>
-          <div class="modal-price" id="modalPrice">${money(g.precio_gtq)}</div>
-          <div class="color-title">Selecciona color</div>
-          <div class="color-options" id="colorBtns">
-            ${g.variants.map(v=>`<button class="color-btn ${selectedVariant===v?'active':''} ${v.agotado?'disabled':''}" data-id="${safe(v.id_producto)}" ${v.agotado?'aria-disabled="true"':''}><span class="color-dot" style="--dot:${safe(colorToHex(v.color))}"></span>${safe(v.color || 'Color')} ${internalCode(v) ? `<span class="color-code">#${safe(internalCode(v))}</span>` : ''}</button>`).join('')}
-          </div>
-          <div class="variant-hint" id="variantHint">${selectedVariant ? 'Color seleccionado. Agrega esta prenda a tu selección.' : 'Elige un color para ver sus fotos y agregarlo a tu selección.'}</div>
-          <div class="modal-meta" id="modalMeta"></div>
-          <div class="size-block" id="sizeBlock"><div class="size-title">Selecciona tu talla</div>
-          <div class="sizes" id="sizeBtns"></div></div>
-        </div>
-        <div class="modal-actions">
-          <button class="btn" id="waProduct" disabled>Agregar a selección</button>
-          <div class="selection-warning" id="selectionWarning">Selecciona color para continuar.</div>
-          <button class="secondary-link" data-close>Seguir viendo</button>
-        </div>`;
-      showSheet(sheet);
-      const productContentEl = $('#productContent');
-      if(productContentEl) productContentEl.scrollTop = 0;
-      $('#productContent [data-close]').addEventListener('click', closeSheets);
-      function renderVariant(){
-        selectedSize = '';
-        const p = selectedVariant || (availableVariants[0] || g.variants[0]);
-        const imgs = modalImageUrls(p, g).slice(0,3);
-        $('#galleryTrack').innerHTML = imgs.map(src=>`<div class="gallery-slide"><img src="${safe(src)}" data-fallbacks="${imgFallbackAttr(imgs, src)}" alt="${safe(g.descripcion)}" onerror="handleImgError(this)"></div>`).join('');
-        $('#dots').innerHTML = imgs.length > 1 ? imgs.map((_,i)=>`<span class="dot ${i===0?'active':''}"></span>`).join('') : '';
-        ['#galleryPrev','#galleryNext'].forEach(sel=>{ const el=$(sel); if(el) el.style.display = imgs.length > 1 ? '' : 'none'; });
-        const dotsEl = $('#dots'); if(dotsEl) dotsEl.style.display = imgs.length > 1 ? '' : 'none';
-        slide = 0;
-        $('#galleryTrack').style.transform = 'translateX(0)';
-        $('#modalPrice').textContent = money(p.precio_gtq || g.precio_gtq);
-        $('#modalMeta').textContent = selectedVariant ? `${p.color || ''}${internalCode(p) ? ' · Código #' + internalCode(p) : ''}` : `${g.colors.length} colores disponibles`;
-        const available = selectedVariant ? (p.tallas || []) : [];
-        const unavailable = selectedVariant ? (p.tallas_agotadas || []) : [];
-        const needsSizeSelector = selectedVariant && nudoUsesSizeSelector(p);
-        const uniqueOnly = selectedVariant && available.length === 1 && String(available[0]).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim().includes('unica') && unavailable.length === 0;
-        $('#sizeBlock').classList.toggle('hidden', !needsSizeSelector || !!uniqueOnly || !selectedVariant);
-        if(selectedVariant && (!needsSizeSelector || uniqueOnly)){
-          selectedSize = available[0] || 'Única';
-          $('#sizeBtns').innerHTML = '';
-          $('#waProduct').disabled = false;
-          $('#selectionWarning').textContent = 'Listo para agregar a tu selección.';
-        } else {
-          $('#sizeBtns').innerHTML = selectedVariant ? `${available.map(t=>`<button class="size-btn" data-size="${safe(t)}">${safe(t)}</button>`).join('')}${unavailable.map(t=>`<button class="size-btn disabled" disabled>${safe(t)}</button>`).join('')}` : '';
-          $('#waProduct').disabled = true;
-          $('#selectionWarning').textContent = selectedVariant ? 'Selecciona talla para continuar.' : 'Selecciona color para continuar.';
-          $$('#sizeBtns .size-btn:not(.disabled)').forEach(btn=>btn.addEventListener('click',()=>{
-            selectedSize = btn.dataset.size;
-            $$('#sizeBtns .size-btn').forEach(b=>b.classList.toggle('active', b===btn));
-            $('#waProduct').disabled = false;
-            $('#selectionWarning').textContent = 'Listo para agregar a tu selección.';
-          }));
-        }
-      }
-      $$('#colorBtns .color-btn').forEach(btn=>btn.addEventListener('click',()=>{
-        const id = Number(btn.dataset.id);
-        const variant = g.variants.find(v=>Number(v.id_producto)===id);
-        if(!variant || variant.agotado) return;
-        selectedVariant = variant;
-        $$('#colorBtns .color-btn').forEach(b=>b.classList.toggle('active', b===btn));
-        $('#variantHint').textContent = 'Color seleccionado. Agrega esta prenda a tu selección.';
-        renderVariant();
-      }));
-      renderVariant();
-      $('#waProduct').addEventListener('click',()=>{
-        if(!selectedVariant || !selectedSize) return;
-        registerClick(selectedVariant,'AGREGAR_BOLSA');
-        addToBag(selectedVariant, g, selectedSize);
-        closeSheets({keepLoader:true});
-        requestAnimationFrame(()=>requestAnimationFrame(()=>openBagSheet()));
-      });
-      const gallery = $('#gallery'); let startX=0;
-      function move(idx){ const dots = $$('#dots .dot'); if(dots.length < 2) return; const max = dots.length-1; slide=Math.max(0,Math.min(idx,max)); $('#galleryTrack').style.transform=`translateX(-${slide*100}%)`; dots.forEach((d,i)=>d.classList.toggle('active',i===slide)); }
-      $('#galleryPrev').addEventListener('click',()=>move(slide-1));
-      $('#galleryNext').addEventListener('click',()=>move(slide+1));
-      $('#dots').addEventListener('click',e=>{ const dot=e.target.closest('.dot'); if(!dot) return; move($$('#dots .dot').indexOf(dot)); });
-      gallery.addEventListener('touchstart', e=>{startX=e.touches[0].clientX},{passive:true});
-      gallery.addEventListener('touchend', e=>{const diff=startX-e.changedTouches[0].clientX; if(Math.abs(diff)>40){ if(diff>0) move(slide+1); if(diff<0) move(slide-1); }},{passive:true});
-      // v25: tap (sin arrastre) sobre la foto abre el lightbox con zoom.
-      // Umbral de 10px para no chocar con el swipe de la galería, y supresión del click
-      // sintético que el navegador dispara después del pointerup (mismo patrón de las cards).
-      let galleryTapStart = null;
-      gallery.addEventListener('pointerdown', e=>{
-        if(e.target && e.target.tagName === 'IMG') galleryTapStart = {x:e.clientX, y:e.clientY};
-        else galleryTapStart = null;
-      }, {passive:true});
-      gallery.addEventListener('pointerup', e=>{
-        if(!galleryTapStart) return;
-        const moved = Math.abs((e.clientX||0) - galleryTapStart.x) > 10 || Math.abs((e.clientY||0) - galleryTapStart.y) > 10;
-        galleryTapStart = null;
-        if(moved || !e.target || e.target.tagName !== 'IMG') return;
-        if(e.target.closest('.photo-lightbox')) return;
-        _suppressNextClickUntil = Date.now() + 500;
-        const zoomVariant = selectedVariant || availableVariants[0] || g.variants[0];
-        registerClick(zoomVariant, 'ZOOM_FOTO');
-        openPhotoLightbox(currentGalleryUrls(), slide);
-      }, {passive:true});
     }
     function openNotice(item){
       registerDemand(item);
