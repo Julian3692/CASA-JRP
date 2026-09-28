@@ -283,7 +283,7 @@ def page_html(marca, brand, group, p, canonical_url):
     .lightbox-close{{position:absolute;top:18px;right:18px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;border:0;font-size:18px}}
     .lightbox-zoom-hint{{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);font-size:12px;color:rgba(255,255,255,.72);text-align:center}}
     .lightbox .gallery-nav{{background:rgba(255,255,255,.16);color:#fff}}
-    .info-pad{{padding:48px 0 30px}}
+    .info-pad{{padding:48px 0 30px;flex:0 1 480px;max-width:480px}}
     .eyebrow{{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota);font-weight:600;margin:0 0 10px}}
     h1{{font-family:'{brand['font_display']}',Georgia,serif;font-size:38px;line-height:1.05;letter-spacing:-.02em;margin:6px 0 8px;color:var(--dark);max-width:520px}}
     .price{{font-size:24px;font-weight:600;margin:0 0 20px;color:var(--dark)}}
