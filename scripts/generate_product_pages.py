@@ -248,7 +248,7 @@ def page_html(marca, brand, group, p, canonical_url):
     #bagPill{{font-size:12px;background:rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;display:none}}
     #bagPill.show{{display:inline-flex;align-items:center;gap:6px}}
     main{{max-width:560px;margin:0 auto;padding:0 0 60px}}
-    .photo{{width:100%;aspect-ratio:3/4;object-fit:cover;background:{brand['border']}}}
+    .photo{{width:100%;height:auto;aspect-ratio:3/4;object-fit:cover;background:{brand['border']}}}
     .thumbs{{display:flex;gap:8px;padding:10px 20px 0}}
     .thumb{{width:64px;height:80px;object-fit:cover;background:{brand['border']}}}
     .info{{padding:24px 20px}}
