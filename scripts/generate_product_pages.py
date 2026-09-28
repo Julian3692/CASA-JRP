@@ -348,7 +348,7 @@ def page_html(marca, brand, group, p, canonical_url):
     .footer .brand-logo{{font-size:20px}}
     .footer p{{margin:6px 0 0;color:rgba(255,255,255,.62);font-size:10px;letter-spacing:.14em;text-transform:uppercase}}
     @media (max-width:800px){{
-      .layout{{flex-direction:column;gap:0;max-width:none;margin:0}}
+      .layout{{flex-direction:column;align-items:stretch;gap:0;max-width:none;margin:0}}
       main{{padding:0 0 50px}}
       .gallery{{height:58vh;max-height:480px;aspect-ratio:auto;width:100%;flex:0 0 auto}}
       .thumbs{{padding:8px 18px 0}}
