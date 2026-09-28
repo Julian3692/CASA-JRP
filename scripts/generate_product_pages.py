@@ -4,6 +4,12 @@ Genera una pagina estatica REAL por producto (SEO + destino limpio para
 anuncios + navegacion principal del catalogo), una por cada SKU publicado
 de Orkia y Nudo, en {marca}/producto/{id}/index.html.
 
+La presentacion reutiliza el mismo sistema visual del sitio (header oscuro
+con logo serif + punto, banner de envio, tipografia Cormorant
+Garamond/Playfair Display + DM Sans, botones y swatches con la misma
+pinta que el modal) — esto NO es una pagina generica aparte, es la misma
+identidad premium del catalogo.
+
 Cada pagina:
 - Trae su propio <title>/meta description/Open Graph ya escritos en el
   HTML (no dependen de JavaScript para ser indexables).
@@ -11,7 +17,8 @@ Cada pagina:
 - Muestra los colores hermanos del mismo modelo (mismo Ref_Proveedor) como
   links directos a la pagina de cada uno — igual que Zara/Amazon: cambiar
   de color es navegar a la URL de ese color, no un swap de JS.
-- Tiene selector de talla si el modelo tiene mas de una talla real.
+- Tiene selector de talla (botones, como el modal) si el modelo tiene mas
+  de una talla real.
 - "Agregar a selección" escribe en el MISMO localStorage que usa el
   catalogo (orkia_seleccion_whatsapp_v1 / nudo_seleccion_whatsapp_v1), con
   el mismo formato de item — el carrito es compartido entre el catalogo y
@@ -53,13 +60,21 @@ COLOR_HEX = {
 BRANDS = {
     "orkia": {
         "label": "ORKIA",
-        "bg": "#F5F0EA", "surface": "#FFFFFF", "dark": "#111111", "text": "#1E1E1E",
-        "mid": "#716A63", "border": "#E5DDD4", "accent": "#C4714A",
+        "tagline": "Moda femenina colombiana",
+        "font_display": "Cormorant Garamond",
+        "font_google": "Cormorant+Garamond:wght@400;500",
+        "bg": "#F5F0EA", "surface": "#FFFFFF", "dark": "#111111", "carbon": "#1A1A1A",
+        "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#C4714A",
+        "wa_msg_generic": "Hola%20Orkia%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20sus%20prendas.",
     },
     "nudo": {
         "label": "NUDO",
-        "bg": "#FAF8F5", "surface": "#FFFFFF", "dark": "#111111", "text": "#1E1E1E",
-        "mid": "#77736F", "border": "#E8E4DF", "accent": "#4A1F2C",
+        "tagline": "Ropa interior colombiana",
+        "font_display": "Playfair Display",
+        "font_google": "Playfair+Display:wght@500;600",
+        "bg": "#FAF8F5", "surface": "#FFFFFF", "dark": "#111111", "carbon": "#1A1A1A",
+        "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#4A1F2C",
+        "wa_msg_generic": "Hola%20Nudo%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20su%20ropa%20interior.",
     },
 }
 
@@ -151,31 +166,28 @@ def page_html(marca, brand, group, p, canonical_url):
     description = f"{p['descripcion']} en color {p.get('color') or ''}. {money(p.get('precio_gtq'))}. Envio gratis desde Q300 en Guatemala. Pide por WhatsApp."
     imgs = images_for(p)
     image = imgs[0] if imgs else ""
-    tallas_disponibles = [t for t in (p.get("tallas") or [])]
-    if not tallas_disponibles:
-        tallas_disponibles = ["Unica"]
+    tallas_disponibles = [t for t in (p.get("tallas") or [])] or ["Unica"]
     default_talla = tallas_disponibles[0]
     wa_msg_default = build_whatsapp_message(brand["label"], p, default_talla)
     wa_link_default = f"https://wa.me/{WA_NUMBER}?text={urllib.parse.quote(wa_msg_default)}"
     catalog_url = f"https://casajrp.com/{marca}/"
 
     color_swatches = "".join(
-        f"""<a class="swatch {'active' if v['id_producto']==pid else ''} {'agotado' if v.get('agotado') else ''}"
-             href="/{marca}/producto/{v['id_producto']}/"
-             title="{esc(v.get('color') or '')}"
-             style="--dot:{color_hex(v.get('color'))}"></a>"""
+        f"""<a class="color-btn {'active' if v['id_producto']==pid else ''} {'disabled' if v.get('agotado') else ''}"
+             href="/{marca}/producto/{v['id_producto']}/">
+             <span class="color-dot" style="--dot:{color_hex(v.get('color'))}"></span>{esc(v.get('color') or 'Color')}
+             <span class="color-code">#{v['id_producto']}</span></a>"""
         for v in group
     )
 
-    talla_options = "".join(
-        f'<option value="{esc(t)}">{esc("Por confirmar" if is_unica(t) else t)}</option>'
-        for t in tallas_disponibles
-    )
-    talla_block = "" if len(tallas_disponibles) <= 1 else f"""
-      <div class="field">
-        <label for="tallaSel">Talla</label>
-        <select id="tallaSel">{talla_options}</select>
-      </div>"""
+    if len(tallas_disponibles) <= 1:
+        talla_block = ""
+    else:
+        size_buttons = "".join(
+            f'<button type="button" class="size-btn {"active" if i==0 else ""}" data-talla="{esc(t)}">{esc(t)}</button>'
+            for i, t in enumerate(tallas_disponibles)
+        )
+        talla_block = f'<div class="size-title">Selecciona tu talla</div><div class="sizes" id="sizes">{size_buttons}</div>'
 
     gallery = "".join(
         f'<img class="thumb" src="{esc(u)}" alt="{esc(p["descripcion"])}" loading="lazy">'
@@ -214,6 +226,9 @@ def page_html(marca, brand, group, p, canonical_url):
   <meta property="product:price:amount" content="{p.get('precio_gtq') or ''}" />
   <meta property="product:price:currency" content="GTQ" />
   <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family={brand['font_google']}&display=swap" rel="stylesheet">
   <!-- Facebook Pixel Code -->
   <script>
   !function(f,b,e,v,n,t,s)
@@ -240,60 +255,118 @@ def page_html(marca, brand, group, p, canonical_url):
   </noscript>
   <!-- End Facebook Pixel Code -->
   <style>
+    :root{{
+      --bg:{brand['bg']};--surface:{brand['surface']};--dark:{brand['dark']};--carbon:{brand['carbon']};
+      --text:{brand['text']};--mid:{brand['mid']};--border:{brand['border']};--terracota:{brand['terracota']};
+    }}
     *{{box-sizing:border-box}}
-    body{{margin:0;background:{brand['bg']};color:{brand['text']};font-family:system-ui,-apple-system,'Segoe UI',sans-serif;-webkit-font-smoothing:antialiased}}
+    html{{scroll-behavior:smooth}}
+    body{{margin:0;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}}
     a{{color:inherit;text-decoration:none}}
-    header{{background:{brand['dark']};color:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between}}
-    header a.home{{font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:14px}}
-    #bagPill{{font-size:12px;background:rgba(255,255,255,.14);border-radius:999px;padding:6px 12px;display:none}}
-    #bagPill.show{{display:inline-flex;align-items:center;gap:6px}}
-    main{{max-width:560px;margin:0 auto;padding:0 0 60px}}
-    .photo{{width:100%;height:auto;aspect-ratio:3/4;object-fit:cover;background:{brand['border']}}}
-    .thumbs{{display:flex;gap:8px;padding:10px 20px 0}}
-    .thumb{{width:64px;height:80px;object-fit:cover;background:{brand['border']}}}
-    .info{{padding:24px 20px}}
-    .eyebrow{{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:{brand['accent']};font-weight:700;margin:0 0 8px}}
-    h1{{font-size:26px;line-height:1.15;margin:0 0 10px}}
-    .price{{font-size:22px;font-weight:600;margin:0 0 18px}}
-    .swatches{{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 20px}}
-    .swatch{{width:32px;height:32px;border-radius:50%;background:var(--dot);border:2px solid transparent;box-shadow:0 0 0 1px {brand['border']};display:inline-block}}
-    .swatch.active{{border-color:{brand['accent']}}}
-    .swatch.agotado{{opacity:.35}}
-    .field{{margin:0 0 18px}}
-    .field label{{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:{brand['mid']};margin-bottom:6px}}
-    select{{width:100%;height:44px;border:1px solid {brand['border']};background:#fff;border-radius:8px;padding:0 12px;font-size:14px;color:{brand['text']}}}
-    .desc{{color:{brand['mid']};line-height:1.55;margin:0 0 24px;font-size:15px}}
-    .btn{{display:flex;align-items:center;justify-content:center;gap:10px;height:52px;border-radius:999px;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;border:0;width:100%;cursor:pointer;font-family:inherit}}
-    .btn-add{{background:{brand['dark']};color:#fff}}
-    .btn-wa{{background:#25D366;color:#fff}}
-    .btn-catalog{{background:transparent;border:1px solid {brand['border']} !important;color:{brand['text']};display:block;text-align:center;line-height:36px;height:auto;padding:8px 0}}
-    .meta{{font-size:12px;color:{brand['mid']};margin-top:20px}}
-    .confirm{{font-size:13px;color:#1f7a3d;margin:-4px 0 12px;display:none}}
+    img{{display:block;max-width:100%}}
+    button{{font:inherit;cursor:pointer}}
+    .serif{{font-family:'{brand['font_display']}',Georgia,serif;font-weight:400}}
+    .icon{{width:18px;height:18px;stroke:currentColor;stroke-width:1.55;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}}
+    .site-header{{height:72px;background:linear-gradient(180deg,#161616,#111);color:#fff;display:flex;align-items:center;position:sticky;top:0;z-index:80;border-bottom:1px solid rgba(255,255,255,.07)}}
+    .header-inner{{width:100%;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:16px}}
+    .brand{{line-height:1;display:flex;align-items:center;gap:10px}}
+    .brand .back{{opacity:.75;font-size:13px}}
+    .brand-logo{{font-family:'{brand['font_display']}',Georgia,serif;font-size:28px;letter-spacing:.09em;font-weight:400}}
+    .brand-dot{{display:inline-block;width:6px;height:6px;background:var(--terracota);border-radius:50%;margin-left:2px}}
+    .header-actions{{display:flex;align-items:center;gap:18px}}
+    .icon-btn{{border:0;background:transparent;color:inherit;padding:6px;line-height:0;position:relative;display:inline-flex}}
+    .bag-count{{position:absolute;top:-2px;right:-2px;background:var(--terracota);color:#fff;font-size:9px;font-weight:700;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center}}
+    .top-shipping{{height:34px;background:#EFE8E0;color:var(--text);display:flex;align-items:center;justify-content:center;gap:9px;font-size:12px}}
+    .top-shipping .q{{color:var(--terracota);font-weight:600}}
+    main{{max-width:1080px;margin:0 auto;padding:36px 24px 60px}}
+    .layout{{display:grid;grid-template-columns:minmax(0,480px) 1fr;gap:48px;align-items:start}}
+    .photo{{width:100%;height:auto;aspect-ratio:3/4;object-fit:cover;background:var(--border)}}
+    .thumbs{{display:flex;gap:8px;margin-top:8px}}
+    .thumb{{width:72px;height:90px;object-fit:cover;background:var(--border)}}
+    .eyebrow{{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota);font-weight:600;margin:0 0 10px}}
+    h1{{font-family:'{brand['font_display']}',Georgia,serif;font-size:34px;line-height:1.05;letter-spacing:-.02em;margin:0 0 12px;color:var(--dark)}}
+    .price{{font-size:20px;font-weight:600;margin:0 0 22px;color:var(--dark)}}
+    .color-title,.size-title{{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text);margin-bottom:10px}}
+    .color-options{{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:24px}}
+    .color-btn{{min-height:38px;border:1px solid #D9D2CC;background:#fff;color:#111;border-radius:999px;padding:0 13px;display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}}
+    .color-btn.active{{background:#111;color:#fff;border-color:#111}}
+    .color-btn .color-code{{font-size:9px;opacity:.72;margin-left:2px}}
+    .color-btn.disabled{{opacity:.45;text-decoration:line-through}}
+    .color-dot{{width:13px;height:13px;border-radius:50%;border:1px solid rgba(0,0,0,.18);background:var(--dot,#D8D2CC)}}
+    .sizes{{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}}
+    .size-btn{{width:44px;height:44px;border:1px solid #D9D2CC;background:#fff;color:#111;font-size:12px}}
+    .size-btn.active{{background:#111;color:#fff;border-color:#111}}
+    .desc{{color:var(--mid);line-height:1.6;margin:0 0 28px;font-size:14px;max-width:440px}}
+    .actions{{display:flex;flex-direction:column;gap:12px;max-width:340px}}
+    .btn{{border:0;height:48px;padding:0 24px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.18s ease;width:100%}}
+    .btn-primary{{background:var(--dark);color:#fff}}
+    .btn-primary:hover{{background:#000}}
+    .btn-ghost{{background:transparent;color:var(--dark);border:1px solid #B8B2AC}}
+    .btn-ghost:hover{{background:#fff}}
+    .confirm{{font-size:12px;color:#2D6A4F;margin:-4px 0 0;display:none}}
     .confirm.show{{display:block}}
+    .meta{{font-size:11px;color:var(--mid);letter-spacing:.06em;margin-top:22px}}
+    .footer{{background:var(--carbon);color:#fff;margin-top:60px;padding:34px 28px;text-align:center}}
+    .footer .brand-logo{{font-size:30px}}
+    .footer p{{margin:8px 0 0;color:rgba(255,255,255,.62);font-size:11px;letter-spacing:.14em;text-transform:uppercase}}
+    @media (max-width:800px){{
+      .layout{{grid-template-columns:1fr;gap:24px}}
+      main{{padding:0 0 50px}}
+      .info-pad{{padding:24px 20px 0}}
+      h1{{font-size:28px}}
+      .site-header{{height:58px}}
+      .header-inner{{padding:0 16px}}
+      .brand-logo{{font-size:22px}}
+    }}
   </style>
 </head>
 <body>
-  <header>
-    <a class="home" href="{catalog_url}">&larr; {brand['label']}</a>
-    <a id="bagPill" href="/{marca}/?abrirSeleccion=1">Selección: <span id="bagCount">0</span></a>
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="{catalog_url}" aria-label="Volver al catálogo">
+        <span class="icon back">&larr;</span>
+        <div class="brand-logo">{brand['label']}<span class="brand-dot"></span></div>
+      </a>
+      <div class="header-actions">
+        <a class="icon-btn" href="/{marca}/?abrirSeleccion=1" aria-label="Selección">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M6 8h12l-1 13H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
+          <span class="bag-count" id="bagCount">0</span>
+        </a>
+        <a class="icon-btn" href="https://wa.me/{WA_NUMBER}?text={brand['wa_msg_generic']}" target="_blank" rel="noopener" aria-label="WhatsApp">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/><path d="M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8c.3.1.4.3.4.6v.4c0 .4-.2.7-.6.9-.6.3-1.9.4-3.8-.6-2.6-1.3-4.3-4.1-4.4-5.5 0-.5.2-.9.4-1.3Z"/></svg>
+        </a>
+      </div>
+    </div>
   </header>
+  <div class="top-shipping"><span>Envío gratis desde <span class="q">Q300</span></span></div>
   <main>
-    <img id="mainPhoto" class="photo" src="{esc(image)}" alt="{esc(p['descripcion'])} - {esc(p.get('color') or '')}" width="1122" height="1402" loading="eager" fetchpriority="high">
-    {f'<div class="thumbs">{gallery}</div>' if gallery else ''}
-    <div class="info">
-      <p class="eyebrow">{esc(p.get('tipo_prenda') or brand['label'])}</p>
-      <h1>{esc(p['descripcion'])}</h1>
-      <p class="price">{money(p.get('precio_gtq'))} &middot; Color {esc(p.get('color') or '-')}</p>
-      <div class="swatches">{color_swatches}</div>
-      {talla_block}
-      <p class="desc">{esc(p['descripcion'])} Envio gratis desde Q300 en Guatemala.</p>
-      <button class="btn btn-add" id="addBtn" type="button">Agregar a selección</button>
-      <p class="confirm" id="confirmMsg">Agregado. Podés seguir viendo más prendas o revisar tu selección.</p>
-      <a class="btn btn-wa" id="waBtn" href="{wa_link_default}" target="_blank" rel="noopener">Pedir ya por WhatsApp</a>
-      <a class="btn btn-catalog" href="{catalog_url}?sku={pid}">Ver catálogo completo</a>
-      <p class="meta">Codigo #{pid}</p>
+    <div class="layout">
+      <div>
+        <img id="mainPhoto" class="photo" src="{esc(image)}" alt="{esc(p['descripcion'])} - {esc(p.get('color') or '')}" loading="eager" fetchpriority="high">
+        {f'<div class="thumbs">{gallery}</div>' if gallery else ''}
+      </div>
+      <div class="info-pad">
+        <p class="eyebrow">{esc(p.get('tipo_prenda') or brand['label'])}</p>
+        <h1 class="serif">{esc(p['descripcion'])}</h1>
+        <p class="price">{money(p.get('precio_gtq'))}</p>
+        <div class="color-title">Selecciona color</div>
+        <div class="color-options">{color_swatches}</div>
+        {talla_block}
+        <p class="desc">{esc(p['descripcion'])} Envío gratis desde Q300 en Guatemala.</p>
+        <div class="actions">
+          <button class="btn btn-primary" id="addBtn" type="button">Agregar a selección</button>
+          <a class="btn btn-ghost" id="waBtn" href="{wa_link_default}" target="_blank" rel="noopener">Pedir ya por WhatsApp</a>
+          <a class="btn btn-ghost" href="{catalog_url}?sku={pid}">Ver catálogo completo</a>
+        </div>
+        <p class="confirm" id="confirmMsg">Agregado. Podés seguir viendo más prendas o revisar tu selección.</p>
+        <p class="meta">Código #{pid}</p>
+      </div>
     </div>
   </main>
+  <footer class="footer">
+    <div class="brand-logo serif">{brand['label']}<span class="brand-dot"></span></div>
+    <p>Guatemala &middot; Manufactura colombiana &middot; &copy; 2026</p>
+  </footer>
   <script>
     const BAG_KEY = {json.dumps(bag_key)};
     const WA_NUMBER = {json.dumps(WA_NUMBER)};
@@ -301,39 +374,31 @@ def page_html(marca, brand, group, p, canonical_url):
     const ITEM_BASE = {item_json};
 
     function readBag(){{ try{{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }}catch(e){{ return []; }} }}
-    function writeBag(items){{ try{{ localStorage.setItem(BAG_KEY, JSON.stringify(items)); }}catch(e){{}} updateBagPill(items); }}
+    function writeBag(items){{ try{{ localStorage.setItem(BAG_KEY, JSON.stringify(items)); }}catch(e){{}} updateBagCount(items); }}
     function bagKeyFor(item){{ return `${{item.id_producto || ''}}::${{item.talla || ''}}`; }}
-    function updateBagPill(items){{
+    function updateBagCount(items){{
       const total = items.reduce((s,i)=>s+(Number(i.qty)||1),0);
-      const pill = document.getElementById('bagPill');
-      const count = document.getElementById('bagCount');
-      count.textContent = total;
-      pill.classList.toggle('show', total > 0);
+      document.getElementById('bagCount').textContent = total;
     }}
-    function currentTalla(){{
-      const sel = document.getElementById('tallaSel');
-      return sel ? sel.value : 'Unica';
-    }}
-    function isUnica(t){{
-      return /unica|confirmar/.test(String(t||'').toLowerCase());
-    }}
+    function isUnica(t){{ return /unica|confirmar/.test(String(t||'').toLowerCase()); }}
+    let selectedTalla = {json.dumps(default_talla)};
+    document.querySelectorAll('.size-btn').forEach(btn => {{
+      btn.addEventListener('click', () => {{
+        document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedTalla = btn.dataset.talla;
+        document.getElementById('waBtn').href = waLinkFor(selectedTalla);
+      }});
+    }});
     function waLinkFor(talla){{
       const tallaLine = isUnica(talla) ? '' : `\\n\\uD83D\\uDCCF Talla: ${{talla}}`;
       const msg = `Hola ${{MARCA_LABEL}} \\uD83D\\uDC4B Me interesa este producto:\\n\\n*${{ITEM_BASE.descripcion}}*\\n\\uD83C\\uDFA8 Color: ${{ITEM_BASE.color}}${{tallaLine}}\\n\\uD83D\\uDCB0 Precio: Q${{Math.round(ITEM_BASE.precio_gtq)}}\\n\\uD83C\\uDFF7\\uFE0F Codigo: #${{ITEM_BASE.id_producto}}\\n\\n\\u00bfMe ayudas a confirmar disponibilidad?`;
       return `https://wa.me/${{WA_NUMBER}}?text=${{encodeURIComponent(msg)}}`;
     }}
 
-    const tallaSel = document.getElementById('tallaSel');
-    if(tallaSel){{
-      tallaSel.addEventListener('change', () => {{
-        document.getElementById('waBtn').href = waLinkFor(tallaSel.value);
-      }});
-    }}
-
     document.getElementById('addBtn').addEventListener('click', () => {{
-      const talla = currentTalla();
       const items = readBag();
-      const item = Object.assign({{}}, ITEM_BASE, {{ talla: isUnica(talla) ? 'Por confirmar' : talla, ts: Date.now() }});
+      const item = Object.assign({{}}, ITEM_BASE, {{ talla: isUnica(selectedTalla) ? 'Por confirmar' : selectedTalla, ts: Date.now() }});
       const key = bagKeyFor(item);
       const existing = items.find(x => bagKeyFor(x) === key);
       if(existing){{ existing.qty = (existing.qty || 1) + 1; }}
@@ -342,7 +407,7 @@ def page_html(marca, brand, group, p, canonical_url):
       document.getElementById('confirmMsg').classList.add('show');
     }});
 
-    updateBagPill(readBag());
+    updateBagCount(readBag());
   </script>
 </body>
 </html>
