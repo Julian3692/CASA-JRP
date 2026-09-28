@@ -120,11 +120,6 @@ def group_by_ref_proveedor(productos):
     return [groups[k] for k in order]
 
 
-def is_unica(talla):
-    t = strip_accents(str(talla or "")).lower()
-    return "unica" in t or "confirmar" in t
-
-
 def esc(s):
     return (
         str(s or "")
