@@ -777,8 +777,20 @@
       // modal de producto con todos los colores deshabilitados y el botón de agregar muerto:
       // un callejón sin salida. El flujo correcto para agotados es capturar demanda.
       if(group.agotado){ openNotice(group); return true; }
-      openProductGroup(group);
+      goToProductPage(group);
       return true;
+    }
+
+    // Sep 2026: cada producto tiene su propia pagina real (/nudo/producto/{id}/),
+    // generada por scripts/generate_product_pages.py — indexable y con la misma
+    // funcion de color/talla/seleccion que el modal. El catalogo ya no abre el
+    // modal para la navegacion principal, solo enlaza a esa pagina, como
+    // cualquier ecommerce real.
+    function goToProductPage(g, preselectId){
+      const variant = (preselectId != null && g.variants.find(v => Number(v.id_producto) === Number(preselectId)))
+        || g.display || g.variants[0];
+      if(!variant){ openProductGroup(g, preselectId); return; }
+      location.href = `/nudo/producto/${encodeURIComponent(variant.id_producto)}/`;
     }
     function withTimeout(promise, ms){
       return new Promise((resolve, reject)=>{
@@ -826,20 +838,25 @@
       }finally{
         const elapsed = Date.now() - started;
         const wait = Math.max(0, MIN_INITIAL_LOADER_MS - elapsed);
-        setTimeout(()=>{ releaseInitialPreload(120); openProductBySkuParam(); }, wait);
+        setTimeout(()=>{ releaseInitialPreload(120); openProductBySkuParam(); openSeleccionParam(); }, wait);
       }
     }
 
-    // Sep 2026: soporte de deep-link por producto via ?sku=ID (ej. desde un
-    // anuncio dinamico de Meta). Se corre una sola vez, despues de la carga
-    // inicial del catalogo, para que allProducts ya este armado.
+    // Sep 2026: los links viejos con ?sku=ID (feeds/anuncios ya en circulacion)
+    // ahora redirigen a la pagina real del producto en vez de abrir el modal
+    // sobre el catalogo — una sola pagina canonica por producto, no dos.
     function openProductBySkuParam(){
       if(!SKU_PARAM) return;
       const targetId = Number(SKU_PARAM);
       if(!targetId) return;
-      const group = allProducts.find(g => g.variants.some(v => Number(v.id_producto) === targetId));
-      if(!group) return;
-      openProductGroup(group, targetId);
+      location.replace(`/nudo/producto/${targetId}/`);
+    }
+
+    // Sep 2026: la pagina individual de producto manda de vuelta al catalogo
+    // con ?abrirSeleccion=1 para revisar/enviar el pedido por WhatsApp, en vez
+    // de duplicar el sheet de seleccion en cada una de las paginas estaticas.
+    function openSeleccionParam(){
+      if(new URLSearchParams(window.location.search).get('abrirSeleccion') === '1') openBagSheet();
     }
 
     function showCatalogLoadError(){
@@ -1331,7 +1348,7 @@
           if(!group) return;
           e.preventDefault();
           if(group.agotado){ openNotice(group); return; } // v30: mismo flujo que el tap
-          openProductGroup(group);
+          goToProductPage(group);
         });
       });
     }
@@ -1414,13 +1431,8 @@
       $$('.search-result', $('#searchResults')).forEach(btn=>btn.addEventListener('click',()=>{
         const g = allProducts.find(x=>String(x.sku_key)===btn.dataset.key);
         if(!g) return;
-        searchTerm = term;
-        currentFilter = '__search';
-        advancedFilters = {tipo:'', color:'', patron:'', precio:'', plus:false};
-        $$('.pill').forEach(p=>p.classList.remove('active'));
-        closeSheets({keepLoader:true});
-        safeRenderGrid({text:'Preparando resultado'}).then(()=>setTimeout(()=>openProductGroup(g), 80));
         trackLight('SEARCH_RESULT_CLICK');
+        goToProductPage(g);
       }));
     }
     function activeSearchMarkup(){
