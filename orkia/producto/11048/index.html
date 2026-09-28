@@ -71,8 +71,8 @@
     .top-shipping{height:52px;background:#EFE8E0;color:var(--text);display:flex;align-items:center;justify-content:center;gap:10px;font-size:16px;font-weight:500}
     .top-shipping .q{color:var(--terracota);font-weight:700}
     main{max-width:1440px;margin:0 auto;padding:0;width:100%;flex:1 0 auto}
-    .layout{display:grid;grid-template-columns:auto minmax(300px,480px);gap:56px;align-items:start;justify-content:center}
-    .gallery{position:relative;background:var(--border);height:78vh;max-height:720px;aspect-ratio:4/5}
+    .layout{display:flex;justify-content:center;align-items:flex-start;gap:40px;max-width:1120px;margin:0 auto;flex-wrap:nowrap}
+    .gallery{position:relative;background:var(--border);width:560px;max-width:100%;aspect-ratio:4/5;flex:1 1 560px}
     .photo{width:100%;height:100%;object-fit:cover;background:var(--border);display:block}
     .gallery-nav{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);border:0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#111}
     .gallery-nav.prev{left:10px}
@@ -118,11 +118,11 @@
     .footer .brand-logo{font-size:20px}
     .footer p{margin:6px 0 0;color:rgba(255,255,255,.62);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
     @media (max-width:800px){
-      .layout{grid-template-columns:1fr;gap:0}
+      .layout{flex-direction:column;gap:0;max-width:none;margin:0}
       main{padding:0 0 50px}
-      .gallery{height:58vh;max-height:480px;aspect-ratio:auto;width:100%}
+      .gallery{height:58vh;max-height:480px;aspect-ratio:auto;width:100%;flex:0 0 auto}
       .thumbs{padding:8px 18px 0}
-      .info-pad{padding:20px 18px 0}
+      .info-pad{padding:20px 18px 0;flex:0 0 auto;max-width:none}
       .eyebrow{font-size:9px}
       h1{font-size:31px;line-height:1.08;margin:5px 0 8px}
       .price{font-size:22px;margin:0 0 18px}
@@ -183,7 +183,7 @@
           <button class="btn btn-primary" id="addBtn" type="button">Agregar a selección</button>
           <a class="btn btn-ghost" href="https://casajrp.com/orkia/">Ver catálogo completo</a>
         </div>
-        <p class="confirm" id="confirmMsg">Agregado a tu selección. Revisala y envíala por WhatsApp cuando estés lista.</p>
+        <p class="confirm" id="confirmMsg">Agregado a tu selección. Ya está en tu carrito, revísalo cuando quieras.</p>
         <p class="meta">Código #11048</p>
       </div>
     </div>
