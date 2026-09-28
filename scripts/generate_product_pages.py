@@ -40,7 +40,6 @@ import json
 import re
 import time
 import unicodedata
-import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -140,20 +139,6 @@ def money(v):
         return "Q0"
 
 
-def build_whatsapp_message(marca_label, p, talla):
-    talla_line = "" if is_unica(talla) else f"\n\U0001F4CF Talla: {talla}"
-    lines = [
-        f"Hola {marca_label} \U0001F44B Me interesa este producto:",
-        "",
-        f"*{p['descripcion']}*",
-        f"\U0001F3A8 Color: {p.get('color') or '-'}{talla_line}",
-        f"\U0001F4B0 Precio: {money(p.get('precio_gtq'))}",
-        f"\U0001F3F7️ Codigo: #{p['id_producto']}",
-        "",
-        "Me ayudas a confirmar disponibilidad?",
-    ]
-    return "\n".join(lines)
-
 
 def images_for(p):
     return [u for u in [p.get("url_imagen"), p.get("url_imagen_2"), p.get("url_imagen_3")] if u]
@@ -168,8 +153,6 @@ def page_html(marca, brand, group, p, canonical_url):
     image = imgs[0] if imgs else ""
     tallas_disponibles = [t for t in (p.get("tallas") or [])] or ["Unica"]
     default_talla = tallas_disponibles[0]
-    wa_msg_default = build_whatsapp_message(brand["label"], p, default_talla)
-    wa_link_default = f"https://wa.me/{WA_NUMBER}?text={urllib.parse.quote(wa_msg_default)}"
     catalog_url = f"https://casajrp.com/{marca}/"
 
     color_swatches = "".join(
@@ -190,9 +173,10 @@ def page_html(marca, brand, group, p, canonical_url):
         talla_block = f'<div class="size-title">Selecciona tu talla</div><div class="sizes" id="sizes">{size_buttons}</div>'
 
     gallery = "".join(
-        f'<img class="thumb" src="{esc(u)}" alt="{esc(p["descripcion"])}" loading="lazy">'
-        for u in imgs[1:]
+        f'<button type="button" class="thumb-btn {"active" if i==0 else ""}" data-idx="{i}"><img class="thumb" src="{esc(u)}" alt="{esc(p["descripcion"])}" loading="lazy"></button>'
+        for i, u in enumerate(imgs)
     )
+    images_json = json.dumps(imgs)
 
     bag_key = f"{marca}_seleccion_whatsapp_v1"
     item_json = json.dumps({
@@ -261,7 +245,8 @@ def page_html(marca, brand, group, p, canonical_url):
     }}
     *{{box-sizing:border-box}}
     html{{scroll-behavior:smooth}}
-    body{{margin:0;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}}
+    html,body{{height:100%}}
+    body{{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}}
     a{{color:inherit;text-decoration:none}}
     img{{display:block;max-width:100%}}
     button{{font:inherit;cursor:pointer}}
@@ -278,11 +263,25 @@ def page_html(marca, brand, group, p, canonical_url):
     .bag-count{{position:absolute;top:-2px;right:-2px;background:var(--terracota);color:#fff;font-size:9px;font-weight:700;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center}}
     .top-shipping{{height:34px;background:#EFE8E0;color:var(--text);display:flex;align-items:center;justify-content:center;gap:9px;font-size:12px}}
     .top-shipping .q{{color:var(--terracota);font-weight:600}}
-    main{{max-width:820px;margin:0 auto;padding:0}}
+    main{{max-width:820px;margin:0 auto;padding:0;width:100%;flex:1 0 auto}}
     .layout{{display:grid;grid-template-columns:420px 1fr;gap:0;align-items:start}}
-    .photo{{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;background:var(--border);max-height:70vh}}
-    .thumbs{{display:flex;gap:8px;margin-top:8px;padding:0 0 0 0}}
-    .thumb{{width:72px;height:90px;object-fit:cover;background:var(--border)}}
+    .gallery{{position:relative;background:var(--border)}}
+    .photo{{width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;background:var(--border);display:block}}
+    .gallery-nav{{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);border:0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#111}}
+    .gallery-nav.prev{{left:10px}}
+    .gallery-nav.next{{right:10px}}
+    .gallery-nav.hidden{{display:none}}
+    .zoom-hint{{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:999px}}
+    .thumbs{{display:flex;gap:8px;margin-top:8px;padding:0}}
+    .thumb-btn{{border:1px solid transparent;background:none;padding:0;line-height:0}}
+    .thumb-btn.active{{border-color:var(--terracota)}}
+    .thumb{{width:72px;height:90px;object-fit:cover;background:var(--border);display:block}}
+    .lightbox{{position:fixed;inset:0;background:rgba(17,17,17,.94);z-index:200;display:none;align-items:center;justify-content:center}}
+    .lightbox.open{{display:flex}}
+    .lightbox img{{max-width:92vw;max-height:82vh;object-fit:contain;transition:transform .2s ease;cursor:zoom-in}}
+    .lightbox img.zoomed{{transform:scale(1.9);cursor:zoom-out}}
+    .lightbox-close{{position:absolute;top:18px;right:18px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;border:0;font-size:18px}}
+    .lightbox .gallery-nav{{background:rgba(255,255,255,.16);color:#fff}}
     .info-pad{{padding:48px 34px 30px}}
     .eyebrow{{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota);font-weight:600;margin:0 0 10px}}
     h1{{font-family:'{brand['font_display']}',Georgia,serif;font-size:38px;line-height:1.05;letter-spacing:-.02em;margin:6px 0 8px;color:var(--dark)}}
@@ -313,7 +312,7 @@ def page_html(marca, brand, group, p, canonical_url):
     @media (max-width:800px){{
       .layout{{grid-template-columns:1fr;gap:0}}
       main{{padding:0 0 50px}}
-      .photo{{max-height:60vh;aspect-ratio:4/5}}
+      .photo{{aspect-ratio:auto;height:min(58vh,480px);width:100%}}
       .thumbs{{padding:8px 18px 0}}
       .info-pad{{padding:20px 18px 0}}
       .eyebrow{{font-size:9px}}
@@ -347,8 +346,13 @@ def page_html(marca, brand, group, p, canonical_url):
   <main>
     <div class="layout">
       <div>
-        <img id="mainPhoto" class="photo" src="{esc(image)}" alt="{esc(p['descripcion'])} - {esc(p.get('color') or '')}" loading="eager" fetchpriority="high">
-        {f'<div class="thumbs">{gallery}</div>' if gallery else ''}
+        <div class="gallery">
+          <img id="mainPhoto" class="photo" src="{esc(image)}" alt="{esc(p['descripcion'])} - {esc(p.get('color') or '')}" loading="eager" fetchpriority="high">
+          <button type="button" class="gallery-nav prev {'hidden' if len(imgs)<=1 else ''}" id="prevBtn" aria-label="Foto anterior">&lsaquo;</button>
+          <button type="button" class="gallery-nav next {'hidden' if len(imgs)<=1 else ''}" id="nextBtn" aria-label="Foto siguiente">&rsaquo;</button>
+          {f'<div class="zoom-hint">Toca para ampliar</div>' if imgs else ''}
+        </div>
+        {f'<div class="thumbs">{gallery}</div>' if len(imgs) > 1 else ''}
       </div>
       <div class="info-pad">
         <p class="eyebrow">{esc(p.get('tipo_prenda') or brand['label'])}</p>
@@ -360,10 +364,9 @@ def page_html(marca, brand, group, p, canonical_url):
         <p class="desc">{esc(p['descripcion'])} Envío gratis desde Q300 en Guatemala.</p>
         <div class="actions">
           <button class="btn btn-primary" id="addBtn" type="button">Agregar a selección</button>
-          <a class="btn btn-ghost" id="waBtn" href="{wa_link_default}" target="_blank" rel="noopener">Pedir ya por WhatsApp</a>
           <a class="btn btn-ghost" href="{catalog_url}?sku={pid}">Ver catálogo completo</a>
         </div>
-        <p class="confirm" id="confirmMsg">Agregado. Podés seguir viendo más prendas o revisar tu selección.</p>
+        <p class="confirm" id="confirmMsg">Agregado a tu selección. Revisala y envíala por WhatsApp cuando estés lista.</p>
         <p class="meta">Código #{pid}</p>
       </div>
     </div>
@@ -372,11 +375,16 @@ def page_html(marca, brand, group, p, canonical_url):
     <div class="brand-logo serif">{brand['label']}<span class="brand-dot"></span></div>
     <p>Guatemala &middot; Manufactura colombiana &middot; &copy; 2026</p>
   </footer>
+  <div class="lightbox" id="lightbox">
+    <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Cerrar">&times;</button>
+    <button type="button" class="gallery-nav prev {'hidden' if len(imgs)<=1 else ''}" id="lbPrev" aria-label="Foto anterior">&lsaquo;</button>
+    <img id="lightboxImg" src="" alt="{esc(p['descripcion'])}">
+    <button type="button" class="gallery-nav next {'hidden' if len(imgs)<=1 else ''}" id="lbNext" aria-label="Foto siguiente">&rsaquo;</button>
+  </div>
   <script>
     const BAG_KEY = {json.dumps(bag_key)};
-    const WA_NUMBER = {json.dumps(WA_NUMBER)};
-    const MARCA_LABEL = {json.dumps(brand['label'])};
     const ITEM_BASE = {item_json};
+    const IMAGES = {images_json};
 
     function readBag(){{ try{{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }}catch(e){{ return []; }} }}
     function writeBag(items){{ try{{ localStorage.setItem(BAG_KEY, JSON.stringify(items)); }}catch(e){{}} updateBagCount(items); }}
@@ -392,14 +400,8 @@ def page_html(marca, brand, group, p, canonical_url):
         document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         selectedTalla = btn.dataset.talla;
-        document.getElementById('waBtn').href = waLinkFor(selectedTalla);
       }});
     }});
-    function waLinkFor(talla){{
-      const tallaLine = isUnica(talla) ? '' : `\\n\\uD83D\\uDCCF Talla: ${{talla}}`;
-      const msg = `Hola ${{MARCA_LABEL}} \\uD83D\\uDC4B Me interesa este producto:\\n\\n*${{ITEM_BASE.descripcion}}*\\n\\uD83C\\uDFA8 Color: ${{ITEM_BASE.color}}${{tallaLine}}\\n\\uD83D\\uDCB0 Precio: Q${{Math.round(ITEM_BASE.precio_gtq)}}\\n\\uD83C\\uDFF7\\uFE0F Codigo: #${{ITEM_BASE.id_producto}}\\n\\n\\u00bfMe ayudas a confirmar disponibilidad?`;
-      return `https://wa.me/${{WA_NUMBER}}?text=${{encodeURIComponent(msg)}}`;
-    }}
 
     document.getElementById('addBtn').addEventListener('click', () => {{
       const items = readBag();
@@ -413,6 +415,44 @@ def page_html(marca, brand, group, p, canonical_url):
     }});
 
     updateBagCount(readBag());
+
+    // Galeria: miniaturas + flechas cambian la foto principal sin recargar.
+    let currentIdx = 0;
+    function showImage(idx){{
+      if(!IMAGES.length) return;
+      currentIdx = (idx + IMAGES.length) % IMAGES.length;
+      document.getElementById('mainPhoto').src = IMAGES[currentIdx];
+      document.querySelectorAll('.thumb-btn').forEach((btn,i)=>btn.classList.toggle('active', i===currentIdx));
+    }}
+    document.getElementById('prevBtn')?.addEventListener('click', ()=>showImage(currentIdx-1));
+    document.getElementById('nextBtn')?.addEventListener('click', ()=>showImage(currentIdx+1));
+    document.querySelectorAll('.thumb-btn').forEach(btn=>{{
+      btn.addEventListener('click', ()=>showImage(Number(btn.dataset.idx)));
+    }});
+
+    // Lightbox: tocar la foto principal la abre a pantalla completa; tocar la
+    // foto ampliada alterna zoom 1x/1.9x; las flechas tambien funcionan ahi.
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    function openLightbox(){{
+      if(!IMAGES.length) return;
+      lightboxImg.src = IMAGES[currentIdx];
+      lightboxImg.classList.remove('zoomed');
+      lightbox.classList.add('open');
+    }}
+    function closeLightbox(){{ lightbox.classList.remove('open'); }}
+    document.getElementById('mainPhoto').addEventListener('click', openLightbox);
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e)=>{{ if(e.target === lightbox) closeLightbox(); }});
+    lightboxImg.addEventListener('click', ()=> lightboxImg.classList.toggle('zoomed'));
+    document.getElementById('lbPrev')?.addEventListener('click', (e)=>{{ e.stopPropagation(); showImage(currentIdx-1); lightboxImg.src = IMAGES[currentIdx]; lightboxImg.classList.remove('zoomed'); }});
+    document.getElementById('lbNext')?.addEventListener('click', (e)=>{{ e.stopPropagation(); showImage(currentIdx+1); lightboxImg.src = IMAGES[currentIdx]; lightboxImg.classList.remove('zoomed'); }});
+    document.addEventListener('keydown', (e)=>{{
+      if(!lightbox.classList.contains('open')) return;
+      if(e.key === 'Escape') closeLightbox();
+      if(e.key === 'ArrowLeft') document.getElementById('lbPrev')?.click();
+      if(e.key === 'ArrowRight') document.getElementById('lbNext')?.click();
+    }});
   </script>
 </body>
 </html>
