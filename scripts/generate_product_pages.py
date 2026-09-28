@@ -24,11 +24,14 @@ Cada pagina:
   el mismo formato de item — el carrito es compartido entre el catalogo y
   estas paginas, se revisa/envia desde el sheet de siempre
   (/{marca}/?abrirSeleccion=1 lo abre automatico).
-- Tambien ofrece "Pedir ya por WhatsApp" para una consulta directa de un
-  solo producto, sin pasar por el carrito.
+- Incluye datos estructurados Product (JSON-LD) y marca "Agotado" +
+  deshabilita agregar/tallas cuando el producto o la talla no tiene stock.
 
 El catalogo (orkia/index.html, nudo/index.html) ya navega aca en vez de
 abrir un modal — ver goToProductPage() en ambos archivos.
+
+Tambien regenera sitemap.xml en la raiz del repo con las URLs de las
+dos paginas de catalogo y cada producto.
 
 No sincroniza sola: hay que volver a correr este script (y hacer
 commit/push) cada vez que cambien precios, stock, tallas o fotos
@@ -543,7 +546,21 @@ def page_html(marca, brand, group, p, canonical_url):
 """
 
 
+def write_sitemap(product_urls):
+    urls = ["https://casajrp.com/", "https://casajrp.com/orkia/", "https://casajrp.com/nudo/"] + product_urls
+    body = "\n".join(f"  <url><loc>{u}</loc></url>" for u in urls)
+    xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        f"{body}\n"
+        "</urlset>\n"
+    )
+    (REPO_ROOT / "sitemap.xml").write_text(xml, encoding="utf-8")
+    print(f"sitemap.xml: {len(urls)} URLs")
+
+
 def main():
+    product_urls = []
     for marca, brand in BRANDS.items():
         productos = fetch_catalogo(marca)
         groups = group_by_ref_proveedor(productos)
@@ -557,8 +574,10 @@ def main():
                 canonical = f"https://casajrp.com/{marca}/producto/{pid}/"
                 html = page_html(marca, brand, group, p, canonical)
                 (page_dir / "index.html").write_text(html, encoding="utf-8")
+                product_urls.append(canonical)
                 count += 1
         print(f"{marca}: {count} paginas generadas en {out_dir}")
+    write_sitemap(product_urls)
 
 
 if __name__ == "__main__":
