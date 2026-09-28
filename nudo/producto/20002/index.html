@@ -16,6 +16,7 @@
   <meta property="og:locale" content="es_GT" />
   <meta property="product:price:amount" content="169" />
   <meta property="product:price:currency" content="GTQ" />
+  <script type="application/ld+json">{"@context": "https://schema.org/", "@type": "Product", "name": "Banador Piel", "image": ["https://img.casajrp.com/nudo/20002_frente.webp", "https://img.casajrp.com/nudo/20002_atras.webp"], "description": "Banador Piel en color Piel. Q169. Envio gratis desde Q300 en Guatemala. Pide por WhatsApp.", "sku": "20002", "brand": {"@type": "Brand", "name": "NUDO"}, "offers": {"@type": "Offer", "url": "https://casajrp.com/nudo/producto/20002/", "priceCurrency": "GTQ", "price": "169", "availability": "https://schema.org/InStock"}}</script>
   <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -92,6 +93,7 @@
     .lightbox .gallery-nav{background:rgba(255,255,255,.16);color:#fff}
     .info-pad{padding:48px 0 30px;flex:0 1 480px;max-width:480px}
     .eyebrow{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota);font-weight:600;margin:0 0 10px}
+    .badge-agotado{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:#EFE3E0;color:#9A3B2E;font-size:9px;letter-spacing:.1em}
     h1{font-family:'Playfair Display',Georgia,serif;font-size:38px;line-height:1.05;letter-spacing:-.02em;margin:6px 0 8px;color:var(--dark);max-width:520px}
     .price{font-size:24px;font-weight:600;margin:0 0 20px;color:var(--dark)}
     .color-title,.size-title{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text);margin-bottom:10px}
@@ -104,11 +106,14 @@
     .sizes{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}
     .size-btn{width:44px;height:44px;border:1px solid #D9D2CC;background:#fff;color:#111;font-size:12px}
     .size-btn.active{background:#111;color:#fff;border-color:#111}
+    .size-btn.disabled{opacity:.4;text-decoration:line-through;cursor:not-allowed}
     .desc{color:var(--mid);line-height:1.6;margin:0 0 28px;font-size:14px;max-width:440px}
     .actions{display:flex;flex-direction:column;gap:12px;max-width:340px}
     .btn{border:0;height:48px;padding:0 24px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.18s ease;width:100%}
     .btn-primary{background:var(--dark);color:#fff}
     .btn-primary:hover{background:#000}
+    .btn-primary:disabled{background:#C9C2BB;color:#fff;cursor:not-allowed}
+    .btn-primary:disabled:hover{background:#C9C2BB}
     .btn-ghost{background:transparent;color:var(--dark);border:1px solid #B8B2AC}
     .btn-ghost:hover{background:#fff}
     .confirm{font-size:12px;color:#2D6A4F;margin:-4px 0 0;display:none}

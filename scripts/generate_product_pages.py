@@ -152,7 +152,16 @@ def page_html(marca, brand, group, p, canonical_url):
     imgs = images_for(p)
     image = imgs[0] if imgs else ""
     tallas_disponibles = [t for t in (p.get("tallas") or [])] or ["Unica"]
-    default_talla = tallas_disponibles[0]
+    tallas_agotadas = {normalize(t).lower() for t in (p.get("tallas_agotadas") or [])}
+    try:
+        stock_total = float(p.get("stock_total"))
+    except (TypeError, ValueError):
+        stock_total = None
+    is_agotado = bool(p.get("agotado")) or stock_total == 0
+    default_talla = next(
+        (t for t in tallas_disponibles if normalize(t).lower() not in tallas_agotadas),
+        tallas_disponibles[0],
+    )
     catalog_url = f"https://casajrp.com/{marca}/"
 
     color_swatches = "".join(
@@ -167,8 +176,9 @@ def page_html(marca, brand, group, p, canonical_url):
         talla_block = ""
     else:
         size_buttons = "".join(
-            f'<button type="button" class="size-btn {"active" if i==0 else ""}" data-talla="{esc(t)}">{esc(t)}</button>'
-            for i, t in enumerate(tallas_disponibles)
+            f'<button type="button" class="size-btn {"active" if t==default_talla else ""} {"disabled" if normalize(t).lower() in tallas_agotadas else ""}" '
+            f'data-talla="{esc(t)}" {"disabled" if normalize(t).lower() in tallas_agotadas else ""}>{esc(t)}</button>'
+            for t in tallas_disponibles
         )
         talla_block = f'<div class="size-title">Selecciona tu talla</div><div class="sizes" id="sizes">{size_buttons}</div>'
 
@@ -177,6 +187,25 @@ def page_html(marca, brand, group, p, canonical_url):
         for i, u in enumerate(imgs)
     )
     images_json = json.dumps(imgs)
+
+    ld_json = json.dumps({
+        "@context": "https://schema.org/",
+        "@type": "Product",
+        "name": p["descripcion"],
+        "image": imgs,
+        "description": description,
+        "sku": str(pid),
+        "brand": {"@type": "Brand", "name": brand["label"]},
+        "offers": {
+            "@type": "Offer",
+            "url": canonical_url,
+            "priceCurrency": "GTQ",
+            "price": str(p.get("precio_gtq") or 0),
+            "availability": (
+                "https://schema.org/OutOfStock" if is_agotado else "https://schema.org/InStock"
+            ),
+        },
+    }, ensure_ascii=False).replace("</", "<\\/")
 
     bag_key = f"{marca}_seleccion_whatsapp_v1"
     item_json = json.dumps({
@@ -209,6 +238,7 @@ def page_html(marca, brand, group, p, canonical_url):
   <meta property="og:locale" content="es_GT" />
   <meta property="product:price:amount" content="{p.get('precio_gtq') or ''}" />
   <meta property="product:price:currency" content="GTQ" />
+  <script type="application/ld+json">{ld_json}</script>
   <link rel="preconnect" href="https://img.casajrp.com" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -285,6 +315,7 @@ def page_html(marca, brand, group, p, canonical_url):
     .lightbox .gallery-nav{{background:rgba(255,255,255,.16);color:#fff}}
     .info-pad{{padding:48px 0 30px;flex:0 1 480px;max-width:480px}}
     .eyebrow{{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota);font-weight:600;margin:0 0 10px}}
+    .badge-agotado{{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:#EFE3E0;color:#9A3B2E;font-size:9px;letter-spacing:.1em}}
     h1{{font-family:'{brand['font_display']}',Georgia,serif;font-size:38px;line-height:1.05;letter-spacing:-.02em;margin:6px 0 8px;color:var(--dark);max-width:520px}}
     .price{{font-size:24px;font-weight:600;margin:0 0 20px;color:var(--dark)}}
     .color-title,.size-title{{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text);margin-bottom:10px}}
@@ -297,11 +328,14 @@ def page_html(marca, brand, group, p, canonical_url):
     .sizes{{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px}}
     .size-btn{{width:44px;height:44px;border:1px solid #D9D2CC;background:#fff;color:#111;font-size:12px}}
     .size-btn.active{{background:#111;color:#fff;border-color:#111}}
+    .size-btn.disabled{{opacity:.4;text-decoration:line-through;cursor:not-allowed}}
     .desc{{color:var(--mid);line-height:1.6;margin:0 0 28px;font-size:14px;max-width:440px}}
     .actions{{display:flex;flex-direction:column;gap:12px;max-width:340px}}
     .btn{{border:0;height:48px;padding:0 24px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.18s ease;width:100%}}
     .btn-primary{{background:var(--dark);color:#fff}}
     .btn-primary:hover{{background:#000}}
+    .btn-primary:disabled{{background:#C9C2BB;color:#fff;cursor:not-allowed}}
+    .btn-primary:disabled:hover{{background:#C9C2BB}}
     .btn-ghost{{background:transparent;color:var(--dark);border:1px solid #B8B2AC}}
     .btn-ghost:hover{{background:#fff}}
     .confirm{{font-size:12px;color:#2D6A4F;margin:-4px 0 0;display:none}}
@@ -356,7 +390,7 @@ def page_html(marca, brand, group, p, canonical_url):
         {f'<div class="thumbs">{gallery}</div>' if len(imgs) > 1 else ''}
       </div>
       <div class="info-pad">
-        <p class="eyebrow">{esc(p.get('tipo_prenda') or brand['label'])}</p>
+        <p class="eyebrow">{esc(p.get('tipo_prenda') or brand['label'])}{' <span class="badge-agotado">Agotado</span>' if is_agotado else ''}</p>
         <h1 class="serif">{esc(p['descripcion'])}</h1>
         <p class="price">{money(p.get('precio_gtq'))}</p>
         <div class="color-title">Selecciona color</div>
@@ -364,7 +398,7 @@ def page_html(marca, brand, group, p, canonical_url):
         {talla_block}
         <p class="desc">{esc(p['descripcion'])} Envío gratis desde Q300 en Guatemala.</p>
         <div class="actions">
-          <button class="btn btn-primary" id="addBtn" type="button">Agregar a selección</button>
+          {f'<button class="btn btn-primary" id="addBtn" type="button" disabled>Agotado</button>' if is_agotado else '<button class="btn btn-primary" id="addBtn" type="button">Agregar a selección</button>'}
           <a class="btn btn-ghost" href="{catalog_url}">Ver catálogo completo</a>
         </div>
         <p class="confirm" id="confirmMsg">Agregado a tu selección. Ya está en tu carrito, revísalo cuando quieras.</p>
