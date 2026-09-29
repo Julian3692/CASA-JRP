@@ -81,6 +81,7 @@
     .gallery-nav.next{right:10px}
     .gallery-nav.hidden{display:none}
     .zoom-hint{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:6px 10px;border-radius:999px}
+    .zoom-hint .mobile-only{display:none}
     .thumbs{display:flex;gap:8px;margin-top:8px;padding:0}
     .thumb-btn{border:1px solid transparent;background:none;padding:0;line-height:0}
     .thumb-btn.active{border-color:var(--terracota)}
@@ -166,6 +167,8 @@
       .related{padding:0 18px 34px;margin-top:36px}
       .related h2{font-size:22px}
       .related-grid{grid-template-columns:repeat(2,1fr);gap:14px}
+      .zoom-hint .mobile-only{display:inline}
+      .zoom-hint .desktop-only{display:none}
     }
   </style>
 </head>
@@ -195,7 +198,7 @@
           <img id="mainPhoto" class="photo" src="https://img.casajrp.com/orkia/10318_frente.webp" alt="Blusa off shoulder canale - Verde Claro" loading="eager" fetchpriority="high">
           <button type="button" class="gallery-nav prev " id="prevBtn" aria-label="Foto anterior">&lsaquo;</button>
           <button type="button" class="gallery-nav next " id="nextBtn" aria-label="Foto siguiente">&rsaquo;</button>
-          <div class="zoom-hint">Toca para ampliar</div>
+          <div class="zoom-hint"><span class="mobile-only">Toca</span><span class="desktop-only">Clic</span> para ampliar</div>
         </div>
         <div class="thumbs"><button type="button" class="thumb-btn active" data-idx="0"><img class="thumb" src="https://img.casajrp.com/orkia/10318_frente.webp" alt="Blusa off shoulder canale" loading="lazy"></button><button type="button" class="thumb-btn " data-idx="1"><img class="thumb" src="https://img.casajrp.com/orkia/10318_lado.webp" alt="Blusa off shoulder canale" loading="lazy"></button><button type="button" class="thumb-btn " data-idx="2"><img class="thumb" src="https://img.casajrp.com/orkia/10318_detalle.webp" alt="Blusa off shoulder canale" loading="lazy"></button></div>
       </div>
@@ -332,6 +335,16 @@
     document.querySelectorAll('.thumb-btn').forEach(btn=>{
       btn.addEventListener('click', ()=>showImage(Number(btn.dataset.idx)));
     });
+
+    // Swipe en la foto principal para cambiar de imagen en movil (mismo umbral
+    // que ya usaba el modal original).
+    const galleryEl = document.querySelector('.gallery');
+    let gallerySwipeStartX = 0;
+    galleryEl?.addEventListener('touchstart', (e)=>{ gallerySwipeStartX = e.touches[0].clientX; }, {passive:true});
+    galleryEl?.addEventListener('touchend', (e)=>{
+      const diff = gallerySwipeStartX - e.changedTouches[0].clientX;
+      if(Math.abs(diff) > 40){ showImage(currentIdx + (diff > 0 ? 1 : -1)); }
+    }, {passive:true});
 
     // Lightbox: tocar la foto principal la abre a pantalla completa; tocar la
     // foto ampliada alterna zoom 1x/1.9x; las flechas tambien funcionan ahi.
