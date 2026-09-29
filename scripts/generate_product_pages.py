@@ -141,6 +141,38 @@ def group_by_ref_proveedor(productos):
     return [groups[k] for k in order]
 
 
+TOP_TYPES = {"blusa", "top", "body"}
+BOTTOM_TYPES = {"falda", "pantalon"}
+RELATED_COUNT = 4
+
+
+def pick_related(marca, all_groups, current_group, count=RELATED_COUNT):
+    current_ref = normalize(current_group[0].get("ref_proveedor"))
+    current_tipo = strip_accents(normalize(current_group[0].get("tipo_prenda"))).lower()
+
+    pool_primary = []
+    pool_general = []
+    for g in all_groups:
+        if normalize(g[0].get("ref_proveedor")) == current_ref:
+            continue
+        available = [v for v in g if not v.get("agotado")]
+        if not available:
+            continue
+        v = available[0]
+        tipo = strip_accents(normalize(v.get("tipo_prenda"))).lower()
+        if marca == "orkia" and current_tipo in TOP_TYPES and tipo in BOTTOM_TYPES:
+            pool_primary.append(v)
+        elif marca == "orkia" and current_tipo in BOTTOM_TYPES and tipo in TOP_TYPES:
+            pool_primary.append(v)
+        else:
+            pool_general.append(v)
+
+    chosen = pool_primary[:count]
+    if len(chosen) < count:
+        chosen += pool_general[: count - len(chosen)]
+    return chosen[:count]
+
+
 def esc(s):
     return (
         str(s or "")
@@ -163,7 +195,7 @@ def images_for(p):
     return [u for u in [p.get("url_imagen"), p.get("url_imagen_2"), p.get("url_imagen_3")] if u]
 
 
-def page_html(marca, brand, group, p, canonical_url):
+def page_html(marca, brand, group, p, canonical_url, all_groups):
     pid = p["id_producto"]
     title_txt = f"{p.get('tipo_prenda') or 'Prenda'} {p.get('color') or ''}".strip()
     page_title = f"{esc(title_txt)} — {esc(p['descripcion'])} | {brand['label']}"
@@ -235,6 +267,23 @@ def page_html(marca, brand, group, p, canonical_url):
         f'''<div class="trust-item"><svg class="icon" viewBox="0 0 24 24">{"".join(f'<path d="{d}"/>' for d in paths.split("|"))}</svg>
           <div><h3>{esc(title)}</h3><p>{esc(text)}</p></div></div>'''
         for paths, title, text in brand.get("trust_items", [])
+    )
+
+    related = pick_related(marca, all_groups, group)
+    related_cards = "".join(
+        f'''<a class="related-card" href="/{marca}/producto/{v['id_producto']}/">
+          <div class="related-imgbox"><img src="{esc((images_for(v) or [''])[0])}" alt="{esc(v.get('descripcion') or '')}" loading="lazy"></div>
+          <div class="related-name">{esc(v.get('descripcion') or '')}</div>
+          <div class="related-price">{money(v.get('precio_gtq'))}</div>
+        </a>'''
+        for v in related
+    )
+    related_section = (
+        f'''<section class="related" aria-label="También te puede gustar">
+          <h2 class="serif">También te puede gustar</h2>
+          <div class="related-grid">{related_cards}</div>
+        </section>'''
+        if related_cards else ""
     )
 
     gallery = "".join(
@@ -414,6 +463,14 @@ def page_html(marca, brand, group, p, canonical_url):
     .trust-item p{{margin:0;color:var(--mid);font-size:12.5px;line-height:1.5}}
     .wa-float{{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.28);z-index:60}}
     .wa-float svg{{width:28px;height:28px;color:#fff}}
+    .related{{max-width:1120px;margin:56px auto 0;padding:0 34px 44px}}
+    .related h2{{font-size:26px;font-weight:400;margin:0 0 20px;color:var(--dark)}}
+    .related-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}}
+    .related-card{{display:block}}
+    .related-imgbox{{aspect-ratio:4/5;background:var(--border);overflow:hidden;margin-bottom:10px}}
+    .related-imgbox img{{width:100%;height:100%;object-fit:cover;display:block}}
+    .related-name{{font-size:13px;color:var(--dark);margin-bottom:4px;line-height:1.35}}
+    .related-price{{font-size:13px;font-weight:600;color:var(--dark)}}
     .footer{{background:var(--carbon);color:#fff;margin-top:40px;padding:22px 28px;text-align:center}}
     .footer .brand-logo{{font-size:20px}}
     .footer p{{margin:6px 0 0;color:rgba(255,255,255,.62);font-size:10px;letter-spacing:.14em;text-transform:uppercase}}
@@ -431,6 +488,9 @@ def page_html(marca, brand, group, p, canonical_url):
       .brand-logo{{font-size:22px}}
       .wa-float{{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:50px;height:50px}}
       .wa-float svg{{width:25px;height:25px}}
+      .related{{padding:0 18px 34px;margin-top:36px}}
+      .related h2{{font-size:22px}}
+      .related-grid{{grid-template-columns:repeat(2,1fr);gap:14px}}
     }}
   </style>
 </head>
@@ -490,6 +550,7 @@ def page_html(marca, brand, group, p, canonical_url):
         <div class="trust-bar">{trust_bar}</div>
       </div>
     </div>
+    {related_section}
   </main>
   <footer class="footer">
     <div class="brand-logo serif">{brand['label']}<span class="brand-dot"></span></div>
@@ -657,7 +718,7 @@ def main():
                 page_dir = out_dir / str(pid)
                 page_dir.mkdir(parents=True, exist_ok=True)
                 canonical = f"https://casajrp.com/{marca}/producto/{pid}/"
-                html = page_html(marca, brand, group, p, canonical)
+                html = page_html(marca, brand, group, p, canonical, groups)
                 (page_dir / "index.html").write_text(html, encoding="utf-8")
                 product_urls.append(canonical)
                 count += 1

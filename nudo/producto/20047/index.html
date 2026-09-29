@@ -137,6 +137,14 @@
     .trust-item p{margin:0;color:var(--mid);font-size:12.5px;line-height:1.5}
     .wa-float{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.28);z-index:60}
     .wa-float svg{width:28px;height:28px;color:#fff}
+    .related{max-width:1120px;margin:56px auto 0;padding:0 34px 44px}
+    .related h2{font-size:26px;font-weight:400;margin:0 0 20px;color:var(--dark)}
+    .related-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+    .related-card{display:block}
+    .related-imgbox{aspect-ratio:4/5;background:var(--border);overflow:hidden;margin-bottom:10px}
+    .related-imgbox img{width:100%;height:100%;object-fit:cover;display:block}
+    .related-name{font-size:13px;color:var(--dark);margin-bottom:4px;line-height:1.35}
+    .related-price{font-size:13px;font-weight:600;color:var(--dark)}
     .footer{background:var(--carbon);color:#fff;margin-top:40px;padding:22px 28px;text-align:center}
     .footer .brand-logo{font-size:20px}
     .footer p{margin:6px 0 0;color:rgba(255,255,255,.62);font-size:10px;letter-spacing:.14em;text-transform:uppercase}
@@ -154,6 +162,9 @@
       .brand-logo{font-size:22px}
       .wa-float{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:50px;height:50px}
       .wa-float svg{width:25px;height:25px}
+      .related{padding:0 18px 34px;margin-top:36px}
+      .related h2{font-size:22px}
+      .related-grid{grid-template-columns:repeat(2,1fr);gap:14px}
     }
   </style>
 </head>
@@ -237,6 +248,26 @@
           <div><h3>Compra discreta</h3><p>Te atendemos por WhatsApp con color, talla, fit y disponibilidad.</p></div></div></div>
       </div>
     </div>
+    <section class="related" aria-label="También te puede gustar">
+          <h2 class="serif">También te puede gustar</h2>
+          <div class="related-grid"><a class="related-card" href="/nudo/producto/20001/">
+          <div class="related-imgbox"><img src="https://img.casajrp.com/nudo/20001_frente.webp" alt="Banador Cafe Claro" loading="lazy"></div>
+          <div class="related-name">Banador Cafe Claro</div>
+          <div class="related-price">Q169</div>
+        </a><a class="related-card" href="/nudo/producto/20006/">
+          <div class="related-imgbox"><img src="https://img.casajrp.com/nudo/20006_frente.webp" alt="Body Brillante Negro" loading="lazy"></div>
+          <div class="related-name">Body Brillante Negro</div>
+          <div class="related-price">Q269</div>
+        </a><a class="related-card" href="/nudo/producto/20017/">
+          <div class="related-imgbox"><img src="https://img.casajrp.com/nudo/20017_frente.webp" alt="Brief Bikini Celeste" loading="lazy"></div>
+          <div class="related-name">Brief Bikini Celeste</div>
+          <div class="related-price">Q139</div>
+        </a><a class="related-card" href="/nudo/producto/20038/">
+          <div class="related-imgbox"><img src="https://img.casajrp.com/nudo/20038_frente.webp" alt="Hilo con Liguero 2cm Estampado Militar" loading="lazy"></div>
+          <div class="related-name">Hilo con Liguero 2cm Estampado Militar</div>
+          <div class="related-price">Q199</div>
+        </a></div>
+        </section>
   </main>
   <footer class="footer">
     <div class="brand-logo serif">NUDO<span class="brand-dot"></span></div>
