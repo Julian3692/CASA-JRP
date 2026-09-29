@@ -43,6 +43,7 @@ import json
 import re
 import time
 import unicodedata
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -68,6 +69,16 @@ BRANDS = {
         "bg": "#F5F0EA", "surface": "#FFFFFF", "dark": "#111111", "carbon": "#1A1A1A",
         "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#C4714A",
         "wa_msg_generic": "Hola%20Orkia%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20sus%20prendas.",
+        "low_stock_threshold": 2,
+        "trust_items": [
+            ("M8 3 5 5v4l-2 3 3 3v4l4 2 3-2 4 1 3-4-2-3 1-4-4-2-2-4z", "Diseño colombiano",
+             "Prendas seleccionadas por su estilo, color y caída."),
+            ("M4 21h16M7 21V7a5 5 0 0 1 10 0v14M9 8h6M9 12h6M9 16h6", "Confección con propósito",
+             "Trabajamos con mujeres cabeza de hogar en Colombia para confeccionar nuestras prendas."),
+            ("M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z|"
+             "M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8",
+             "Atención personalizada", "Te ayudamos por WhatsApp si tienes dudas o necesitas asesoría."),
+        ],
     },
     "nudo": {
         "label": "NUDO",
@@ -77,6 +88,16 @@ BRANDS = {
         "bg": "#FAF8F5", "surface": "#FFFFFF", "dark": "#111111", "carbon": "#1A1A1A",
         "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#4A1F2C",
         "wa_msg_generic": "Hola%20Nudo%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20su%20ropa%20interior.",
+        "low_stock_threshold": 0,
+        "trust_items": [
+            ("M8 3 5 5v4l-2 3 3 3v4l4 2 3-2 4 1 3-4-2-3 1-4-4-2-2-4z", "Buen fit",
+             "Ropa interior seleccionada por comodidad, materiales y durabilidad."),
+            ("M4 21h16M7 21V7a5 5 0 0 1 10 0v14M9 8h6M9 12h6M9 16h6", "Fit cómodo",
+             "Telas, elásticos y acabados pensados para acompañar tu cuerpo."),
+            ("M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z|"
+             "M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8",
+             "Compra discreta", "Te atendemos por WhatsApp con color, talla, fit y disponibilidad."),
+        ],
     },
 }
 
@@ -156,11 +177,41 @@ def page_html(marca, brand, group, p, canonical_url):
     except (TypeError, ValueError):
         stock_total = None
     is_agotado = bool(p.get("agotado")) or stock_total == 0
+    low_stock_threshold = brand.get("low_stock_threshold") or 0
+    is_low_stock = (
+        not is_agotado
+        and stock_total is not None
+        and 0 < stock_total <= low_stock_threshold
+    )
+
+    manga_raw = normalize(p.get("material")).lower()
+    manga_labels = {
+        "larga": "Manga larga", "manga larga": "Manga larga",
+        "corta": "Manga corta", "3/4": "Manga 3/4",
+        "sin mangas": "Sin mangas", "sin manga": "Sin mangas",
+        "sisa": "Tipo sisa", "strapless": "Strapless", "un hombro": "Un hombro",
+    }
+    manga_txt = manga_labels.get(manga_raw, "")
+    patron_raw = normalize(p.get("patron")).lower()
+    patron_skip = {"liso", "lisa", "n/a", "no especificado", ""}
+    patron_txt = normalize(p.get("patron")) if patron_raw not in patron_skip else ""
+    detail_bits = [b for b in [manga_txt, patron_txt] if b]
+    detail_line = " · ".join(detail_bits)
+
     default_talla = next(
         (t for t in tallas_disponibles if normalize(t).lower() not in tallas_agotadas),
         tallas_disponibles[0],
     )
     catalog_url = f"https://casajrp.com/{marca}/"
+
+    wa_contact_msg = urllib.parse.quote(
+        f"Hola {brand['label']} 👋 Tengo una pregunta sobre: {p['descripcion']} (#{pid})"
+    )
+    wa_contact_link = f"https://wa.me/{WA_NUMBER}?text={wa_contact_msg}"
+    wa_advice_msg = urllib.parse.quote(
+        f"Hola {brand['label']} 👋 Quiero asesoría para saber cómo me quedaría: {p['descripcion']} (#{pid})"
+    )
+    wa_advice_link = f"https://wa.me/{WA_NUMBER}?text={wa_advice_msg}"
 
     color_swatches = "".join(
         f"""<a class="color-btn {'active' if v['id_producto']==pid else ''} {'disabled' if v.get('agotado') else ''}"
@@ -179,6 +230,12 @@ def page_html(marca, brand, group, p, canonical_url):
             for t in tallas_disponibles
         )
         talla_block = f'<div class="size-title">Selecciona tu talla</div><div class="sizes" id="sizes">{size_buttons}</div>'
+
+    trust_bar = "".join(
+        f'''<div class="trust-item"><svg class="icon" viewBox="0 0 24 24">{"".join(f'<path d="{d}"/>' for d in paths.split("|"))}</svg>
+          <div><h3>{esc(title)}</h3><p>{esc(text)}</p></div></div>'''
+        for paths, title, text in brand.get("trust_items", [])
+    )
 
     gallery = "".join(
         f'<button type="button" class="thumb-btn {"active" if i==0 else ""}" data-idx="{i}"><img class="thumb" src="{esc(u)}" alt="{esc(p["descripcion"])}" loading="lazy"></button>'
@@ -327,8 +384,14 @@ def page_html(marca, brand, group, p, canonical_url):
     .size-btn{{width:44px;height:44px;border:1px solid #D9D2CC;background:#fff;color:#111;font-size:12px}}
     .size-btn.active{{background:#111;color:#fff;border-color:#111}}
     .size-btn.disabled{{opacity:.4;text-decoration:line-through;cursor:not-allowed}}
+    .detail-line{{font-size:11px;color:var(--terracota);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin:-4px 0 14px}}
+    .low-stock{{font-size:12px;font-weight:600;color:#B3492E;margin:-6px 0 16px;display:flex;align-items:center;gap:6px}}
+    .low-stock .dot{{width:7px;height:7px;border-radius:50%;background:#B3492E}}
     .desc{{color:var(--mid);line-height:1.6;margin:0 0 28px;font-size:14px;max-width:440px}}
     .actions{{display:flex;flex-direction:column;gap:12px;max-width:340px}}
+    .wa-advice{{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text);margin-top:4px}}
+    .wa-advice svg{{width:16px;height:16px;color:#25D366;flex:0 0 auto}}
+    .wa-advice a{{color:var(--terracota);font-weight:600;text-decoration:underline}}
     .btn{{border:0;height:48px;padding:0 24px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:.18s ease;width:100%}}
     .btn-primary{{background:var(--dark);color:#fff}}
     .btn-primary:hover{{background:#000}}
@@ -339,6 +402,18 @@ def page_html(marca, brand, group, p, canonical_url):
     .confirm{{font-size:12px;color:#2D6A4F;margin:-4px 0 0;display:none}}
     .confirm.show{{display:block}}
     .meta{{font-size:11px;color:var(--mid);letter-spacing:.06em;margin-top:22px}}
+    .breadcrumb{{font-size:11px;color:var(--mid);margin:0 0 16px;display:flex;flex-wrap:wrap;gap:6px}}
+    .breadcrumb a{{color:var(--mid)}}
+    .breadcrumb a:hover{{color:var(--dark)}}
+    .breadcrumb .sep{{opacity:.5}}
+    .breadcrumb .current{{color:var(--text)}}
+    .trust-bar{{display:flex;flex-direction:column;gap:16px;margin-top:32px;padding-top:24px;border-top:1px solid var(--border);max-width:440px}}
+    .trust-item{{display:grid;grid-template-columns:24px 1fr;gap:12px;align-items:start}}
+    .trust-item .icon{{width:21px;height:21px;color:var(--terracota)}}
+    .trust-item h3{{margin:0 0 3px;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dark)}}
+    .trust-item p{{margin:0;color:var(--mid);font-size:12.5px;line-height:1.5}}
+    .wa-float{{position:fixed;right:20px;bottom:20px;width:56px;height:56px;border-radius:50%;background:#25D366;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(0,0,0,.28);z-index:60}}
+    .wa-float svg{{width:28px;height:28px;color:#fff}}
     .footer{{background:var(--carbon);color:#fff;margin-top:40px;padding:22px 28px;text-align:center}}
     .footer .brand-logo{{font-size:20px}}
     .footer p{{margin:6px 0 0;color:rgba(255,255,255,.62);font-size:10px;letter-spacing:.14em;text-transform:uppercase}}
@@ -354,6 +429,8 @@ def page_html(marca, brand, group, p, canonical_url):
       .site-header{{height:58px}}
       .header-inner{{padding:0 16px}}
       .brand-logo{{font-size:22px}}
+      .wa-float{{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));width:50px;height:50px}}
+      .wa-float svg{{width:25px;height:25px}}
     }}
   </style>
 </head>
@@ -388,9 +465,14 @@ def page_html(marca, brand, group, p, canonical_url):
         {f'<div class="thumbs">{gallery}</div>' if len(imgs) > 1 else ''}
       </div>
       <div class="info-pad">
+        <nav class="breadcrumb" aria-label="Ruta">
+          <a href="{catalog_url}">Inicio</a><span class="sep">/</span><span class="current">{esc(p.get('tipo_prenda') or brand['label'])}</span>
+        </nav>
         <p class="eyebrow">{esc(p.get('tipo_prenda') or brand['label'])}{' <span class="badge-agotado">Agotado</span>' if is_agotado else ''}</p>
         <h1 class="serif">{esc(p['descripcion'])}</h1>
         <p class="price">{money(p.get('precio_gtq'))}</p>
+        {f'<p class="low-stock"><span class="dot"></span>¡Solo quedan {int(stock_total)} unidades!</p>' if is_low_stock else ''}
+        {f'<p class="detail-line">{esc(detail_line)}</p>' if detail_line else ''}
         <div class="color-title">Selecciona color</div>
         <div class="color-options">{color_swatches}</div>
         {talla_block}
@@ -400,7 +482,12 @@ def page_html(marca, brand, group, p, canonical_url):
           <a class="btn btn-ghost" href="{catalog_url}">Ver catálogo completo</a>
         </div>
         <p class="confirm" id="confirmMsg">Agregado a tu selección. Ya está en tu carrito, revísalo cuando quieras.</p>
+        <p class="wa-advice">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/><path d="M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8c.3.1.4.3.4.6v.4c0 .4-.2.7-.6.9-.6.3-1.9.4-3.8-.6-2.6-1.3-4.3-4.1-4.4-5.5 0-.5.2-.9.4-1.3Z"/></svg>
+          <span>¿Quieres asesoría para saber cómo te quedaría? <a href="{wa_advice_link}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a></span>
+        </p>
         <p class="meta">Código #{pid}</p>
+        <div class="trust-bar">{trust_bar}</div>
       </div>
     </div>
   </main>
@@ -408,6 +495,9 @@ def page_html(marca, brand, group, p, canonical_url):
     <div class="brand-logo serif">{brand['label']}<span class="brand-dot"></span></div>
     <p>Guatemala &middot; Manufactura colombiana &middot; &copy; 2026</p>
   </footer>
+  <a class="wa-float" href="{wa_contact_link}" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/><path d="M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8c.3.1.4.3.4.6v.4c0 .4-.2.7-.6.9-.6.3-1.9.4-3.8-.6-2.6-1.3-4.3-4.1-4.4-5.5 0-.5.2-.9.4-1.3Z"/></svg>
+  </a>
   <div class="lightbox" id="lightbox">
     <button type="button" class="lightbox-close" id="lightboxClose" aria-label="Cerrar">&times;</button>
     <button type="button" class="gallery-nav prev {'hidden' if len(imgs)<=1 else ''}" id="lbPrev" aria-label="Foto anterior">&lsaquo;</button>
