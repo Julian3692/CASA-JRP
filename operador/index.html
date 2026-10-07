@@ -19,15 +19,15 @@
 <body>
   <div id="root"></div>
   <script type="text/babel" data-presets="react">
-const { useState, useMemo } = React;
+const { useState, useMemo, useEffect } = React;
 
 // CAMBIO: nueva URL del AS bajo julian@casajrp.com
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec";
 
-// Envío gratis desde este monto (subtotal, antes de cupón), igual que en Code.gs.
-// Solo se usa acá para que el resumen en pantalla coincida con lo que el
-// backend va a calcular al confirmar — el backend es la fuente real del cobro.
-const UMBRAL_ENVIO_GRATIS_GTQ = 300;
+// Los totales (envío gratis, cupón, primera compra) NO se
+// calculan acá: se piden al backend con la acción "cotizar_pedido", que usa
+// exactamente la misma cuenta que al guardar el pedido. Así lo que Nadia ve
+// en pantalla es lo que queda registrado.
 
 // Paleta por marca — sin cambios
 const TEMA = {
@@ -285,6 +285,13 @@ function NadiaApp() {
   const [talla, setTalla]     = useState("");
   const [cantidad, setCant]   = useState("1");
   const [cupon, setCupon]     = useState("");
+  // Prendas ya agregadas al pedido (prodId/talla/cantidad de arriba es la prenda en edición)
+  const [lineas, setLineas]   = useState([]);
+
+  // Cotización oficial que devuelve el backend (paso 3)
+  const [cotiz, setCotiz]             = useState(null);
+  const [cotizando, setCotizando]     = useState(false);
+  const [cotizError, setCotizError]   = useState("");
 
   const [pago, setPago]   = useState("");
   const [banco, setBanco] = useState("");
@@ -327,21 +334,45 @@ function NadiaApp() {
   }
 
   const prod      = prodId ? productos.find(p => (p.id_producto||p.id) === prodId) : null;
-  // CAMBIO: precio en GTQ
   const precioGTQ = prod ? (prod.precio_gtq || 0) : 0;
   const tallasDisp = prod ? (prod.tallas || []) : [];
+  const prodDe    = (id) => productos.find(p => (p.id_producto||p.id) === id) || null;
 
-  // CAMBIO: costo de envío dinámico desde zonasList
-  const zonaSelObj     = zonasList.find(z => z.nombre === zonaGT || z.id_zona === zonaGT) || null;
-  const costoEnvioZona = zonaSelObj ? zonaSelObj.costo_envio_gtq : 0;
-  const nseInf         = NSE_POR_ZONA[zonaGT] ?? null;
+  // Prendas del pedido = las ya agregadas + la que se está editando (si está completa)
+  const lineaActual = (prodId && talla && cantidad) ? { prodId, talla, cantidad } : null;
+  const lineasTodas = lineaActual ? [...lineas, lineaActual] : lineas;
+  const lineasPayload = lineasTodas.map(l => ({ id_producto: Number(l.prodId), talla: l.talla, cantidad: Number(l.cantidad) }));
+  const subtotalGTQ = lineasTodas.reduce((s, l) => s + (Number(prodDe(l.prodId)?.precio_gtq) || 0) * Number(l.cantidad || 1), 0);
 
-  // CAMBIO: totales en GTQ
-  const subtotalGTQ = precioGTQ * Number(cantidad || 1);
-  // Envío gratis desde Q300 (subtotal antes de cupón) — igual regla que Code.gs.
-  const envioGratis = subtotalGTQ >= UMBRAL_ENVIO_GRATIS_GTQ;
-  const costoEnvio  = envioGratis ? 0 : costoEnvioZona;
-  const totalGTQ    = subtotalGTQ + costoEnvio;
+  // Costo de envío: ahora lo resuelve el backend; acá solo se identifica la zona elegida
+  const zonaSelObj = zonasList.find(z => z.nombre === zonaGT || z.id_zona === zonaGT) || null;
+  const nseInf     = NSE_POR_ZONA[zonaGT] ?? null;
+
+  // Cotización oficial (paso 3): se recalcula al cambiar prendas, zona, teléfono o cupón
+  useEffect(() => {
+    if (step !== 3 || !marca || lineasPayload.length === 0) return;
+    let cancelado = false;
+    setCotizando(true);
+    setCotizError("");
+    const t = setTimeout(async () => {
+      try {
+        const res  = await fetch(APPS_SCRIPT_URL, {
+          method:"POST",
+          headers:{"Content-Type":"text/plain"},
+          body: JSON.stringify({ accion:"cotizar_pedido", marca, telefono, zona_gt: zonaGT, codigo_descuento: cupon, lineas: lineasPayload })
+        });
+        const data = await res.json();
+        if (cancelado) return;
+        if (data.ok) { setCotiz(data); }
+        else { setCotiz(null); setCotizError(String(data.error || "No se pudo calcular el total.").replace(" Pedido no registrado.", "")); }
+      } catch(err) {
+        if (!cancelado) { setCotiz(null); setCotizError("No se pudo calcular el total. Revisa la conexión."); }
+      } finally {
+        if (!cancelado) setCotizando(false);
+      }
+    }, 350);
+    return () => { cancelado = true; clearTimeout(t); };
+  }, [step, marca, telefono, zonaGT, cupon, JSON.stringify(lineasPayload)]);
 
   // Opciones zona para Sel — dinámicas desde AS
   const zonasOpts = zonasList.map(z => ({
@@ -350,16 +381,23 @@ function NadiaApp() {
   }));
 
   const ok1 = nombre && telefono && canal && ciudad && colonia && direc;
-  const ok2 = prodId && talla && cantidad;
-  const ok3 = pago && comp && (pago !== "Transferencia bancaria" || banco);
+  const ok2 = lineasTodas.length > 0 && (!prodId || !!talla);
+  const ok3 = pago && comp && (pago !== "Transferencia bancaria" || banco) && zonaSelObj && cotiz && !cotizando;
 
   function resetPedido() {
     setStep(1); setResult(null);
     setNombre(""); setTel(""); setCanal("");
     setCiudad(""); setZonaGT(""); setColonia(""); setDirec(""); setRefs("");
     setEdad(""); setCumple(""); setDec("");
-    setProdId(null); setTalla(""); setCant("1"); setCupon("");
+    setProdId(null); setTalla(""); setCant("1"); setCupon(""); setLineas([]);
+    setCotiz(null); setCotizError(""); setCotizando(false);
     setPago(""); setBanco(""); setComp("");
+  }
+
+  function agregarOtraPrenda() {
+    if (!lineaActual) return;
+    setLineas([...lineas, lineaActual]);
+    setProdId(null); setTalla(""); setCant("1");
   }
 
   function resetTotal() {
@@ -387,11 +425,7 @@ function NadiaApp() {
       edad_inferida:   edadInf,
       mes_cumpleanos:  cumple,
       perfil_decision: decision,
-      lineas: [{
-        id_producto: Number(prodId),
-        talla:       talla,
-        cantidad:    Number(cantidad),
-      }],
+      lineas: lineasPayload,
       codigo_descuento: cupon,
       metodo_pago:     pago,
       banco:           banco,
@@ -562,18 +596,37 @@ function NadiaApp() {
                 <Sel value={cantidad} onChange={setCant} placeholder="Cant." opts={["1","2","3","4","5","6","7","8","9","10"]} T={T}/>
               </Field>
             </div>
+            {lineaActual&&(
+              <button onClick={agregarOtraPrenda} style={{...S.btnSec,marginBottom:14}}>+ Agregar otra prenda al pedido</button>
+            )}
+            {lineas.length>0&&(
+              <div style={{background:"#FFF",borderRadius:12,padding:"10px 14px",border:`1.5px solid ${T.border}`,marginBottom:14}}>
+                <p style={{margin:"0 0 6px",fontSize:10,fontWeight:700,letterSpacing:"0.1em",color:T.gold,textTransform:"uppercase"}}>Ya en el pedido</p>
+                {lineas.map((l,i)=>{
+                  const pr = prodDe(l.prodId);
+                  return (
+                    <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,padding:"5px 0",borderBottom:i<lineas.length-1?`1px solid ${T.border}`:"none"}}>
+                      <span style={{fontSize:13,color:T.dark}}>{pr?.descripcion||pr?.nombre||l.prodId} — {l.talla} x {l.cantidad}</span>
+                      <button onClick={()=>setLineas(lineas.filter((_,j)=>j!==i))} aria-label="Quitar prenda" style={{background:"none",border:"none",color:"#E8614A",fontSize:20,cursor:"pointer",padding:"0 4px"}}>×</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <Field label="Cupón de descuento" optional hint="Solo si el cliente lo tiene" T={T}>
               <input value={cupon} onChange={e=>setCupon(e.target.value.toUpperCase())} placeholder="Ej: BIENVENIDA10" style={S.inpSt(!!cupon)}/>
             </Field>
-            {prod&&talla&&(
+            {lineasTodas.length>0&&(
               <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
-                <SummaryRow k="Producto" v={`${prod.descripcion||prod.nombre} — ${talla} x ${cantidad}`} T={T}/>
-                {/* CAMBIO: precio y subtotal en GTQ */}
-                <SummaryRow k="Precio unitario" v={fmtGTQ(precioGTQ)} T={T}/>
+                {lineasTodas.map((l,i)=>{
+                  const pr = prodDe(l.prodId);
+                  return <SummaryRow key={i} k={`Prenda ${i+1}`} v={`${pr?.descripcion||pr?.nombre||l.prodId} — ${l.talla} x ${l.cantidad} · ${fmtGTQ((Number(pr?.precio_gtq)||0)*Number(l.cantidad||1))}`} T={T}/>;
+                })}
                 <div style={{display:"flex",justifyContent:"space-between",marginTop:10,alignItems:"baseline"}}>
                   <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>SUBTOTAL</span>
                   <p style={{margin:0,fontFamily:"'Playfair Display',serif",fontSize:22,color:"#FAF7F2"}}>{fmtGTQ(subtotalGTQ)}</p>
                 </div>
+                <p style={{margin:"8px 0 0",fontSize:11,color:"#6B4C33"}}>Cupón y envío se calculan en el siguiente paso.</p>
               </div>
             )}
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginTop:20}}>
@@ -610,21 +663,35 @@ function NadiaApp() {
               )}
             </Field>
 
-            {prod&&(
+            {lineasTodas.length>0&&(
               <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
                 <p style={{margin:"0 0 12px",fontSize:10,letterSpacing:"0.18em",color:"#6B4C33",textTransform:"uppercase"}}>Resumen final</p>
                 <SummaryRow k="Tienda"   v={T.nombre} T={T}/>
                 <SummaryRow k="Cliente"  v={nombre} T={T}/>
                 <SummaryRow k="Ciudad"   v={`${ciudad}${zonaGT?" — "+zonaGT:""}`} T={T}/>
-                <SummaryRow k="Producto" v={`${prod.descripcion||prod.nombre} — ${talla} x ${cantidad}`} T={T}/>
+                {lineasTodas.map((l,i)=>{
+                  const pr = prodDe(l.prodId);
+                  return <SummaryRow key={i} k={`Prenda ${i+1}`} v={`${pr?.descripcion||pr?.nombre||l.prodId} — ${l.talla} x ${l.cantidad}`} T={T}/>;
+                })}
                 {cupon&&<SummaryRow k="Cupón" v={cupon} T={T}/>}
-                {/* CAMBIO: todo en GTQ */}
-                <SummaryRow k="Subtotal" v={fmtGTQ(subtotalGTQ)} T={T}/>
-                {zonaSelObj&&<SummaryRow k="Envío" v={envioGratis?"Gratis":fmtGTQ(costoEnvio)} T={T}/>}
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:12,alignItems:"baseline"}}>
-                  <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>TOTAL A COBRAR</span>
-                  <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2"}}>{fmtGTQ(totalGTQ)}</span>
-                </div>
+                {cotizError&&(
+                  <p style={{margin:"10px 0 0",fontSize:13,color:"#FF9A8A"}}>{cotizError}{/cupón|código/i.test(cotizError)?" Vuelve atrás para corregir el cupón.":""}</p>
+                )}
+                {!cotizError&&!zonaSelObj&&<p style={{margin:"10px 0 0",fontSize:12,color:"#C4A882"}}>Elige la zona de envío para ver el total.</p>}
+                {!cotizError&&zonaSelObj&&cotizando&&<p style={{margin:"10px 0 0",fontSize:12,color:"#C4A882"}}>Calculando total...</p>}
+                {!cotizError&&zonaSelObj&&!cotizando&&cotiz&&(
+                  <>
+                    {cotiz.es_nuevo&&marca==="orkia"&&<SummaryRow k="Clienta" v="Nueva (primera compra)" T={T}/>}
+                    <SummaryRow k="Subtotal" v={fmtGTQ(cotiz.subtotal_gtq)} T={T}/>
+                    {cotiz.descuento_codigo_gtq>0&&<SummaryRow k={`Cupón ${cupon}`} v={`−${fmtGTQ(cotiz.descuento_codigo_gtq)}`} T={T}/>}
+                    <SummaryRow k="Envío" v={cotiz.envio_gratis?`Gratis${cotiz.motivo_envio_gratis==="primera_compra"?" (primera compra)":" (compra desde Q300)"}`:(cotiz.envio_por_validar?"Por validar (no incluido)":fmtGTQ(cotiz.costo_envio_gtq))} T={T}/>
+                    {cotiz.envio_por_validar&&<p style={{margin:"8px 0 0",fontSize:12,color:"#FF9A8A"}}>Esta zona no tiene tarifa cargada: confirma el costo del envío con la clienta y cóbralo aparte.</p>}
+                    <div style={{display:"flex",justifyContent:"space-between",marginTop:12,alignItems:"baseline"}}>
+                      <span style={{fontSize:11,color:"#6B4C33",letterSpacing:"0.12em"}}>TOTAL A COBRAR</span>
+                      <span style={{fontFamily:"'Playfair Display',serif",fontSize:26,color:"#FAF7F2"}}>{fmtGTQ(cotiz.total_gtq)}</span>
+                    </div>
+                  </>
+                )}
               </div>
             )}
 

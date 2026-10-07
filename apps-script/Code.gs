@@ -1,7 +1,7 @@
 // ============================================================
 // CASA JRP — Apps Script Multi-Marca
 // Orkia + Nudo by CASA JRP
-// Última actualización: Julio 2026 (v2 — fix Precio_GTQ + orden catálogo)
+// Última actualización: Octubre 2026 (reglas comerciales Orkia: envío gratis en primera compra, códigos)
 // ============================================================
 
 const SHEETS = {
@@ -67,6 +67,9 @@ function doPost(e) {
     switch (accion) {
       case "nuevo_pedido":
         return _json(registrarPedido(marca, body));
+      case "cotizar_pedido":
+        // Oct 2026: POST (no GET) para que el telefono no viaje en la URL.
+        return _json(cotizarPedido(marca, body));
       case "nuevo_feedback":
         return _json(registrarFeedback(marca, body));
       default:
@@ -407,6 +410,12 @@ function getZonas(marca) {
   for (let r = 1; r < zonasData.length; r++) {
     const row = zonasData[r];
     if (!row[0]) continue;
+    // Oct 2026: una zona con Activa = No/FALSE no se ofrece (si la hoja no
+    // tiene la columna Activa, todas se ofrecen como siempre).
+    if (idx["Activa"] !== undefined) {
+      const act = String(row[idx["Activa"]]).toUpperCase().trim();
+      if (act === "NO" || act === "FALSE" || act === "0") continue;
+    }
     zonas.push({
       id_zona:        row[idx["ID_Zona"]]         || row[0],
       nombre:         row[idx["Nombre_Zona"]]      || row[1] || "",
@@ -501,32 +510,289 @@ function registrarDemanda(marca, params) {
 // de referencia interna de costo/margen frente al proveedor.
 // ============================================================
 
-function registrarPedido(marca, body) {
-  const ss = _ss(marca);
+// ============================================================
+// Reglas comerciales por marca (Oct 2026)
+// Solo Orkia: envio gratis en la primera compra y codigos de influencer
+// (hoja DIM_CODIGOS, opcional: mientras no exista, el codigo solo se
+// registra como texto, como siempre). Nudo se mantiene igual: solo aplica
+// el umbral de envio gratis (UMBRAL_ENVIO_GRATIS_GTQ).
+// ============================================================
 
-  // --- 1. Cliente ---
+const REGLAS_MARCA = {
+  orkia: { primeraCompra: true,  codigos: true  },
+  nudo:  { primeraCompra: false, codigos: false }
+};
+
+function _reglas(marca) {
+  return REGLAS_MARCA[marca] || { primeraCompra: false, codigos: false };
+}
+
+// Telefono comparable: solo digitos, ultimos 8 (numeros de Guatemala).
+// Evita que "5555-1234", "+502 5555 1234" y "55551234" cuenten como
+// clientes distintos (y regalen el envio de primera compra dos veces).
+function _telNorm(t) {
+  const d = String(t === undefined || t === null ? "" : t).replace(/\D/g, "");
+  return d.length > 8 ? d.slice(-8) : d;
+}
+
+function _mismoTelefono(marca, a, b) {
+  if (_reglas(marca).primeraCompra) {
+    const na = _telNorm(a);
+    return na !== "" && na === _telNorm(b);
+  }
+  return String(a) === String(b);   // Nudo: comparacion exacta, como siempre
+}
+
+function _esSi(v) {
+  if (v === true || v === 1) return true;
+  const s = String(v === undefined || v === null ? "" : v).toUpperCase().trim();
+  return s === "TRUE" || s === "SI" || s === "SÍ" || s === "1";
+}
+
+// Zona de envio: acepta ID ("Z1"), nombre ("Centro") o un barrio/zona
+// de la lista ("Zona 9"). Si nada coincide, costo 0 e id vacio.
+function _resolverZona(zonasData, zona) {
+  const z = String(zona || "").trim().toLowerCase();
+  if (!z) return { id_zona: "", costo: 0 };
+
+  for (let r = 1; r < zonasData.length; r++) {
+    const row = zonasData[r];
+    if (!row[0]) continue;
+    if (String(row[0]).trim().toLowerCase() === z || String(row[1] || "").trim().toLowerCase() === z) {
+      return { id_zona: row[0], costo: Number(row[3]) || 0 };
+    }
+  }
+  for (let r = 1; r < zonasData.length; r++) {
+    const row = zonasData[r];
+    if (!row[0]) continue;
+    const barrios = String(row[2] || "").toLowerCase().split(",").map(s => s.trim());
+    if (barrios.indexOf(z) > -1) return { id_zona: row[0], costo: Number(row[3]) || 0 };
+  }
+  for (let r = 1; r < zonasData.length; r++) {
+    const row = zonasData[r];
+    if (!row[0]) continue;
+    if (String(row[2] || "").toLowerCase().indexOf(z) > -1) return { id_zona: row[0], costo: Number(row[3]) || 0 };
+  }
+  return { id_zona: "", costo: 0 };
+}
+
+// Fecha de una celda (Date, "dd-MM-yyyy" o "yyyy-MM-dd") como "yyyy-MM-dd".
+function _fechaISO(v) {
+  if (v instanceof Date) return Utilities.formatDate(v, "America/Guatemala", "yyyy-MM-dd");
+  const s = String(v || "").trim();
+  let m = s.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (m) return m[3] + "-" + m[2] + "-" + m[1];
+  m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[1] + "-" + m[2] + "-" + m[3] : "";
+}
+
+// Valida un codigo de influencer contra DIM_CODIGOS. Lanza un error con
+// mensaje claro (el operador lo ve tal cual) si no existe, esta inactivo
+// o todavia no inicia. Se llama ANTES de escribir cualquier fila.
+// Si la hoja DIM_CODIGOS todavia no existe, devuelve null (sin descuento: el
+// codigo se guarda como texto, como antes). Una vez creada, se valida en serio.
+function _validarCodigo(ss, codigoRaw) {
+  const codigo = String(codigoRaw || "").trim().toUpperCase();
+  const hoja = ss.getSheetByName("DIM_CODIGOS");
+  if (!hoja) return null;
+  const data = hoja.getDataRange().getValues();
+  const idx = {};
+  (data[0] || []).forEach((c, i) => { if (c) idx[String(c).trim()] = i; });
+  ["Codigo", "Descuento_Pct", "Activo"].forEach(c => {
+    if (idx[c] === undefined) throw new Error("columna_no_encontrada: DIM_CODIGOS." + c);
+  });
+
+  for (let r = 1; r < data.length; r++) {
+    const row = data[r];
+    if (String(row[idx["Codigo"]] || "").trim().toUpperCase() !== codigo) continue;
+
+    if (!_esSi(row[idx["Activo"]])) {
+      throw new Error("El código «" + codigo + "» está inactivo. Pedido no registrado.");
+    }
+    const inicio = idx["Fecha_Inicio"] !== undefined ? _fechaISO(row[idx["Fecha_Inicio"]]) : "";
+    if (inicio && inicio > Utilities.formatDate(new Date(), "America/Guatemala", "yyyy-MM-dd")) {
+      throw new Error("El código «" + codigo + "» todavía no está vigente (inicia el " + inicio + "). Pedido no registrado.");
+    }
+    const pct = Number(row[idx["Descuento_Pct"]]) || 0;
+    if (pct <= 0 || pct > 100) {
+      throw new Error("El código «" + codigo + "» no tiene un descuento válido. Pedido no registrado.");
+    }
+    return { codigo: codigo, pct: pct };
+  }
+  throw new Error("El código «" + codigo + "» no existe. Pedido no registrado.");
+}
+
+// Calculo puro (sin Sheets): mismos numeros para cotizar y para registrar.
+//   o.unidades        [{precio}] una entrada por prenda (cantidad ya expandida)
+//   o.descuentoManual Descuento extra que mande el front (heredado), en GTQ
+//   o.costoEnvioZona  Costo de la zona, GTQ
+//   o.esNuevo         true si el telefono no existia en DIM_CLIENTES
+//   o.reglas          REGLAS_MARCA[marca]
+//   o.codigoPct       % del codigo ya validado (0 si no hay)
+function _calcularTotalesPedido(o) {
+  const unidades = o.unidades.map(u => ({ precio: Number(u.precio) || 0 }));
+  const subtotal = unidades.reduce((s, u) => s + u.precio, 0);
+
+  // Codigo: % sobre el subtotal, redondeado al quetzal mas cercano.
+  let descuento_codigo = 0;
+  if (o.codigoPct > 0) {
+    descuento_codigo = Math.round(subtotal * o.codigoPct / 100);
+  }
+
+  const descuento_manual = Math.round((Number(o.descuentoManual) || 0) * 100) / 100;
+  const descuento_total  = Math.min(subtotal, descuento_codigo + descuento_manual);
+
+  // Envio gratis: el umbral se compara contra el subtotal ANTES de descuentos.
+  // Si no llega al umbral, la primera compra (solo Orkia) tambien lo regala.
+  let envio_gratis = false;
+  let motivo_envio_gratis = "";
+  if (subtotal >= UMBRAL_ENVIO_GRATIS_GTQ) {
+    envio_gratis = true;
+    motivo_envio_gratis = "umbral";
+  } else if (o.reglas.primeraCompra && o.esNuevo) {
+    envio_gratis = true;
+    motivo_envio_gratis = "primera_compra";
+  }
+  const costo_envio_cobrado = envio_gratis ? 0 : o.costoEnvioZona;
+  // Zona sin tarifa cargada ("a validar"): el total NO incluye envio y el
+  // operador debe cobrarlo aparte. Se avisa para que no pase desapercibido.
+  const envio_por_validar = !envio_gratis && !(Number(o.costoEnvioZona) > 0);
+
+  return {
+    subtotal_gtq:         subtotal,
+    descuento_codigo_gtq: descuento_codigo,
+    descuento_gtq:        Math.round(descuento_total * 100) / 100,
+    envio_gratis:         envio_gratis,
+    motivo_envio_gratis:  motivo_envio_gratis,
+    envio_por_validar:    envio_por_validar,
+    costo_envio_cobrado:  costo_envio_cobrado,
+    total_gtq:            Math.round((subtotal - descuento_total + costo_envio_cobrado) * 100) / 100
+  };
+}
+
+// Lee Sheets y calcula el pedido SIN escribir nada. Si algo no es valido
+// (codigo inexistente/inactivo), lanza el error antes de que registrarPedido
+// toque DIM_CLIENTES, FACT_PEDIDOS o FACT_LINEAS_PEDIDO.
+function _prepararPedido(marca, body) {
+  const ss     = _ss(marca);
+  const reglas = _reglas(marca);
+
+  // --- Cliente (solo lectura) ---
   const clienteSheet = ss.getSheetByName("DIM_CLIENTES");
   const clienteData  = clienteSheet.getDataRange().getValues();
-
-  let id_cliente = null;
-  let es_nuevo   = false;
-
+  let id_cliente = null, fila_cliente = 0, total_actual = 0;
   for (let r = 1; r < clienteData.length; r++) {
-    if (String(clienteData[r][2]) === String(body.telefono)) {
-      id_cliente = clienteData[r][0];
-      const total_actual = Number(clienteData[r][8]) || 0;
-      clienteSheet.getRange(r + 1, 9).setValue(total_actual + 1);
+    if (_mismoTelefono(marca, clienteData[r][2], body.telefono)) {
+      id_cliente   = clienteData[r][0];
+      fila_cliente = r + 1;
+      total_actual = Number(clienteData[r][8]) || 0;
       break;
     }
   }
 
-  if (!id_cliente) {
-    es_nuevo       = true;
-    const nextRow  = clienteSheet.getLastRow() + 1;
-    const total_cl = nextRow - 1;
-    id_cliente     = "CLI-" + String(total_cl).padStart(5, "0");
+  // --- DIM_PRODUCTOS: precios (GTQ es lo que se cobra) ---
+  const dimData = ss.getSheetByName("DIM_PRODUCTOS").getDataRange().getValues();
+  const dIdx    = {};
+  dimData[0].forEach((col, i) => { if (col) dIdx[String(col).trim()] = i; });
+  if (dIdx["Precio_GTQ"] === undefined) {
+    throw new Error("columna_no_encontrada: Precio_GTQ en DIM_PRODUCTOS");
+  }
 
-    clienteSheet.appendRow([
+  const precioMap    = {};   // Precio_COP: referencia interna
+  const precioMapGTQ = {};   // Precio_GTQ: lo que se cobra
+  const dim_dict     = {};
+  for (let r = 1; r < dimData.length; r++) {
+    const row = dimData[r];
+    const id  = row[dIdx["ID_Producto"]];
+    if (!id || typeof id !== "number") continue;
+    precioMap[id]    = Number(row[dIdx["Precio_COP"]]) || 0;
+    precioMapGTQ[id] = Number(row[dIdx["Precio_GTQ"]]) || 0;
+    dim_dict[id]     = {
+      color:         row[dIdx["Color"]]         || "",
+      tipo_prenda:   row[dIdx["Tipo_Prenda"]]   || "",
+      ref_proveedor: row[dIdx["Ref_Proveedor"]] || ""
+    };
+  }
+
+  // --- Lineas -> unidades ---
+  const lineas       = body.lineas || [];
+  const unidades     = [];
+  let   subtotal_cop = 0;   // referencia interna
+  lineas.forEach(l => {
+    const cantidad = Math.min(100, Math.max(1, Math.floor(Number(l.cantidad) || 1)));
+    subtotal_cop  += (precioMap[l.id_producto] || 0) * cantidad;
+    for (let i = 0; i < cantidad; i++) {
+      unidades.push({ precio: precioMapGTQ[l.id_producto] || 0 });
+    }
+  });
+  const descuento_cop = Number(body.descuento_cop) || 0;
+
+  // --- Zona y costo de envio ---
+  const zonasData = ss.getSheetByName("DIM_ZONAS_ENVIO").getDataRange().getValues();
+  const zona      = _resolverZona(zonasData, body.zona_gt);
+
+  // --- Codigo de influencer (solo Orkia). Lanza si no es valido. ---
+  const codigoRaw  = String(body.codigo_descuento || "").trim();
+  const codigoInfo = (reglas.codigos && codigoRaw) ? _validarCodigo(ss, codigoRaw) : null;
+
+  const totales = _calcularTotalesPedido({
+    unidades:        unidades,
+    descuentoManual: body.descuento_gtq,
+    costoEnvioZona:  zona.costo,
+    esNuevo:         !id_cliente,
+    reglas:          reglas,
+    codigoPct:       codigoInfo ? codigoInfo.pct : 0
+  });
+
+  return {
+    ss: ss, reglas: reglas, clienteSheet: clienteSheet,
+    id_cliente: id_cliente, fila_cliente: fila_cliente, total_actual: total_actual,
+    es_nuevo: !id_cliente,
+    lineas: lineas, dim_dict: dim_dict, precioMap: precioMap,
+    subtotal_cop: subtotal_cop, descuento_cop: descuento_cop,
+    id_zona: zona.id_zona, costo_envio: zona.costo,
+    codigo: codigoInfo ? codigoInfo.codigo : codigoRaw,   // sin hoja de codigos: texto tal cual, como antes
+    totales: totales
+  };
+}
+
+// ============================================================
+// cotizarPedido
+// Misma cuenta que registrarPedido, sin escribir nada. La usa la app del
+// operador para que el total en pantalla sea EXACTAMENTE el que se guarda.
+// ============================================================
+
+function cotizarPedido(marca, body) {
+  const c = _prepararPedido(marca, body);
+  const t = c.totales;
+  return {
+    ok:                   true,
+    es_nuevo:             c.es_nuevo,
+    subtotal_gtq:         t.subtotal_gtq,
+    descuento_codigo_gtq: t.descuento_codigo_gtq,
+    descuento_gtq:        t.descuento_gtq,
+    costo_envio_gtq:      c.costo_envio,
+    envio_gratis:         t.envio_gratis,
+    motivo_envio_gratis:  t.motivo_envio_gratis,
+    envio_por_validar:    t.envio_por_validar,
+    total_gtq:            t.total_gtq
+  };
+}
+
+function registrarPedido(marca, body) {
+  // 1. Calcular y validar TODO antes de escribir (un codigo invalido corta aqui).
+  const c = _prepararPedido(marca, body);
+  const t = c.totales;
+  const ss = c.ss;
+
+  // --- 2. Cliente ---
+  let id_cliente = c.id_cliente;
+  if (id_cliente) {
+    c.clienteSheet.getRange(c.fila_cliente, 9).setValue(c.total_actual + 1);
+  } else {
+    const nextRow = c.clienteSheet.getLastRow() + 1;
+    id_cliente    = "CLI-" + String(nextRow - 1).padStart(5, "0");
+    c.clienteSheet.appendRow([
       id_cliente,
       _sanitizar(body.nombre_cliente || ""),
       body.telefono       || "",
@@ -544,138 +810,59 @@ function registrarPedido(marca, body) {
     ]);
   }
 
-  // --- 2. Número de pedido ---
+  // --- 3. Numero de pedido ---
   const pedidosSheet  = ss.getSheetByName("FACT_PEDIDOS");
   const nextPedidoRow = pedidosSheet.getLastRow() + 1;
-  const num_pedido    = nextPedidoRow - 1;
-  const id_pedido     = "PED-" + String(num_pedido).padStart(5, "0");
+  const id_pedido     = "PED-" + String(nextPedidoRow - 1).padStart(5, "0");
+  const total_cop     = c.subtotal_cop - c.descuento_cop;
 
-  // --- 3. Leer DIM_PRODUCTOS en batch para precios y datos adicionales ---
-  const dimData2  = ss.getSheetByName("DIM_PRODUCTOS").getDataRange().getValues();
-  const dimHeader = dimData2[0];
-  const dIdx      = {};
-  dimHeader.forEach((col, i) => { if (col) dIdx[String(col).trim()] = i; });
-
-  if (dIdx["Precio_GTQ"] === undefined) {
-    throw new Error("columna_no_encontrada: Precio_GTQ en DIM_PRODUCTOS");
-  }
-
-  const precioMap    = {};   // Precio_COP por SKU (se mantiene para reportes internos)
-  const precioMapGTQ = {};   // FIX: Precio_GTQ por SKU, fuente real del cobro al cliente
-  const dim_dict     = {};
-
-  for (let r = 1; r < dimData2.length; r++) {
-    const row = dimData2[r];
-    const id  = row[dIdx["ID_Producto"]];
-    if (!id || typeof id !== "number") continue;
-
-    precioMap[id]    = Number(row[dIdx["Precio_COP"]]) || 0;
-    precioMapGTQ[id] = Number(row[dIdx["Precio_GTQ"]]) || 0;
-    dim_dict[id]  = {
-      color:         row[dIdx["Color"]]        || "",
-      tipo_prenda:   row[dIdx["Tipo_Prenda"]]  || "",
-      ref_proveedor: row[dIdx["Ref_Proveedor"]] || ""
-    };
-  }
-
-  // --- 4. Calcular subtotales ---
-  const lineas        = body.lineas || [];
-  let   subtotal_cop  = 0;   // se mantiene solo como referencia interna de costo/margen
-  let   subtotal_gtq  = 0;   // FIX: fuente real del total cobrado al cliente
-  const descuento_cop = Number(body.descuento_cop) || 0;
-
-  lineas.forEach(l => {
-    const cantidad = Number(l.cantidad) || 1;
-    subtotal_cop += (precioMap[l.id_producto] || 0) * cantidad;
-    subtotal_gtq += (precioMapGTQ[l.id_producto] || 0) * cantidad;
-  });
-
-  const total_cop = subtotal_cop - descuento_cop;
-
-  // Descuento real, en GTQ (la moneda que se cobra). Si el front no
-  // manda nada, no hay descuento.
-  const descuento_gtq = Math.round((Number(body.descuento_gtq) || 0) * 100) / 100;
-
-  // --- 5. Lookup zona y costo de envío ---
-  const zonasData = ss.getSheetByName("DIM_ZONAS_ENVIO").getDataRange().getValues();
-  let id_zona     = "";
-  let costo_envio = 0;
-  const zona_gt   = body.zona_gt || "";
-
-  for (let r = 1; r < zonasData.length; r++) {
-    const barrios = String(zonasData[r][2]).toLowerCase();
-    if (barrios.indexOf(zona_gt.toLowerCase()) > -1 || zona_gt === zonasData[r][0]) {
-      id_zona     = zonasData[r][0];
-      costo_envio = zonasData[r][3];
-      break;
-    }
-  }
-
-  // --- 5b. Envío gratis (Jul 2026) ---
-  // Umbral se compara contra subtotal_gtq ANTES de descuento/cupón,
-  // igual para Orkia y Nudo (UMBRAL_ENVIO_GRATIS_GTQ). costo_envio
-  // (el precio estandar de la zona) se guarda SIEMPRE en su columna
-  // propia de FACT_PEDIDOS, aunque sea gratis, para que quede registro
-  // contable de cuanto hubiera costado. Lo que cambia es si ese monto
-  // se suma o no a total_gtq.
-  const envio_gratis        = subtotal_gtq >= UMBRAL_ENVIO_GRATIS_GTQ;
-  const costo_envio_cobrado = envio_gratis ? 0 : costo_envio;
-
-  const total_gtq = Math.round((subtotal_gtq - descuento_gtq + costo_envio_cobrado) * 100) / 100;
-
-  // --- 6. Escribir FACT_PEDIDOS ---
-  pedidosSheet.appendRow([
+  // --- 4. FACT_PEDIDOS ---
+  // costo_envio (el precio estandar de la zona) se guarda SIEMPRE, aunque el
+  // envio sea gratis, para que quede registro de cuanto hubiera costado.
+  const fila = [
     id_pedido,
     _fecha(),
     id_cliente,
     _sanitizar(body.nombre_cliente || ""),
     body.telefono       || "",
     body.ciudad         || "Guatemala City",
-    zona_gt,
+    body.zona_gt        || "",
     _sanitizar(body.colonia || ""),
     _sanitizar(body.direccion || ""),
     _sanitizar(body.referencias || ""),
     body.nse_inferido   || "",
-    id_zona,
-    costo_envio,
+    c.id_zona,
+    c.costo_envio,
     body.banco          || "",
     body.metodo_pago    || "",
     "Pendiente pago",
-    subtotal_cop,
-    descuento_cop,
+    c.subtotal_cop,
+    c.descuento_cop,
     total_cop,
-    descuento_gtq,   // FIX (Jul 2026 v3): antes esta columna guardaba la constante
-                     // TASA_COP_GTQ (igual en todas las filas, no aportaba nada por
-                     // pedido). Ahora guarda el descuento real en GTQ de este pedido.
-                     // Requiere renombrar el encabezado de esta columna en el Sheet
-                     // (Orkia y Nudo) de "Tasa_Cop_Gtq" a "Descuento_GTQ" — es un
-                     // cambio de nombre nada mas, no mueve ninguna columna.
-    total_gtq,
-    body.codigo_descuento || "",
-    body.comprobante === "Si",   // FIX: antes escribia "false" fijo sin importar lo que mandaba el front
+    t.descuento_gtq,    // Descuento_GTQ: codigo (+ descuento manual heredado)
+    t.total_gtq,
+    c.codigo,           // Codigo_Descuento (Orkia: el codigo validado, en mayusculas)
+    body.comprobante === "Si",
     _sanitizar(body.notas || ""),
     body.motivo_compra  || "",
     body.perfil_decision || "",
     body.canal_origen   || "",
-    body.edad_inferida  || "",   // FIX: se capturaba en el front pero nunca se guardaba
-    body.mes_cumpleanos || "",   // FIX: se capturaba en el front pero nunca se guardaba
-    envio_gratis                 // NUEVO (Jul 2026): columna al final. TRUE = se aplico envio
-                                  // gratis por umbral y costo_envio NO esta sumado en total_gtq;
-                                  // FALSE = costo_envio SI esta sumado en total_gtq.
-                                  // Requiere agregar el encabezado "Envio_Gratis" como ULTIMA
-                                  // columna de FACT_PEDIDOS en ambos Sheets (Orkia y Nudo)
-                                  // antes de desplegar este cambio.
-  ]);
+    body.edad_inferida  || "",
+    body.mes_cumpleanos || "",
+    t.envio_gratis      // Envio_Gratis: TRUE = costo_envio NO esta sumado en total_gtq
+  ];
+  // Orkia: columna nueva al final, "Motivo_Envio_Gratis" (umbral | primera_compra | vacio),
+  // solo en pedidos nuevos. Agregar ese encabezado en FACT_PEDIDOS de Orkia antes de desplegar.
+  if (c.reglas.primeraCompra) fila.push(t.motivo_envio_gratis);
+  pedidosSheet.appendRow(fila);
 
-  // --- 7. Escribir FACT_LINEAS_PEDIDO ---
+  // --- 5. FACT_LINEAS_PEDIDO ---
   const lineasSheet = ss.getSheetByName("FACT_LINEAS_PEDIDO");
-
-  const rowsLineas = lineas.map((linea, i) => {
+  const rowsLineas = c.lineas.map((linea, i) => {
     const id_linea = id_pedido + "-L" + String(i + 1).padStart(2, "0");
-    const d        = dim_dict[linea.id_producto] || {};
-    const precio   = precioMap[linea.id_producto] || 0;
+    const d        = c.dim_dict[linea.id_producto] || {};
+    const precio   = c.precioMap[linea.id_producto] || 0;
     const cant     = Number(linea.cantidad) || 1;
-
     return [
       id_pedido,
       id_linea,
@@ -696,20 +883,107 @@ function registrarPedido(marca, body) {
   }
 
   return {
-    ok:               true,
-    id_pedido:        id_pedido,
-    id_cliente:       id_cliente,
-    es_nuevo:         es_nuevo,
-    subtotal_cop:     subtotal_cop,
-    descuento_cop:    descuento_cop,
-    total_cop:        total_cop,
-    subtotal_gtq:     subtotal_gtq,
-    descuento_gtq:    descuento_gtq,
-    costo_envio_gtq:  costo_envio,      // precio estandar de la zona (siempre, aunque sea gratis)
-    envio_gratis:     envio_gratis,
-    total_gtq:        total_gtq,        // ya incluye costo_envio si no aplico envio gratis
-    lineas:           lineas.length
+    ok:                   true,
+    id_pedido:            id_pedido,
+    id_cliente:           id_cliente,
+    es_nuevo:             c.es_nuevo,
+    subtotal_cop:         c.subtotal_cop,
+    descuento_cop:        c.descuento_cop,
+    total_cop:            total_cop,
+    subtotal_gtq:         t.subtotal_gtq,
+    descuento_gtq:        t.descuento_gtq,
+    descuento_codigo_gtq: t.descuento_codigo_gtq,
+    costo_envio_gtq:      c.costo_envio,      // precio estandar de la zona (siempre, aunque sea gratis)
+    envio_gratis:         t.envio_gratis,
+    motivo_envio_gratis:  t.motivo_envio_gratis,
+    envio_por_validar:    t.envio_por_validar,
+    total_gtq:            t.total_gtq,        // ya incluye costo_envio si no aplico envio gratis
+    lineas:               c.lineas.length
   };
+}
+
+// ============================================================
+// Reporte mensual de codigos de influencer (Oct 2026)
+// Se corre a mano desde el editor de Apps Script. Escribe la hoja
+// REPORTE_CODIGOS en el Sheet de Orkia (la reemplaza en cada corrida):
+//   - reporteCodigosMesActual()   -> mes en curso
+//   - reporteCodigosMesAnterior() -> mes anterior (el que se liquida)
+// Ventas = lo que pago la clienta SIN envio (total_gtq menos el envio si se cobro).
+// Comision = Comision_Pct de DIM_CODIGOS sobre esas ventas. No cuenta pedidos
+// cuyo Estado contenga "cancel".
+// ============================================================
+
+function reporteCodigosMesActual() {
+  const hoy = new Date();
+  return _reporteCodigos(hoy.getFullYear(), hoy.getMonth() + 1);
+}
+
+function reporteCodigosMesAnterior() {
+  const hoy = new Date();
+  const d   = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+  return _reporteCodigos(d.getFullYear(), d.getMonth() + 1);
+}
+
+function _reporteCodigos(anio, mes) {
+  const ss  = _ss("orkia");
+  const mm  = String(mes).padStart(2, "0");
+  const per = anio + "-" + mm;
+
+  // Codigos y su comision
+  const cod  = ss.getSheetByName("DIM_CODIGOS").getDataRange().getValues();
+  const cIdx = {};
+  cod[0].forEach((c, i) => { if (c) cIdx[String(c).trim()] = i; });
+  const info = {};
+  for (let r = 1; r < cod.length; r++) {
+    const k = String(cod[r][cIdx["Codigo"]] || "").trim().toUpperCase();
+    if (!k) continue;
+    info[k] = {
+      influencer: cod[r][cIdx["Influencer"]] || "",
+      comision:   Number(cod[r][cIdx["Comision_Pct"]]) || 0
+    };
+  }
+
+  // Pedidos del mes con codigo (posiciones = orden de columnas que escribe registrarPedido)
+  const ped = ss.getSheetByName("FACT_PEDIDOS").getDataRange().getValues();
+  const resumen = {};
+  const detalle = [];
+  for (let r = 1; r < ped.length; r++) {
+    const row    = ped[r];
+    const codigo = String(row[21] || "").trim().toUpperCase();
+    if (!codigo || !info[codigo]) continue;
+    if (_fechaISO(row[1]).slice(0, 7) !== per) continue;
+    if (String(row[15] || "").toLowerCase().indexOf("cancel") > -1) continue;
+
+    const total   = Number(row[20]) || 0;
+    const envio   = _esSi(row[29]) ? 0 : (Number(row[12]) || 0);
+    const ventas  = Math.round((total - envio) * 100) / 100;
+    const comis   = Math.round(ventas * info[codigo].comision) / 100;
+    const desc    = Number(row[19]) || 0;
+
+    if (!resumen[codigo]) resumen[codigo] = { pedidos: 0, ventas: 0, descuentos: 0, comision: 0 };
+    resumen[codigo].pedidos++;
+    resumen[codigo].ventas     += ventas;
+    resumen[codigo].descuentos += desc;
+    resumen[codigo].comision   += comis;
+    detalle.push([row[0], row[1], codigo, row[15], desc, ventas, comis]);
+  }
+
+  let hoja = ss.getSheetByName("REPORTE_CODIGOS");
+  if (!hoja) hoja = ss.insertSheet("REPORTE_CODIGOS");
+  hoja.clear();
+
+  const filas = [["Periodo", per], [], ["Codigo", "Influencer", "Pedidos", "Ventas_GTQ", "Descuentos_GTQ", "Comision_Pct", "Comision_GTQ"]];
+  Object.keys(info).forEach(k => {
+    const x = resumen[k] || { pedidos: 0, ventas: 0, descuentos: 0, comision: 0 };
+    filas.push([k, info[k].influencer, x.pedidos, x.ventas, x.descuentos, info[k].comision, Math.round(x.comision * 100) / 100]);
+  });
+  filas.push([], ["Detalle"], ["ID_Pedido", "Fecha", "Codigo", "Estado", "Descuento_GTQ", "Ventas_GTQ", "Comision_GTQ"]);
+  detalle.forEach(d => filas.push(d));
+
+  const ancho = 7;
+  const norm  = filas.map(f => { const a = f.slice(); while (a.length < ancho) a.push(""); return a; });
+  hoja.getRange(1, 1, norm.length, ancho).setValues(norm);
+  return { ok: true, periodo: per, codigos: Object.keys(resumen).length, pedidos: detalle.length };
 }
 
 // ============================================================

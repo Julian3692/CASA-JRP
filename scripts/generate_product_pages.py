@@ -70,6 +70,10 @@ BRANDS = {
         "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#C4714A",
         "wa_msg_generic": "Hola%20Orkia%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20sus%20prendas.",
         "low_stock_threshold": 2,
+        "ship_banner": "Envío gratis en tu primera compra",
+        "ship_text": "Envío gratis en tu primera compra. Después, gratis desde Q300 en Guatemala.",
+        "ship_meta": "Envio gratis en tu primera compra.",
+        "first_ship": True,
         "trust_items": [
             ("M8 3 5 5v4l-2 3 3 3v4l4 2 3-2 4 1 3-4-2-3 1-4-4-2-2-4z", "Diseño colombiano",
              "Prendas seleccionadas por su estilo, color y caída."),
@@ -89,6 +93,10 @@ BRANDS = {
         "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#4A1F2C",
         "wa_msg_generic": "Hola%20Nudo%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20su%20ropa%20interior.",
         "low_stock_threshold": 0,
+        "ship_banner": 'Envío gratis desde <span class="q">Q300</span>',
+        "ship_text": "Envío gratis desde Q300 en Guatemala.",
+        "ship_meta": "Envio gratis desde Q300 en Guatemala.",
+        "first_ship": False,
         "trust_items": [
             ("M8 3 5 5v4l-2 3 3 3v4l4 2 3-2 4 1 3-4-2-3 1-4-4-2-2-4z", "Buen fit",
              "Ropa interior seleccionada por comodidad, materiales y durabilidad."),
@@ -199,7 +207,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     pid = p["id_producto"]
     title_txt = f"{p.get('tipo_prenda') or 'Prenda'} {p.get('color') or ''}".strip()
     page_title = f"{esc(title_txt)} — {esc(p['descripcion'])} | {brand['label']}"
-    description = f"{p['descripcion']} en color {p.get('color') or ''}. {money(p.get('precio_gtq'))}. Envio gratis desde Q300 en Guatemala. Pide por WhatsApp."
+    description = f"{p['descripcion']} en color {p.get('color') or ''}. {money(p.get('precio_gtq'))}. {brand['ship_meta']} Pide por WhatsApp."
     imgs = images_for(p)
     image = imgs[0] if imgs else ""
     tallas_disponibles = [t for t in (p.get("tallas") or [])] or ["Unica"]
@@ -209,6 +217,19 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     except (TypeError, ValueError):
         stock_total = None
     is_agotado = bool(p.get("agotado")) or stock_total == 0
+    first_ship_css = (
+        "\n    .first-ship{display:flex;align-items:center;gap:9px;margin:-6px 0 20px;padding:10px 12px;"
+        "border:1px solid var(--terracota);color:var(--dark);font-size:13px;line-height:1.35}"
+        "\n    .first-ship .icon{width:20px;height:20px;color:var(--terracota);flex:none}"
+        "\n    .first-ship span{color:var(--mid);font-size:12px}"
+        if brand.get("first_ship") else ""
+    )
+    first_ship = (
+        '\n        <p class="first-ship">'
+        '<svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>'
+        '<strong>Envío gratis en tu primera compra</strong></p>'
+        if brand.get("first_ship") else ""
+    )
     low_stock_threshold = brand.get("low_stock_threshold") or 0
     is_low_stock = (
         not is_agotado
@@ -423,7 +444,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     .eyebrow{{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota);font-weight:600;margin:0 0 10px}}
     .badge-agotado{{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:#EFE3E0;color:#9A3B2E;font-size:9px;letter-spacing:.1em}}
     h1{{font-family:'{brand['font_display']}',Georgia,serif;font-size:38px;line-height:1.05;letter-spacing:-.02em;margin:6px 0 8px;color:var(--dark);max-width:520px}}
-    .price{{font-size:24px;font-weight:600;margin:0 0 20px;color:var(--dark)}}
+    .price{{font-size:24px;font-weight:600;margin:0 0 20px;color:var(--dark)}}{first_ship_css}
     .color-title,.size-title{{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text);margin-bottom:10px}}
     .color-options{{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:24px}}
     .color-btn{{min-height:38px;border:1px solid #D9D2CC;background:#fff;color:#111;border-radius:999px;padding:0 13px;display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}}
@@ -516,7 +537,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
       </div>
     </div>
   </header>
-  <div class="top-shipping"><span>Envío gratis desde <span class="q">Q300</span></span></div>
+  <div class="top-shipping"><span>{brand['ship_banner']}</span></div>
   <main>
     <div class="layout">
       <div class="gallery-col">
@@ -534,13 +555,13 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
         </nav>
         <p class="eyebrow">{esc(p.get('tipo_prenda') or brand['label'])}{' <span class="badge-agotado">Agotado</span>' if is_agotado else ''}</p>
         <h1 class="serif">{esc(p['descripcion'])}</h1>
-        <p class="price">{money(p.get('precio_gtq'))}</p>
+        <p class="price">{money(p.get('precio_gtq'))}</p>{first_ship}
         {f'<p class="low-stock"><span class="dot"></span>¡Solo quedan {int(stock_total)} unidades!</p>' if is_low_stock else ''}
         {f'<p class="detail-line">{esc(detail_line)}</p>' if detail_line else ''}
         <div class="color-title">Selecciona color</div>
         <div class="color-options">{color_swatches}</div>
         {talla_block}
-        <p class="desc">{esc(p['descripcion'])} Envío gratis desde Q300 en Guatemala.</p>
+        <p class="desc">{esc(p['descripcion'])} {esc(brand['ship_text'])}</p>
         <div class="actions">
           {f'<button class="btn btn-primary" id="addBtn" type="button" disabled>Agotado</button>' if is_agotado else '<button class="btn btn-primary" id="addBtn" type="button">Agregar a selección</button>'}
           <a class="btn btn-ghost" href="{catalog_url}">Ver catálogo completo</a>
