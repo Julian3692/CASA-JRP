@@ -110,13 +110,13 @@
        fallbacks lado/detalle conectados en grid, fetchpriority corregido, showcase de categorías
        solo con fotos frontales (máx 2), limpieza de código muerto (validación masiva, cache local,
        semilla, fast slots), fallback vh para dvh, overscroll contain en sheets. -->
-  <meta name="description" content="Nudo: ropa interior colombiana en Guatemala. Cómoda, con estilo, compra por WhatsApp y envío gratis desde Q300." />
+  <meta name="description" content="Nudo: ropa interior colombiana en Guatemala. Cómoda, con estilo, compra por WhatsApp. Tu primer envío va por nuestra cuenta." />
   <!-- v26: Open Graph. Cuando una cliente comparte el link del catálogo por WhatsApp,
        aparece una tarjeta con imagen en vez de un link pelado. URL canónica: casajrp.com/nudo/ -->
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="NUDO" />
   <meta property="og:title" content="NUDO — Ropa interior colombiana en Guatemala" />
-  <meta property="og:description" content="Ropa interior cómoda y con estilo. Compra por WhatsApp. Envío gratis desde Q300." />
+  <meta property="og:description" content="Ropa interior cómoda y con estilo. Compra por WhatsApp. Tu primer envío va por nuestra cuenta." />
   <meta property="og:image" content="https://img.casajrp.com/nudo/banners/home-hero-desktop.webp" />
   <meta property="og:url" content="https://casajrp.com/nudo/" />
   <meta property="og:locale" content="es_GT" />
@@ -189,7 +189,9 @@
     .category-card span{position:absolute;left:18px;bottom:18px;font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;z-index:2}
     .category-card small{position:absolute;left:18px;bottom:40px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.72);z-index:2}
     .category-card:after{content:'';position:absolute;inset:auto 0 0;height:50%;background:linear-gradient(0deg,rgba(0,0,0,.55),transparent);z-index:1}
-    .bag-sheet{padding:0 20px 22px;overflow:auto}.bag-title{font-family:'Playfair Display',Georgia,serif;font-size:34px;line-height:1;margin:6px 0 8px}.bag-sub{font-size:14px;line-height:1.55;color:#625B55;margin:0 0 16px}.bag-list{display:grid;gap:10px;margin:16px 0}.bag-item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;border:1px solid var(--border);padding:9px;background:#FAF8F6}.bag-item img{width:58px;height:76px;object-fit:cover;background:#EEE7DF}.bag-item h4{margin:0 0 3px;font-family:'Playfair Display',Georgia,serif;font-size:20px;line-height:1}.bag-item p{margin:0;color:#625B55;font-size:12px;line-height:1.35}.bag-remove{border:0;background:transparent;font-size:20px;color:#7A746E;padding:6px}.bag-actions{position:sticky;bottom:0;background:#fff;padding-top:12px;border-top:1px solid var(--border)}.bag-actions .btn{width:100%;height:46px}.bag-empty{padding:28px 0;color:#625B55;font-size:14px;text-align:center}.side-menu-list{display:grid;gap:8px;margin:16px 0 0}.side-menu-list button,.side-menu-list a{height:42px;border:1px solid var(--border);background:#fff;color:var(--dark);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+    .bag-sheet{padding:0 20px 22px;overflow:auto}.bag-title{font-family:'Playfair Display',Georgia,serif;font-size:34px;line-height:1;margin:6px 0 8px}.bag-ship{display:flex;align-items:center;gap:9px;margin:0 0 14px;padding:11px 13px;background:#F6F5F2;border-radius:10px;font-size:13px;line-height:1.35;color:#3F3A36}.bag-ship .icon{width:20px;height:20px;color:var(--terracota);flex:none}
+    .footer-links{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;margin:14px 0 0}.footer-links a{color:rgba(255,255,255,.78);font-size:12px;text-decoration:underline;text-underline-offset:3px}.bag-links{margin:-6px 0 14px;font-size:12px;line-height:1.4;color:#625B55}.bag-links a{text-decoration:underline;text-underline-offset:3px}
+    .bag-sub{font-size:14px;line-height:1.55;color:#625B55;margin:0 0 16px}.bag-list{display:grid;gap:10px;margin:16px 0}.bag-item{display:grid;grid-template-columns:58px 1fr auto;gap:12px;align-items:center;border:1px solid var(--border);padding:9px;background:#FAF8F6}.bag-item img{width:58px;height:76px;object-fit:cover;background:#EEE7DF}.bag-item h4{margin:0 0 3px;font-family:'Playfair Display',Georgia,serif;font-size:20px;line-height:1}.bag-item p{margin:0;color:#625B55;font-size:12px;line-height:1.35}.bag-remove{border:0;background:transparent;font-size:20px;color:#7A746E;padding:6px}.bag-actions{position:sticky;bottom:0;background:#fff;padding-top:12px;border-top:1px solid var(--border)}.bag-actions .btn{width:100%;height:46px}.bag-empty{padding:28px 0;color:#625B55;font-size:14px;text-align:center}.side-menu-list{display:grid;gap:8px;margin:16px 0 0}.side-menu-list button,.side-menu-list a{height:42px;border:1px solid var(--border);background:#fff;color:var(--dark);display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
     @media (max-width:720px){.top-shipping{font-weight:500}.filters-wrap{position:relative!important;top:auto!important;z-index:20}.filter-title{display:block!important;font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;margin-bottom:9px}.category-showcase{padding:18px 0 18px}.category-showcase-head{padding:0 12px;display:block;margin-bottom:10px}.category-showcase h2{font-size:25px}.category-showcase p{display:none}.category-track{border-left:0;border-right:0;grid-auto-columns:72%;gap:1px}.category-card{min-height:190px}.header-actions .icon-btn[aria-label="WhatsApp"]{display:none!important}.bag-btn{display:inline-flex!important}.bottom-nav{grid-template-columns:repeat(4,1fr)!important}.bottom-nav .icon{width:20px;height:20px}.bottom-nav a{font-size:8.2px}.bag-sheet{padding-left:18px;padding-right:18px}.bag-title{font-size:31px}}
     @media (max-width:720px){.filters-wrap{position:relative!important;top:auto!important}.top-shipping{position:relative!important}.category-showcase{border-top:1px solid var(--border)}}
     /* NUDO v7: categorías visuales solo mobile, desktop simple */
@@ -323,7 +325,7 @@
   </header>
   <div class="top-shipping" role="note">
     <svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-    <span>Envío gratis desde <span class="q">Q300</span></span>
+    <span>Tu primer envío va por nuestra cuenta</span>
   </div>
   <section class="hero" aria-labelledby="hero-title">
     <div class="hero-inner">
@@ -332,7 +334,7 @@
         <h1 id="hero-title" class="serif">Ropa interior colombiana para hombres como tú.</h1>
         <p>Cómoda, versátil y fácil de combinar. Para tu día a día.</p>
         <a class="btn" href="#nuevo">Ver novedades</a>
-        <div class="hero-meta">Ropa interior desde Q129</div>
+        <div class="hero-meta">Ropa interior desde Q109</div>
       </div>
       <div class="hero-image-wrap">
         <picture class="hero-picture">
@@ -403,7 +405,7 @@
       <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M8 3 5 5v4l-2 3 3 3v4l4 2 3-2 4 1 3-4-2-3 1-4-4-2-2-4z"/></svg><div><h3>Buen fit</h3><p>Ropa interior seleccionada por comodidad, materiales y durabilidad.</p></div></article>
       <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M4 21h16M7 21V7a5 5 0 0 1 10 0v14M9 8h6M9 12h6M9 16h6"/></svg><div><h3>Fit cómodo</h3><p>Telas, elásticos y acabados pensados para acompañar tu cuerpo.</p></div></article>
       <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/><path d="M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8"/></svg><div><h3>Compra discreta</h3><p>Te atendemos por WhatsApp con color, talla, fit y disponibilidad.</p></div></article>
-      <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 7v14M12 7H7.5A2.5 2.5 0 1 1 12 4.5M12 7h4.5A2.5 2.5 0 1 0 12 4.5"/></svg><div><h3>Envío gratis +Q300</h3><p>Envío gratis en compras mayores a Q300.</p></div></article>
+      <article class="value-item"><svg class="icon" viewBox="0 0 24 24"><path d="M20 12v9H4v-9M2 7h20v5H2zM12 7v14M12 7H7.5A2.5 2.5 0 1 1 12 4.5M12 7h4.5A2.5 2.5 0 1 0 12 4.5"/></svg><div><h3>Tu primer envío va por nuestra cuenta</h3><p>Aplica a tu primer pedido.</p></div></article>
     </section>
     <section class="about-section" id="nosotros" aria-labelledby="nosotros-title">
       <div class="story-copy">
@@ -424,6 +426,7 @@
   </main>
   <footer class="footer">
     <div class="brand-logo">NUDO<span class="brand-dot"></span></div>
+    <nav class="footer-links" aria-label="Ayuda"><a href="/nudo/cambios-y-devoluciones/">Cambios y devoluciones</a><a href="/nudo/envios/">Envíos y entregas</a><a href="/nudo/preguntas-frecuentes/">Preguntas frecuentes</a><a href="/nudo/terminos-y-privacidad/">Términos y privacidad</a></nav>
     <p>Guatemala · Ropa interior · © 2026 CASA JRP</p>
   </footer>
   <nav class="bottom-nav" aria-label="Navegación inferior móvil">
@@ -928,7 +931,7 @@
       }).join('');
       $('#bagContent').innerHTML = `<h3 class="bag-title">Tu selección</h3>
         <p class="bag-sub">Agrega varias prendas, sigue explorando y envía tu selección completa por WhatsApp cuando estés listo.</p>
-        ${total ? `<div class="bag-list">${list}</div><div class="bag-actions"><button class="btn" id="sendBagWa">Enviar selección por WhatsApp</button><button class="secondary-link" id="continueShopping" type="button">Seguir comprando</button></div>` : `<div class="bag-empty">Tu selección está vacía. Explora el catálogo y toca <strong>Ver opciones</strong> para agregar prendas.<br><br><button class="btn" id="continueShopping" type="button">Seguir comprando</button></div>`}`;
+        ${total ? `<div class="bag-list">${list}</div><p class="bag-ship">${iconTruck()} <span><strong>Tu primer envío va por nuestra cuenta.</strong> Si ya compraste antes, gratis desde Q300.</span></p><p class="bag-links"><a href="/nudo/cambios-y-devoluciones/">Cambios y devoluciones</a> · <a href="/nudo/envios/">Envíos y entregas</a></p><div class="bag-actions"><button class="btn" id="sendBagWa">Enviar selección por WhatsApp</button><button class="secondary-link" id="continueShopping" type="button">Seguir comprando</button></div>` : `<div class="bag-empty">Tu selección está vacía. Explora el catálogo y toca <strong>Ver opciones</strong> para agregar prendas.<br><br><button class="btn" id="continueShopping" type="button">Seguir comprando</button></div>`}`;
       showSheet($('#bagSheet'));
       $$('#bagContent [data-remove]').forEach(btn=>btn.addEventListener('click',()=>removeFromBag(btn.dataset.remove)));
       const cont = $('#continueShopping'); if(cont) cont.addEventListener('click',()=>closeSheets());
@@ -942,7 +945,7 @@
         return `*${idx+1}. ${item.descripcion}*\n🎨 Color: ${item.color}${tallaLinea}\n💰 Precio: ${money(item.precio_gtq)}\n🏷️ Código: #${item.codigo}${item.qty>1 ? `\n🔢 Cantidad: ${item.qty}` : ''}`;
       }).join('\n\n———\n\n');
       const total = bagItems.reduce((s,i)=>s+(Number(i.precio_gtq)||0)*(Number(i.qty)||1),0);
-      const msg = `Hola Nudo 👋 Quiero hacer este pedido (${bagItems.length} ${bagItems.length===1?'prenda':'prendas'}):\n\n${lines}\n\n———\n\n*Total estimado: ${money(total)}*\n\n¿Me ayudas a confirmar disponibilidad y coordinar el envío discreto?`;
+      const msg = `Hola Nudo 👋 Quiero hacer este pedido (${bagItems.length} ${bagItems.length===1?'prenda':'prendas'}):\n\n${lines}\n\n———\n\n*Total estimado: ${money(total)}*\n\nSi es mi primera compra, ¿me confirmas mi envío gratis? 🚚\n¿Me ayudas a confirmar disponibilidad y coordinar el envío discreto?`;
       bagItems.forEach(item=>registerClick({id_producto:item.id_producto, descripcion:item.descripcion}, 'ENVIAR_BOLSA_WA'));
       if(typeof fbq === 'function') fbq('track', 'InitiateCheckout', {
         content_ids: bagItems.map(i=>String(i.id_producto||'')),
@@ -1257,7 +1260,7 @@
           <div class="card-code">Código #${safe(internalCode(display || g.display || g))}</div>
           ${colors.length>1 ? `<div class="card-colors" aria-label="Colores disponibles">${colorDots}</div>` : ''}
           <div class="price">${money(g.precio_gtq)}</div>
-          ${sold ? `<button class="btn ghost card-btn" data-action="notice">Avísame</button>` : `<button class="btn card-btn">Ver opciones</button><div class="shipping-note">${iconTruck()} <span>Envío gratis +Q300</span></div>`}
+          ${sold ? `<button class="btn ghost card-btn" data-action="notice">Avísame</button>` : `<button class="btn card-btn">Ver opciones</button><div class="shipping-note">${iconTruck()} <span>Tu primer envío va por nuestra cuenta</span></div>`}
         </div>
       </article>`;
     }

@@ -47,6 +47,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import policy_pages
+
 AS_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec"
 WA_NUMBER = "50248304736"
 PIXEL_ID = "1778753106585555"
@@ -70,9 +72,8 @@ BRANDS = {
         "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#C4714A",
         "wa_msg_generic": "Hola%20Orkia%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20sus%20prendas.",
         "low_stock_threshold": 2,
-        "ship_banner": "Envío gratis en tu primera compra",
-        "ship_text": "Envío gratis en tu primera compra. Después, gratis desde Q300 en Guatemala.",
-        "ship_meta": "Envio gratis en tu primera compra.",
+        "ship_banner": "Tu primer envío va por nuestra cuenta",
+        "ship_meta": "Tu primer envío va por nuestra cuenta.",
         "first_ship": True,
         "trust_items": [
             ("M8 3 5 5v4l-2 3 3 3v4l4 2 3-2 4 1 3-4-2-3 1-4-4-2-2-4z", "Diseño colombiano",
@@ -93,10 +94,9 @@ BRANDS = {
         "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#4A1F2C",
         "wa_msg_generic": "Hola%20Nudo%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20su%20ropa%20interior.",
         "low_stock_threshold": 0,
-        "ship_banner": 'Envío gratis desde <span class="q">Q300</span>',
-        "ship_text": "Envío gratis desde Q300 en Guatemala.",
-        "ship_meta": "Envio gratis desde Q300 en Guatemala.",
-        "first_ship": False,
+        "ship_banner": "Tu primer envío va por nuestra cuenta",
+        "ship_meta": "Tu primer envío va por nuestra cuenta.",
+        "first_ship": True,
         "trust_items": [
             ("M8 3 5 5v4l-2 3 3 3v4l4 2 3-2 4 1 3-4-2-3 1-4-4-2-2-4z", "Buen fit",
              "Ropa interior seleccionada por comodidad, materiales y durabilidad."),
@@ -118,6 +118,21 @@ def fetch_catalogo(marca):
     if not data.get("ok"):
         raise RuntimeError(f"get_catalogo respondio error para {marca}: {data}")
     return data["productos"]
+
+
+def fetch_zonas(marca):
+    """Zonas de envio con su costo, tal cual estan en el Sheet. Si falla, la pagina de envios sale sin tabla."""
+    url = f"{AS_URL}?accion=get_zonas&marca={marca}&_ts={time.time_ns()}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (generador-paginas-producto)"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            data = json.loads(r.read().decode("utf-8"))
+        if not data.get("ok"):
+            raise RuntimeError(data)
+        return [z for z in data["zonas"] if float(z.get("costo_envio_gtq") or 0) > 0]
+    except Exception as e:  # noqa: BLE001
+        print(f"AVISO: no se pudo leer get_zonas de {marca} ({e}); la pagina de envios saldra sin tabla")
+        return []
 
 
 def normalize(v):
@@ -221,13 +236,12 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
         "\n    .first-ship{display:flex;align-items:center;gap:9px;margin:-6px 0 20px;padding:10px 12px;"
         "border:1px solid var(--terracota);color:var(--dark);font-size:13px;line-height:1.35}"
         "\n    .first-ship .icon{width:20px;height:20px;color:var(--terracota);flex:none}"
-        "\n    .first-ship span{color:var(--mid);font-size:12px}"
-        if brand.get("first_ship") else ""
+                if brand.get("first_ship") else ""
     )
     first_ship = (
         '\n        <p class="first-ship">'
         '<svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>'
-        '<strong>Envío gratis en tu primera compra</strong></p>'
+        '<strong>Tu primer envío va por nuestra cuenta</strong></p>'
         if brand.get("first_ship") else ""
     )
     low_stock_threshold = brand.get("low_stock_threshold") or 0
@@ -497,6 +511,8 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     .footer{{background:var(--carbon);color:#fff;margin-top:40px;padding:22px 28px;text-align:center}}
     .footer .brand-logo{{font-size:20px}}
     .footer p{{margin:6px 0 0;color:rgba(255,255,255,.62);font-size:10px;letter-spacing:.14em;text-transform:uppercase}}
+    .footer-links{{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;margin:14px 0 0}}
+    .footer-links a{{color:rgba(255,255,255,.78);font-size:12px;text-decoration:underline;text-underline-offset:3px}}
     @media (max-width:800px){{
       .layout{{flex-direction:column;align-items:stretch;gap:0;max-width:none;margin:0}}
       main{{padding:0 0 50px}}
@@ -561,7 +577,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
         <div class="color-title">Selecciona color</div>
         <div class="color-options">{color_swatches}</div>
         {talla_block}
-        <p class="desc">{esc(p['descripcion'])} {esc(brand['ship_text'])}</p>
+        <p class="desc">{esc(p['descripcion'])}</p>
         <div class="actions">
           {f'<button class="btn btn-primary" id="addBtn" type="button" disabled>Agotado</button>' if is_agotado else '<button class="btn btn-primary" id="addBtn" type="button">Agregar a selección</button>'}
           <a class="btn btn-ghost" href="{catalog_url}">Ver catálogo completo</a>
@@ -579,6 +595,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
   </main>
   <footer class="footer">
     <div class="brand-logo serif">{brand['label']}<span class="brand-dot"></span></div>
+    {policy_pages.footer_links_html(marca)}
     <p>Guatemala &middot; Manufactura colombiana &middot; &copy; 2026</p>
   </footer>
   <a class="wa-float" href="{wa_contact_link}" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
@@ -727,8 +744,8 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
 """
 
 
-def write_sitemap(product_urls):
-    urls = ["https://casajrp.com/", "https://casajrp.com/orkia/", "https://casajrp.com/nudo/"] + product_urls
+def write_sitemap(product_urls, extra_urls=()):
+    urls = ["https://casajrp.com/", "https://casajrp.com/orkia/", "https://casajrp.com/nudo/"] + list(extra_urls) + product_urls
     body = "\n".join(f"  <url><loc>{u}</loc></url>" for u in urls)
     xml = (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -742,6 +759,7 @@ def write_sitemap(product_urls):
 
 def main():
     product_urls = []
+    policy_urls = []
     for marca, brand in BRANDS.items():
         productos = fetch_catalogo(marca)
         groups = group_by_ref_proveedor(productos)
@@ -758,7 +776,16 @@ def main():
                 product_urls.append(canonical)
                 count += 1
         print(f"{marca}: {count} paginas generadas en {out_dir}")
-    write_sitemap(product_urls)
+
+        zonas = fetch_zonas(marca)
+        for slug, _, _ in policy_pages.POLICY_PAGES:
+            page_dir = REPO_ROOT / marca / slug
+            page_dir.mkdir(parents=True, exist_ok=True)
+            (page_dir / "index.html").write_text(
+                policy_pages.render(marca, brand, slug, WA_NUMBER, PIXEL_ID, zonas), encoding="utf-8")
+        policy_urls += policy_pages.policy_urls(marca)
+        print(f"{marca}: {len(policy_pages.POLICY_PAGES)} paginas de ayuda generadas")
+    write_sitemap(product_urls, policy_urls)
 
 
 if __name__ == "__main__":

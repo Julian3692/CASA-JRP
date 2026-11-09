@@ -681,7 +681,7 @@ function NadiaApp() {
                 {!cotizError&&zonaSelObj&&cotizando&&<p style={{margin:"10px 0 0",fontSize:12,color:"#C4A882"}}>Calculando total...</p>}
                 {!cotizError&&zonaSelObj&&!cotizando&&cotiz&&(
                   <>
-                    {cotiz.es_nuevo&&marca==="orkia"&&<SummaryRow k="Clienta" v="Nueva (primera compra)" T={T}/>}
+                    {cotiz.es_nuevo&&<SummaryRow k={marca==="nudo"?"Cliente":"Clienta"} v="Nueva (primera compra)" T={T}/>}
                     <SummaryRow k="Subtotal" v={fmtGTQ(cotiz.subtotal_gtq)} T={T}/>
                     {cotiz.descuento_codigo_gtq>0&&<SummaryRow k={`Cupón ${cupon}`} v={`−${fmtGTQ(cotiz.descuento_codigo_gtq)}`} T={T}/>}
                     <SummaryRow k="Envío" v={cotiz.envio_gratis?`Gratis${cotiz.motivo_envio_gratis==="primera_compra"?" (primera compra)":" (compra desde Q300)"}`:(cotiz.envio_por_validar?"Por validar (no incluido)":fmtGTQ(cotiz.costo_envio_gtq))} T={T}/>
