@@ -1,7 +1,7 @@
 // ============================================================
 // CASA JRP — Apps Script Multi-Marca
 // Orkia + Nudo by CASA JRP
-// Última actualización: Octubre 2026 (reglas comerciales Orkia: envío gratis en primera compra, códigos)
+// Última actualización: Octubre 2026 (envío gratis en primera compra + umbral, Orkia y Nudo; códigos)
 // ============================================================
 
 const SHEETS = {
@@ -245,7 +245,6 @@ function _calcularCatalogo(marca) {
     if (!fotoPublicada) continue;
 
     const idStr = String(id);
-    const nombreFoto = idx["Nombre_Foto"] !== undefined ? row[idx["Nombre_Foto"]] || "" : "";
 
     // --- Imagenes: siempre nombradas por ID en R2, nunca por Nombre_Foto ---
     const imagenes = [urlBaseCdn + idStr + "_frente.webp"];
@@ -273,15 +272,15 @@ function _calcularCatalogo(marca) {
 
     productos[id] = {
       id_producto:   id,
-      id_proveedor:  idx["ID_Proveedor"] !== undefined ? row[idx["ID_Proveedor"]] : "",
       ref_proveedor: idx["Ref_Proveedor"] !== undefined ? row[idx["Ref_Proveedor"]] : "",
       tipo_prenda:   idx["Tipo_Prenda"] !== undefined ? row[idx["Tipo_Prenda"]] : "",
       patron:        idx["Patron"] !== undefined ? row[idx["Patron"]] || "" : "",
       material:      idx["Material"] !== undefined ? row[idx["Material"]] || "" : (idx["Manga"] !== undefined ? row[idx["Manga"]] || "" : ""),
       color:         idx["Color"] !== undefined ? row[idx["Color"]] : "",
-      precio_cop:    idx["Precio_COP"] !== undefined ? row[idx["Precio_COP"]] : "",
       descripcion:   idx["Descripcion"] !== undefined ? row[idx["Descripcion"]] : "",
-      nombre_foto:   nombreFoto,  // se mantiene en la respuesta por compatibilidad, ya no define la URL
+      // Oct 2026 (seguridad): precio_cop, id_proveedor y nombre_foto ya no se
+      // publican en get_catalogo. Ningun frontend los usaba y exponian costos
+      // y datos de proveedor a cualquiera con la URL.
       precio_gtq:    idx["Precio_GTQ"] !== undefined ? row[idx["Precio_GTQ"]] : "",
       foto_publicada: true,
 
@@ -512,15 +511,15 @@ function registrarDemanda(marca, params) {
 
 // ============================================================
 // Reglas comerciales por marca (Oct 2026)
-// Solo Orkia: envio gratis en la primera compra y codigos de influencer
-// (hoja DIM_CODIGOS, opcional: mientras no exista, el codigo solo se
-// registra como texto, como siempre). Nudo se mantiene igual: solo aplica
-// el umbral de envio gratis (UMBRAL_ENVIO_GRATIS_GTQ).
+// Orkia y Nudo comparten el mismo esquema: envio gratis en la primera compra
+// y, para quien ya compro, desde el umbral (UMBRAL_ENVIO_GRATIS_GTQ). Los
+// codigos de influencer usan la hoja DIM_CODIGOS, que es opcional: mientras
+// no exista, el codigo solo se registra como texto, como siempre.
 // ============================================================
 
 const REGLAS_MARCA = {
-  orkia: { primeraCompra: true,  codigos: true  },
-  nudo:  { primeraCompra: false, codigos: false }
+  orkia: { primeraCompra: true, codigos: true },
+  nudo:  { primeraCompra: true, codigos: true }
 };
 
 function _reglas(marca) {
@@ -643,7 +642,7 @@ function _calcularTotalesPedido(o) {
   const descuento_total  = Math.min(subtotal, descuento_codigo + descuento_manual);
 
   // Envio gratis: el umbral se compara contra el subtotal ANTES de descuentos.
-  // Si no llega al umbral, la primera compra (solo Orkia) tambien lo regala.
+  // Si no llega al umbral, la primera compra tambien lo regala.
   let envio_gratis = false;
   let motivo_envio_gratis = "";
   if (subtotal >= UMBRAL_ENVIO_GRATIS_GTQ) {
@@ -731,7 +730,7 @@ function _prepararPedido(marca, body) {
   const zonasData = ss.getSheetByName("DIM_ZONAS_ENVIO").getDataRange().getValues();
   const zona      = _resolverZona(zonasData, body.zona_gt);
 
-  // --- Codigo de influencer (solo Orkia). Lanza si no es valido. ---
+  // --- Codigo de influencer. Lanza si no es valido. ---
   const codigoRaw  = String(body.codigo_descuento || "").trim();
   const codigoInfo = (reglas.codigos && codigoRaw) ? _validarCodigo(ss, codigoRaw) : null;
 
@@ -841,7 +840,7 @@ function registrarPedido(marca, body) {
     total_cop,
     t.descuento_gtq,    // Descuento_GTQ: codigo (+ descuento manual heredado)
     t.total_gtq,
-    c.codigo,           // Codigo_Descuento (Orkia: el codigo validado, en mayusculas)
+    c.codigo,           // Codigo_Descuento (el codigo validado, en mayusculas)
     body.comprobante === "Si",
     _sanitizar(body.notas || ""),
     body.motivo_compra  || "",
@@ -851,8 +850,8 @@ function registrarPedido(marca, body) {
     body.mes_cumpleanos || "",
     t.envio_gratis      // Envio_Gratis: TRUE = costo_envio NO esta sumado en total_gtq
   ];
-  // Orkia: columna nueva al final, "Motivo_Envio_Gratis" (umbral | primera_compra | vacio),
-  // solo en pedidos nuevos. Agregar ese encabezado en FACT_PEDIDOS de Orkia antes de desplegar.
+  // Columna nueva al final, "Motivo_Envio_Gratis" (umbral | primera_compra | vacio),
+  // solo en pedidos nuevos. Agregar ese encabezado en FACT_PEDIDOS de la marca antes de desplegar.
   if (c.reglas.primeraCompra) fila.push(t.motivo_envio_gratis);
   pedidosSheet.appendRow(fila);
 
@@ -905,7 +904,7 @@ function registrarPedido(marca, body) {
 // ============================================================
 // Reporte mensual de codigos de influencer (Oct 2026)
 // Se corre a mano desde el editor de Apps Script. Escribe la hoja
-// REPORTE_CODIGOS en el Sheet de Orkia (la reemplaza en cada corrida):
+// REPORTE_CODIGOS en el Sheet de la marca (la reemplaza en cada corrida):
 //   - reporteCodigosMesActual()   -> mes en curso
 //   - reporteCodigosMesAnterior() -> mes anterior (el que se liquida)
 // Ventas = lo que pago la clienta SIN envio (total_gtq menos el envio si se cobro).
@@ -913,19 +912,19 @@ function registrarPedido(marca, body) {
 // cuyo Estado contenga "cancel".
 // ============================================================
 
-function reporteCodigosMesActual() {
+function reporteCodigosMesActual()        { return _reporteCodigosMes("orkia", 0); }
+function reporteCodigosMesAnterior()      { return _reporteCodigosMes("orkia", -1); }
+function reporteCodigosNudoMesActual()    { return _reporteCodigosMes("nudo", 0); }
+function reporteCodigosNudoMesAnterior()  { return _reporteCodigosMes("nudo", -1); }
+
+function _reporteCodigosMes(marca, desfase) {
   const hoy = new Date();
-  return _reporteCodigos(hoy.getFullYear(), hoy.getMonth() + 1);
+  const d   = new Date(hoy.getFullYear(), hoy.getMonth() + desfase, 1);
+  return _reporteCodigos(marca, d.getFullYear(), d.getMonth() + 1);
 }
 
-function reporteCodigosMesAnterior() {
-  const hoy = new Date();
-  const d   = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
-  return _reporteCodigos(d.getFullYear(), d.getMonth() + 1);
-}
-
-function _reporteCodigos(anio, mes) {
-  const ss  = _ss("orkia");
+function _reporteCodigos(marca, anio, mes) {
+  const ss  = _ss(marca);
   const mm  = String(mes).padStart(2, "0");
   const per = anio + "-" + mm;
 
