@@ -218,6 +218,41 @@ def images_for(p):
     return [u for u in [p.get("url_imagen"), p.get("url_imagen_2"), p.get("url_imagen_3")] if u]
 
 
+# Rastreo de la pagina de producto (Nov 2026). Antes la pagina solo mandaba PageView/ViewContent
+# al Pixel y no registraba nada en el Sheet, asi que se perdian clics y senales de compra.
+# Usa las MISMAS acciones que la portada: ABRIR_MODAL (ver producto) y AGREGAR_BOLSA (agregar a seleccion),
+# mas WHATSAPP_PDP para los enlaces a WhatsApp. ViewContent ya se dispara arriba, no se duplica.
+TRACK_TEMPLATE = """
+  <script>
+    (function(){
+      var AS_URL = __AS_URL__, MARCA = __MARCA__, PID = __PID__, NAME = __NAME__, PRICE = __PRICE__;
+      var UTM = new URLSearchParams(location.search).get('utm') || 'directo';
+      function isBot(){ return navigator.webdriver === true || /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit/i.test(navigator.userAgent || ''); }
+      function px(evento){
+        if(typeof fbq !== 'function') return;
+        fbq('track', evento, {content_ids:[PID], content_type:'product', content_name:NAME, currency:'GTQ', value:PRICE});
+      }
+      function sheetClick(accion){
+        if(isBot()) return;
+        var url = AS_URL + '?accion=registrar_clic&marca=' + encodeURIComponent(MARCA) + '&id_producto=' + encodeURIComponent(PID)
+          + '&nombre_producto=' + encodeURIComponent(NAME) + '&utm_origen=' + encodeURIComponent(UTM)
+          + '&accion_detalle=' + encodeURIComponent(accion) + '&_ts=' + Date.now();
+        try{ fetch(url, {mode:'no-cors', keepalive:true}).catch(function(){}); }catch(e){}
+      }
+      try{
+        var k = 'pdp_ver_' + MARCA + '_' + PID, last = Number(sessionStorage.getItem(k) || 0);
+        if(Date.now() - last > 30*60*1000){ sessionStorage.setItem(k, String(Date.now())); sheetClick('ABRIR_MODAL'); }
+      }catch(e){ sheetClick('ABRIR_MODAL'); }
+      var add = document.getElementById('addBtn');
+      if(add) add.addEventListener('click', function(){ if(add.disabled) return; sheetClick('AGREGAR_BOLSA'); px('AddToCart'); });
+      document.querySelectorAll('a[href^="https://wa.me/"]').forEach(function(a){
+        a.addEventListener('click', function(){ sheetClick('WHATSAPP_PDP'); px('Contact'); });
+      });
+    })();
+  </script>
+"""
+
+
 def page_html(marca, brand, group, p, canonical_url, all_groups):
     pid = p["id_producto"]
     title_txt = f"{p.get('tipo_prenda') or 'Prenda'} {p.get('color') or ''}".strip()
@@ -358,6 +393,15 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
         "codigo": str(pid),
         "imagen": image,
     })
+
+    track_script = (
+        TRACK_TEMPLATE
+        .replace("__AS_URL__", json.dumps(AS_URL))
+        .replace("__MARCA__", json.dumps(marca))
+        .replace("__PID__", json.dumps(str(pid)))
+        .replace("__NAME__", json.dumps(p.get("descripcion") or "", ensure_ascii=False).replace("</", "<\\/"))
+        .replace("__PRICE__", json.dumps(float(p.get("precio_gtq") or 0)))
+    )
 
     return f"""<!doctype html>
 <html lang="es">
@@ -739,7 +783,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
       if(e.key === 'ArrowRight') document.getElementById('lbNext')?.click();
     }});
   </script>
-</body>
+{track_script}</body>
 </html>
 """
 

@@ -840,7 +840,7 @@
 
     function buildDynamicFilters(){
       const pills = $('#pills');
-      const quickTypes = ['Blusa','Vestido','Top','Falda','Set'];
+      const quickTypes = tiposRapidos();
       const quick = [
         '<button class="pill active" data-filter="__nuevo">Nuevo</button>',
         '<button class="pill sale" data-filter="__plus">Talla Plus</button>',
@@ -861,6 +861,11 @@
     function variantHasPhoto(v){ return !!v && !!(v.url_imagen || v.url_imagen_2 || v.url_imagen_3); }
     function visibleVariantsFor(g){ return (g.variants || []).filter(variantHasPhoto); }
     function groupHasValue(g, field, value){ return visibleVariantsFor(g).some(v => normalize(v[field]) === value); }
+    // Nov 2026: "Jean" se suma a las categorias rapidas SOLO si ya hay jeans publicados (asi no sale un boton vacio).
+    function tiposRapidos(){
+      const base = ['Blusa','Vestido','Top','Falda','Set'];
+      return allProducts.some(g => groupHasValue(g, 'tipo_prenda', 'Jean')) ? ['Jean', ...base] : base;
+    }
     function groupHasColor(g, value){ return visibleVariantsFor(g).some(v => colorFamily(v.color) === value); }
     // v27: helpers para el sheet de filtros dinámicos.
     function variantHasPlusSize(v){
@@ -958,7 +963,7 @@
     }
     function renderCategoryShowcase(){
       const track = $('#categoryTrack'); if(!track) return;
-      const tipos = ['Blusa','Vestido','Top','Falda','Set'];
+      const tipos = tiposRapidos();
       const defs = tipos.map(tipo=>{
         const groups = allProducts
           .filter(g=>groupHasValue(g,'tipo_prenda',tipo))
@@ -1008,7 +1013,7 @@
     }
     function openMenuSheet(){
       $('#filterContent').innerHTML = `<div class="filter-sheet-head"><h3 class="filter-sheet-title">Menú</h3><p class="filter-sheet-sub">Explora Orkia por categoría o escríbenos por WhatsApp.</p></div><div class="side-menu-list">
-        ${['Blusa','Vestido','Top','Falda','Set'].map(t=>`<button type="button" data-menu-cat="${t}">${t}<span>→</span></button>`).join('')}
+        ${tiposRapidos().map(t=>`<button type="button" data-menu-cat="${t}">${t}<span>→</span></button>`).join('')}
         <button type="button" data-menu-filter="__plus">Talla Plus<span>→</span></button>
         <button type="button" data-menu-filter="__menos250">Menos de Q250<span>→</span></button>
         <a href="#origen" data-close>Origen Colombia<span>→</span></a>

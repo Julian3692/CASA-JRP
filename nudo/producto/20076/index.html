@@ -427,5 +427,33 @@
       if(e.key === 'ArrowRight') document.getElementById('lbNext')?.click();
     });
   </script>
+
+  <script>
+    (function(){
+      var AS_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec", MARCA = "nudo", PID = "20076", NAME = "Tanga Hilo Amarillo", PRICE = 109.0;
+      var UTM = new URLSearchParams(location.search).get('utm') || 'directo';
+      function isBot(){ return navigator.webdriver === true || /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit/i.test(navigator.userAgent || ''); }
+      function px(evento){
+        if(typeof fbq !== 'function') return;
+        fbq('track', evento, {content_ids:[PID], content_type:'product', content_name:NAME, currency:'GTQ', value:PRICE});
+      }
+      function sheetClick(accion){
+        if(isBot()) return;
+        var url = AS_URL + '?accion=registrar_clic&marca=' + encodeURIComponent(MARCA) + '&id_producto=' + encodeURIComponent(PID)
+          + '&nombre_producto=' + encodeURIComponent(NAME) + '&utm_origen=' + encodeURIComponent(UTM)
+          + '&accion_detalle=' + encodeURIComponent(accion) + '&_ts=' + Date.now();
+        try{ fetch(url, {mode:'no-cors', keepalive:true}).catch(function(){}); }catch(e){}
+      }
+      try{
+        var k = 'pdp_ver_' + MARCA + '_' + PID, last = Number(sessionStorage.getItem(k) || 0);
+        if(Date.now() - last > 30*60*1000){ sessionStorage.setItem(k, String(Date.now())); sheetClick('ABRIR_MODAL'); }
+      }catch(e){ sheetClick('ABRIR_MODAL'); }
+      var add = document.getElementById('addBtn');
+      if(add) add.addEventListener('click', function(){ if(add.disabled) return; sheetClick('AGREGAR_BOLSA'); px('AddToCart'); });
+      document.querySelectorAll('a[href^="https://wa.me/"]').forEach(function(a){
+        a.addEventListener('click', function(){ sheetClick('WHATSAPP_PDP'); px('Contact'); });
+      });
+    })();
+  </script>
 </body>
 </html>
