@@ -198,6 +198,22 @@ function getCatalogo(marca) {
   return resultado;
 }
 
+// Orden de tallas (Nov 2026): letras de menor a mayor (XXS ... XXXL), luego numericas de menor a mayor,
+// luego cualquier otra ("Unica", "Plus", etc.) conservando su orden original. No cambia el valor de ninguna talla.
+function _ordenarTallas(arr) {
+  const LETRAS = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "XXXL"];
+  const rango = t => {
+    const s = String(t).trim().toUpperCase();
+    const i = LETRAS.indexOf(s);
+    if (i >= 0) return [0, i];
+    if (/^\d+(\.\d+)?$/.test(s)) return [1, Number(s)];
+    return [2, 0];
+  };
+  return (arr || []).map((t, i) => ({ t: t, i: i, r: rango(t) }))
+    .sort((a, b) => (a.r[0] - b.r[0]) || (a.r[1] - b.r[1]) || (a.i - b.i))
+    .map(x => x.t);
+}
+
 function _calcularCatalogo(marca) {
   const ss = _ss(marca);
 
@@ -371,6 +387,9 @@ function _calcularCatalogo(marca) {
   Object.values(productos).forEach(p => {
     p.agotado = p.stock_total <= 0;
     if (!p.tallas_agotadas) p.tallas_agotadas = [];
+    // Nov 2026: las tallas salen SIEMPRE ordenadas, sin depender del orden de las filas del Sheet.
+    p.tallas = _ordenarTallas(p.tallas);
+    p.tallas_agotadas = _ordenarTallas(p.tallas_agotadas);
   });
 
   // FIX (Jul 2026 v2): agrupa primero por Tipo_Prenda (alfabetico),
@@ -419,9 +438,9 @@ function getZonas(marca) {
       id_zona:        row[idx["ID_Zona"]]         || row[0],
       nombre:         row[idx["Nombre_Zona"]]      || row[1] || "",
       barrios:        row[idx["Barrios_Colonias"]] || row[2] || "",
-      costo_envio_gtq: Number(row[idx["Costo_Envio_GTQ"]] || row[3]) || 0,
-      tiempo_entrega: row[idx["Tiempo_Entrega"]]   || row[4] || "",
-      nse_referencia: row[idx["NSE_Referencia"]]   || row[5] || ""
+      // Nov 2026 (seguridad): ya no se publican tiempo_entrega ni nse_referencia. Ningun frontend
+      // los usaba, y el respaldo posicional (row[4], row[5]) podia exponer Costo_Envio_COP.
+      costo_envio_gtq: Number(row[idx["Costo_Envio_GTQ"]] || row[3]) || 0
     });
   }
 
