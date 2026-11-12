@@ -1,0 +1,49 @@
+name: Regenerar paginas y catalogos
+
+# Regenera las paginas de producto, los catalogos de Meta y el sitemap desde el Sheet,
+# para que precios, stock y productos nuevos se reflejen sin depender de ningun computador.
+# - Automatico: cada 3 horas.
+# - Manual: pestana Actions > "Regenerar paginas y catalogos" > Run workflow (tambien desde la app de GitHub en el celular).
+# Si la revision de seguridad falla, NO publica nada.
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: regenerar
+  cancel-in-progress: false
+
+jobs:
+  regenerar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Regenerar desde el Sheet
+        run: python3 scripts/generate_product_pages.py
+
+      - name: Revision de seguridad
+        run: python3 scripts/check_generated.py
+
+      - name: Publicar solo si hubo cambios
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A orkia nudo feeds sitemap.xml
+          if git diff --cached --quiet; then
+            echo "Sin cambios: no se publica nada."
+          else
+            git commit -m "Regenerar paginas y catalogos desde el Sheet"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi

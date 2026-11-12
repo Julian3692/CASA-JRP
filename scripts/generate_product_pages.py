@@ -39,6 +39,7 @@ publicadas.
 
 Uso: python3 scripts/generate_product_pages.py
 """
+import csv
 import json
 import re
 import time
@@ -61,6 +62,15 @@ COLOR_HEX = {
     "rosa": "#D8A6A6", "rosado": "#D8A6A6", "morado": "#705A7A", "lila": "#B7A4C6",
     "amarillo": "#D6B45A", "naranja": "#C4714A", "terracota": "#C4714A",
 }
+
+# Guias de tallas (Nov 2026). Vacio = no se muestra nada. Para activar una, llenar el tipo de prenda, por ejemplo:
+# SIZE_GUIDES["orkia"]["Jean"] = {
+#     "titulo": "Guía de tallas — Jean",
+#     "columnas": ["Talla", "Cintura (cm)", "Cadera (cm)", "Largo (cm)"],
+#     "filas": [["6", "..", "..", ".."], ["8", "..", "..", ".."]],
+#     "nota": "Medidas del producto, en centímetros. Si dudas entre dos tallas, escríbenos por WhatsApp.",
+# }
+SIZE_GUIDES = {"orkia": {}, "nudo": {}}
 
 BRANDS = {
     "orkia": {
@@ -323,6 +333,38 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
         for v in group
     )
 
+    guide = SIZE_GUIDES.get(marca, {}).get(p.get("tipo_prenda") or "")
+    guide_css = guide_html = guide_link = ""
+    if guide:
+        head = "".join(f"<th>{esc(c)}</th>" for c in guide["columnas"])
+        body = "".join("<tr>" + "".join(f"<td>{esc(c)}</td>" for c in fila) + "</tr>" for fila in guide["filas"])
+        nota = f'<p class="sg-note">{esc(guide["nota"])}</p>' if guide.get("nota") else ""
+        guide_link = ' <button type="button" class="size-guide-link" id="sizeGuideBtn">Guía de tallas</button>'
+        guide_css = (
+            "\n    .size-guide-link{background:none;border:0;padding:0;margin-left:10px;font-size:11px;letter-spacing:.08em;"
+            "text-transform:none;color:var(--mid);text-decoration:underline;text-underline-offset:3px;cursor:pointer}"
+            "\n    .sg-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:95;padding:16px}"
+            "\n    .sg-overlay.open{display:flex}"
+            "\n    .sg-box{position:relative;background:#fff;max-width:520px;width:100%;max-height:85vh;overflow:auto;padding:24px 22px 20px}"
+            "\n    .sg-box h2{font-size:16px;margin:0 0 14px;color:var(--dark)}"
+            "\n    .sg-box table{width:100%;border-collapse:collapse;font-size:13px}"
+            "\n    .sg-box th,.sg-box td{padding:8px 6px;border-bottom:1px solid var(--border);text-align:center}"
+            "\n    .sg-box th{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid)}"
+            "\n    .sg-note{font-size:12px;color:var(--mid);margin:14px 0 0;line-height:1.45}"
+            "\n    .sg-close{position:absolute;top:6px;right:10px;background:none;border:0;font-size:26px;line-height:1;cursor:pointer;color:var(--dark)}"
+        )
+        guide_html = (
+            f'<div class="sg-overlay" id="sizeGuide" role="dialog" aria-modal="true" aria-label="{esc(guide["titulo"])}">'
+            f'<div class="sg-box"><button type="button" class="sg-close" id="sgClose" aria-label="Cerrar">&times;</button>'
+            f'<h2>{esc(guide["titulo"])}</h2><table><thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>{nota}</div></div>'
+            "<script>(function(){var o=document.getElementById('sizeGuide'),b=document.getElementById('sizeGuideBtn');"
+            "if(!o||!b)return;function c(){o.classList.remove('open');}"
+            "b.addEventListener('click',function(){o.classList.add('open');});"
+            "document.getElementById('sgClose').addEventListener('click',c);"
+            "o.addEventListener('click',function(e){if(e.target===o)c();});"
+            "document.addEventListener('keydown',function(e){if(e.key==='Escape')c();});})();</script>"
+        )
+
     if len(tallas_disponibles) <= 1:
         talla_block = ""
     else:
@@ -331,7 +373,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
             f'data-talla="{esc(t)}" {"disabled" if normalize(t).lower() in tallas_agotadas else ""}>{esc(t)}</button>'
             for t in tallas_disponibles
         )
-        talla_block = f'<div class="size-title">Selecciona tu talla</div><div class="sizes" id="sizes">{size_buttons}</div>'
+        talla_block = f'<div class="size-title">Selecciona tu talla{guide_link}</div><div class="sizes" id="sizes">{size_buttons}</div>'
 
     trust_bar = "".join(
         f'''<div class="trust-item"><svg class="icon" viewBox="0 0 24 24">{"".join(f'<path d="{d}"/>' for d in paths.split("|"))}</svg>
@@ -502,7 +544,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     .eyebrow{{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--terracota);font-weight:600;margin:0 0 10px}}
     .badge-agotado{{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:#EFE3E0;color:#9A3B2E;font-size:9px;letter-spacing:.1em}}
     h1{{font-family:'{brand['font_display']}',Georgia,serif;font-size:38px;line-height:1.05;letter-spacing:-.02em;margin:6px 0 8px;color:var(--dark);max-width:520px}}
-    .price{{font-size:24px;font-weight:600;margin:0 0 20px;color:var(--dark)}}{first_ship_css}
+    .price{{font-size:24px;font-weight:600;margin:0 0 20px;color:var(--dark)}}{first_ship_css}{guide_css}
     .color-title,.size-title{{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text);margin-bottom:10px}}
     .color-options{{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:24px}}
     .color-btn{{min-height:38px;border:1px solid #D9D2CC;background:#fff;color:#111;border-radius:999px;padding:0 13px;display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}}
@@ -783,9 +825,70 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
       if(e.key === 'ArrowRight') document.getElementById('lbNext')?.click();
     }});
   </script>
-{track_script}</body>
+{guide_html}{track_script}</body>
 </html>
 """
+
+
+# Catalogo para Meta (Facebook/Instagram), un CSV por marca en /feeds/. Solo datos publicos del catalogo:
+# nada de costos ni proveedor. El id es el mismo id_producto que el Pixel manda en content_ids.
+FEED_COLUMNS = [
+    "id", "title", "description", "availability", "condition", "price", "link", "image_link",
+    "additional_image_link", "brand", "color", "gender", "age_group", "item_group_id",
+    "google_product_category", "product_type",
+]
+FEED_META = {
+    "orkia": {"brand": "Orkia", "gender": "female", "category": "Apparel & Accessories > Clothing",
+              "about": "Moda femenina colombiana"},
+    "nudo": {"brand": "Nudo", "gender": "male", "category": "Apparel & Accessories > Clothing > Underwear & Socks",
+             "about": "Ropa interior colombiana"},
+}
+
+
+def feed_rows(marca, groups):
+    meta = FEED_META[marca]
+    rows = []
+    for group in groups:
+        key = normalize(group[0].get("ref_proveedor")) or f"producto-{group[0]['id_producto']}"
+        for p in group:
+            pid = str(p["id_producto"])
+            desc = (p.get("descripcion") or "").strip()
+            color = (p.get("color") or "").strip()
+            title = desc if (not color or normalize(color) in normalize(desc)) else f"{desc} - {color}"
+            tallas = [str(t) for t in (p.get("tallas") or [])]
+            detalle = f"{desc}." + (f" Color: {color}." if color else "") + (f" Tallas: {', '.join(tallas)}." if tallas and tallas != ["Unica"] else "")
+            disponible = (not p.get("agotado")) and float(p.get("stock_total") or 0) > 0
+            extras = [u for u in (p.get("url_imagen_2"), p.get("url_imagen_3")) if u]
+            rows.append({
+                "id": pid,
+                "title": title[:150],
+                "description": f"{detalle} {meta['about']}. Pide por WhatsApp.",
+                "availability": "in stock" if disponible else "out of stock",
+                "condition": "new",
+                "price": f"{float(p.get('precio_gtq') or 0):.2f} GTQ",
+                "link": f"https://casajrp.com/{marca}/producto/{pid}/",
+                "image_link": p.get("url_imagen") or "",
+                "additional_image_link": ",".join(extras),
+                "brand": meta["brand"],
+                "color": color,
+                "gender": meta["gender"],
+                "age_group": "adult",
+                "item_group_id": key,
+                "google_product_category": meta["category"],
+                "product_type": p.get("tipo_prenda") or "",
+            })
+    return rows
+
+
+def write_feed(marca, groups):
+    rows = feed_rows(marca, groups)
+    out = REPO_ROOT / "feeds"
+    out.mkdir(exist_ok=True)
+    with open(out / f"{marca}.csv", "w", encoding="utf-8", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=FEED_COLUMNS)
+        w.writeheader()
+        w.writerows(rows)
+    print(f"{marca}: feed de Meta con {len(rows)} productos en feeds/{marca}.csv")
 
 
 def write_sitemap(product_urls, extra_urls=()):
@@ -820,6 +923,7 @@ def main():
                 product_urls.append(canonical)
                 count += 1
         print(f"{marca}: {count} paginas generadas en {out_dir}")
+        write_feed(marca, groups)
 
         zonas = fetch_zonas(marca)
         for slug, _, _ in policy_pages.POLICY_PAGES:
