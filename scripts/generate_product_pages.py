@@ -236,7 +236,8 @@ TRACK_TEMPLATE = """
   <script>
     (function(){
       var AS_URL = __AS_URL__, MARCA = __MARCA__, PID = __PID__, NAME = __NAME__, PRICE = __PRICE__;
-      var UTM = new URLSearchParams(location.search).get('utm') || 'directo';
+      var QS = new URLSearchParams(location.search);
+      var UTM = (QS.get('utm') || (QS.get('utm_source') ? QS.get('utm_source') + (QS.get('utm_campaign') ? '_' + QS.get('utm_campaign') : '') : (QS.get('fbclid') ? 'meta' : 'directo'))).replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 60) || 'directo';
       function isBot(){ return navigator.webdriver === true || /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit/i.test(navigator.userAgent || ''); }
       function px(evento){
         if(typeof fbq !== 'function') return;

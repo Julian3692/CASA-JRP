@@ -413,7 +413,8 @@
   <script>
     (function(){
       var AS_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec", MARCA = "orkia", PID = "11013", NAME = "Body escote cuadrado manga larga animal print", PRICE = 229.0;
-      var UTM = new URLSearchParams(location.search).get('utm') || 'directo';
+      var QS = new URLSearchParams(location.search);
+      var UTM = (QS.get('utm') || (QS.get('utm_source') ? QS.get('utm_source') + (QS.get('utm_campaign') ? '_' + QS.get('utm_campaign') : '') : (QS.get('fbclid') ? 'meta' : 'directo'))).replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 60) || 'directo';
       function isBot(){ return navigator.webdriver === true || /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit/i.test(navigator.userAgent || ''); }
       function px(evento){
         if(typeof fbq !== 'function') return;

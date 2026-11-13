@@ -459,7 +459,8 @@
     const AS_URL = 'https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec';
     const MARCA = 'orkia';
     const WA_NUMBER = '50248304736';
-    const UTM = new URLSearchParams(window.location.search).get('utm') || 'directo';
+    const QS0 = new URLSearchParams(window.location.search);
+    const UTM = (QS0.get('utm') || (QS0.get('utm_source') ? QS0.get('utm_source') + (QS0.get('utm_campaign') ? '_' + QS0.get('utm_campaign') : '') : (QS0.get('fbclid') ? 'meta' : 'directo'))).replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 60) || 'directo';
     const SKU_PARAM = new URLSearchParams(window.location.search).get('sku') || '';
     const BAG_KEY = 'orkia_seleccion_whatsapp_v1';
     const BAG_KEY_LEGACY = 'orkia_bolsa_whatsapp_v1';
