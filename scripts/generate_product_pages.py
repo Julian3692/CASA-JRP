@@ -72,6 +72,10 @@ COLOR_HEX = {
 # }
 SIZE_GUIDES = {"orkia": {}, "nudo": {}}
 
+# Tipos cuya foto de catalogo es alta (cuerpo entero, ~3:5). Su galeria usa una caja 3:5 para mostrarla
+# completa, sin recortar cabeza ni pies. El resto de la tienda sigue en 4:5.
+TIPOS_FOTO_ALTA = {"jean"}
+
 BRANDS = {
     "orkia": {
         "label": "ORKIA",
@@ -524,6 +528,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     .gallery-col{{display:flex;flex-direction:column;min-width:0}}
     .gallery{{position:relative;background:var(--border);aspect-ratio:4/5;max-width:100%;flex:1 1 auto;min-height:600px}}
     .photo{{width:100%;height:100%;object-fit:cover;background:var(--border);display:block}}
+    .gallery.tall{{aspect-ratio:3/5;min-height:760px}}
     .gallery-nav{{position:absolute;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.85);border:0;display:flex;align-items:center;justify-content:center;font-size:16px;color:#111}}
     .gallery-nav.prev{{left:10px}}
     .gallery-nav.next{{right:10px}}
@@ -604,6 +609,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
       .layout{{flex-direction:column;align-items:stretch;gap:0;max-width:none;margin:0}}
       main{{padding:0 0 50px}}
       .gallery{{height:58vh;min-height:0;max-height:480px;aspect-ratio:auto;width:100%;flex:0 0 auto}}
+      .gallery.tall{{height:auto;max-height:none;min-height:0;aspect-ratio:3/5}}
       .thumbs{{padding:8px 18px 0}}
       .info-pad{{padding:20px 18px 0;flex:0 0 auto;max-width:none}}
       .eyebrow{{font-size:9px}}
@@ -644,7 +650,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
   <main>
     <div class="layout">
       <div class="gallery-col">
-        <div class="gallery">
+        <div class="gallery{' tall' if normalize(p.get('tipo_prenda')).lower() in TIPOS_FOTO_ALTA else ''}">
           <img id="mainPhoto" class="photo" src="{esc(image)}" alt="{esc(p['descripcion'])} - {esc(p.get('color') or '')}" loading="eager" fetchpriority="high">
           <button type="button" class="gallery-nav prev {'hidden' if len(imgs)<=1 else ''}" id="prevBtn" aria-label="Foto anterior">&lsaquo;</button>
           <button type="button" class="gallery-nav next {'hidden' if len(imgs)<=1 else ''}" id="nextBtn" aria-label="Foto siguiente">&rsaquo;</button>
