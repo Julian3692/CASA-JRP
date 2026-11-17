@@ -174,10 +174,24 @@ function _fecha() {
 // Sep 2026: cada get_catalogo leia DIM_PRODUCTOS + DIM_TALLAS_PRODUCTO +
 // FACT_STOCK_ACTUAL enteros en cada visita (3 llamadas a Sheets sin cache),
 // lo que media entre 2 y 4.5s de forma consistente en TODAS las cargas del
-// catalogo. CacheService guarda el JSON ya calculado por CATALOGO_CACHE_SEG
-// segundos: casi todas las visitas devuelven el resultado al instante, y el
-// inventario nunca queda mas viejo que ese margen.
-const CATALOGO_CACHE_SEG = 180;
+// catalogo. CacheService guarda el JSON ya calculado por CATALOGO_CACHE_SEG segundos.
+// Nov 2026: de 180 s a 3600 s (decision del dueno: con poco trafico, 3 minutos casi nunca daban acierto de cache).
+// A cambio, la memoria se borra SOLA cuando cambia lo que importa: registrarPedido (el stock baja), activar/desactivar
+// promociones, y a mano con refrescarCatalogo() despues de editar el Sheet (talla, precio, foto, producto nuevo).
+// Los precios de oferta que se COBRAN no salen de aqui: el servidor los calcula en vivo (cotizarPedido/registrarPedido).
+const CATALOGO_CACHE_SEG = 3600;
+
+function _invalidarCatalogo(marca) {
+  try { CacheService.getScriptCache().remove("catalogo_" + marca); } catch (e) {}
+}
+
+// Ejecutar a mano en Apps Script despues de editar DIM_PRODUCTOS, tallas, stock o fotos y querer verlo YA en la tienda.
+function refrescarCatalogo() {
+  _invalidarCatalogo("orkia"); _invalidarCatalogo("nudo");
+  const msg = "CATALOGO REFRESCADO: la proxima visita a Orkia y a Nudo lee el Sheet en vivo.";
+  Logger.log(msg);
+  return msg;
+}
 
 function getCatalogo(marca) {
   const cache = CacheService.getScriptCache();
@@ -392,6 +406,19 @@ function _calcularCatalogo(marca) {
     p.tallas_agotadas = _ordenarTallas(p.tallas_agotadas);
   });
 
+  // Nov 2026: promociones. Cada producto lleva [id_campania, precio_oferta] por cada campana que lo cobija
+  // (activa o que inicie en los proximos PROMO_HORIZONTE_DIAS dias); la lista global 'campanias' trae las fechas.
+  // El navegador solo compara la hora con inicio/fin y elige la de mayor prioridad; el cobro real lo calcula el servidor.
+  const ahoraCat = _ahoraMs();
+  const campsCat = _cargarCampanias(marca, ss).filter(c => c.fin >= ahoraCat && c.inicio <= ahoraCat + PROMO_HORIZONTE_DIAS * 86400000);
+  if (campsCat.length) {
+    Object.values(productos).forEach(p => {
+      const lista = [];
+      campsCat.forEach(c => { if (_campaniaAplica(c, p)) lista.push([c.id, _precioPromo(p.precio_gtq, c.pct)]); });
+      if (lista.length) p.promos = lista;
+    });
+  }
+
   // FIX (Jul 2026 v2): agrupa primero por Tipo_Prenda (alfabetico),
   // y dentro de cada tipo mantiene el criterio original: agotado al
   // final, y entre los no agotados, mayor stock primero.
@@ -408,8 +435,140 @@ function _calcularCatalogo(marca) {
     ok: true,
     marca: marca,
     total: lista.length,
-    productos: lista
+    productos: lista,
+    campanias: campsCat.map(c => ({ id: c.id, etq: c.etiqueta, i: Math.floor(c.inicio / 1000), f: Math.floor((c.fin + 1) / 1000), d: c.pct, r: c.prioridad, t: c.tachado ? 1 : 0, b: c.banner }))
   };
+}
+
+// ============================================================
+// PROMOCIONES (Nov 2026)
+//
+// Las campanas viven en la hoja DIM_CAMPANIAS de cada marca (si no existe, no hay promociones).
+// Columnas: ID_Campania, Nombre, Etiqueta, Inicio, Fin, Activa, Porcentaje, Tipos_Prenda,
+//           IDs_Excluidos, Prioridad.
+//   - Inicio / Fin: HORA DE GUATEMALA, texto "yyyy-MM-dd HH:mm[:ss]". Fin incluye todo el periodo que nombra
+//     (dia completo si solo hay fecha; minuto o segundo completo si hay hora).
+//   - Activa: SI / NO. Una campana en NO se ignora por completo.
+//   - Porcentaje: 10 o 10% (0.1 se entiende como 10%). Valido de 1 a 90.
+//   - Tipos_Prenda: "*" o vacio = todas; o tipos separados por ";" (Jean;Blusa).
+//   - IDs_Excluidos: IDs de producto separados por ";" que NO entran.
+//   - Mostrar_Tachado: SI = en el sitio se muestra el precio normal tachado; NO (o vacio) = solo se menciona el precio normal.
+//   - Banner: texto del aviso grande de la pagina para esa campana (opcional).
+//   - Prioridad: numero. Si un producto cae en varias campanas activas a la vez, gana la de MAYOR prioridad
+//     (nunca se suman); si empatan, la de mayor porcentaje.
+// El precio de oferta se calcula SOLO aqui (entero, redondeo al quetzal mas cercano): nadie mas lo recalcula.
+// ============================================================
+
+const PROMO_HORIZONTE_DIAS = 7;        // el catalogo incluye campanas que inicien dentro de este plazo
+const PROMO_MAX_RETROCESO_HORAS = 48;  // "precio vigente al momento del mensaje": como maximo 48 h atras
+
+function _ahoraMs() { return Date.now(); }
+
+function _promoFechaMs(v, tz, finDeDia) {
+  let s = v;
+  if (v instanceof Date) s = Utilities.formatDate(v, tz || "America/Guatemala", "yyyy-MM-dd HH:mm:ss");
+  s = String(s === undefined || s === null ? "" : s).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (!m) return NaN;
+  const tieneHora = m[4] !== undefined, tieneSeg = m[6] !== undefined;
+  const base = Date.UTC(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  const GT = 6 * 3600 * 1000;            // Guatemala es UTC-6 todo el ano (sin cambio de horario)
+  // Un Fin cubre TODO el periodo que nombra: el dia completo si solo hay fecha, el minuto completo si hay HH:mm,
+  // el segundo completo si hay HH:mm:ss (asi "23:59:59" no deja un hueco de casi un segundo antes de la campana siguiente).
+  const extra = !finDeDia ? 0 : (!tieneHora ? 86399999 : (!tieneSeg ? 59999 : 999));
+  return base + GT + extra;
+}
+
+function _promoPct(v) {
+  const n0 = Number(String(v === undefined || v === null ? "" : v).replace("%", "").replace(",", ".").trim());
+  if (!isFinite(n0) || n0 <= 0) return NaN;
+  const n = (n0 > 0 && n0 < 1) ? n0 * 100 : n0;   // 0.1 (celda con formato %) = 10 %
+  return Math.round(n * 100) / 100;
+}
+
+function _promoNorm(t) {
+  return String(t === undefined || t === null ? "" : t).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\s+/g, " ").trim();
+}
+
+// Una fila de DIM_CAMPANIAS -> campana lista para usar, o null (y se anota por que en 'errores').
+function _promoNormalizarCampania(f, tz, errores) {
+  const id = String(f.ID_Campania === undefined ? "" : f.ID_Campania).trim();
+  if (!id) return null;
+  if (!_esSi(f.Activa)) return null;
+  const inicio = _promoFechaMs(f.Inicio, tz, false), fin = _promoFechaMs(f.Fin, tz, true);
+  const pct = _promoPct(f.Porcentaje);
+  if (isNaN(inicio) || isNaN(fin)) { errores.push(id + ": fecha de inicio o fin invalida"); return null; }
+  if (fin <= inicio) { errores.push(id + ": el fin no es posterior al inicio"); return null; }
+  if (isNaN(pct) || pct < 1 || pct > 90) { errores.push(id + ": porcentaje invalido (" + f.Porcentaje + ")"); return null; }
+  const tiposRaw = String(f.Tipos_Prenda === undefined ? "" : f.Tipos_Prenda).trim();
+  const tipos = (tiposRaw === "" || tiposRaw === "*") ? null
+    : tiposRaw.split(/[;|]/).map(_promoNorm).filter(Boolean);
+  const excl = {};
+  String(f.IDs_Excluidos === undefined ? "" : f.IDs_Excluidos).split(/[;,\s]+/).forEach(x => { const n = Number(x); if (x !== "" && isFinite(n)) excl[n] = true; });
+  const prio = Number(f.Prioridad);
+  return { id: id, nombre: String(f.Nombre || id), etiqueta: String(f.Etiqueta || f.Nombre || id),
+           inicio: inicio, fin: fin, pct: pct, tipos: tipos, excluidos: excl, prioridad: isFinite(prio) ? prio : 0,
+           tachado: _esSi(f.Mostrar_Tachado), banner: String(f.Banner === undefined || f.Banner === null ? "" : f.Banner).trim().slice(0, 140) };
+}
+
+function _cargarCampanias(marca, ssOpt) {
+  try {
+    const ss = ssOpt || _ss(marca);
+    const sh = ss.getSheetByName("DIM_CAMPANIAS");
+    if (!sh) return [];
+    const data = sh.getDataRange().getValues();
+    if (!data || data.length < 2) return [];
+    const idx = {};
+    data[0].forEach((c, i) => { if (c) idx[String(c).trim()] = i; });
+    ["ID_Campania", "Inicio", "Fin", "Activa", "Porcentaje"].forEach(c => {
+      if (idx[c] === undefined) throw new Error("columna_no_encontrada: DIM_CAMPANIAS." + c);
+    });
+    const tz = (typeof ss.getSpreadsheetTimeZone === "function") ? ss.getSpreadsheetTimeZone() : "America/Guatemala";
+    const out = [], errores = [];
+    for (let r = 1; r < data.length; r++) {
+      const f = {};
+      Object.keys(idx).forEach(k => { f[k] = data[r][idx[k]]; });
+      const c = _promoNormalizarCampania(f, tz, errores);
+      if (c) out.push(c);
+    }
+    if (errores.length) Logger.log("DIM_CAMPANIAS con problemas (se ignoran esas campanas): " + errores.join(" | "));
+    return out;
+  } catch (e) {
+    Logger.log("DIM_CAMPANIAS ilegible, sin promociones: " + e.message);
+    return [];
+  }
+}
+
+function _precioPromo(precio, pct) {
+  return Math.floor((Number(precio) * (100 - pct) + 50) / 100);
+}
+
+// prod: { id_producto, tipo_prenda, precio_gtq }
+function _campaniaAplica(c, prod) {
+  if (!(Number(prod.precio_gtq) > 0)) return false;
+  if (c.excluidos[Number(prod.id_producto)]) return false;
+  if (c.tipos === null) return true;
+  return c.tipos.indexOf(_promoNorm(prod.tipo_prenda)) >= 0;
+}
+
+// La campana ACTIVA en el instante 'ms' para ese producto (la de mayor prioridad), o null.
+function _promoActivaPara(camps, prod, ms) {
+  let mejor = null;
+  (camps || []).forEach(c => {
+    if (ms < c.inicio || ms > c.fin) return;
+    if (!_campaniaAplica(c, prod)) return;
+    if (!mejor || c.prioridad > mejor.prioridad || (c.prioridad === mejor.prioridad && c.pct > mejor.pct)) mejor = c;
+  });
+  if (!mejor) return null;
+  return { id: mejor.id, pct: mejor.pct, etiqueta: mejor.etiqueta, fin: mejor.fin, precio: _precioPromo(prod.precio_gtq, mejor.pct) };
+}
+
+// "Precio vigente al momento del mensaje": fecha_ref opcional (ISO o ms), nunca futura y como maximo 48 h atras.
+function _promoFechaRef(v, ahoraMs) {
+  let ms = NaN;
+  if (v !== undefined && v !== null && String(v).trim() !== "") ms = (typeof v === "number") ? v : (/^\d{10,}$/.test(String(v).trim()) ? Number(v) : Date.parse(String(v)));
+  if (!isFinite(ms)) return ahoraMs;
+  return Math.min(ahoraMs, Math.max(ahoraMs - PROMO_MAX_RETROCESO_HORAS * 3600000, ms));
 }
 
 // ============================================================
@@ -537,8 +696,9 @@ function registrarDemanda(marca, params) {
 // ============================================================
 
 const REGLAS_MARCA = {
-  orkia: { primeraCompra: true, codigos: true },
-  nudo:  { primeraCompra: true, codigos: true }
+  // primeraCompraMin: subtotal minimo (a precio NORMAL, antes de ofertas) para que el primer envio sea gratis. 0 = sin minimo.
+  orkia: { primeraCompra: true, primeraCompraMin: 0, codigos: true },
+  nudo:  { primeraCompra: true, primeraCompraMin: 0, codigos: true }
 };
 
 function _reglas(marca) {
@@ -648,26 +808,33 @@ function _validarCodigo(ss, codigoRaw) {
 //   o.reglas          REGLAS_MARCA[marca]
 //   o.codigoPct       % del codigo ya validado (0 si no hay)
 function _calcularTotalesPedido(o) {
-  const unidades = o.unidades.map(u => ({ precio: Number(u.precio) || 0 }));
-  const subtotal = unidades.reduce((s, u) => s + u.precio, 0);
+  const unidades = o.unidades.map(u => {
+    const precio = Number(u.precio) || 0;
+    return { precio: precio, regular: (u.precio_regular !== undefined ? Number(u.precio_regular) || 0 : precio), promo: u.promo_id || "" };
+  });
+  const subtotal         = unidades.reduce((s, u) => s + u.precio, 0);     // lo que se cobra, ya con oferta
+  const subtotal_regular = unidades.reduce((s, u) => s + u.regular, 0);    // a precio normal
+  const descuento_promo  = subtotal_regular - subtotal;
+  const ids = {}; unidades.forEach(u => { if (u.promo) ids[u.promo] = true; });
+  const id_campania = Object.keys(ids).join("+");
 
-  // Codigo: % sobre el subtotal, redondeado al quetzal mas cercano.
+  // Codigo: % sobre las prendas SIN oferta (un codigo no se acumula con una oferta), al quetzal mas cercano.
   let descuento_codigo = 0;
   if (o.codigoPct > 0) {
-    descuento_codigo = Math.round(subtotal * o.codigoPct / 100);
+    const base = unidades.reduce((s, u) => s + (u.promo ? 0 : u.precio), 0);
+    descuento_codigo = Math.round(base * o.codigoPct / 100);
   }
 
   const descuento_manual = Math.round((Number(o.descuentoManual) || 0) * 100) / 100;
   const descuento_total  = Math.min(subtotal, descuento_codigo + descuento_manual);
 
-  // Envio gratis: el umbral se compara contra el subtotal ANTES de descuentos.
-  // Si no llega al umbral, la primera compra tambien lo regala.
+  // Envio gratis: el umbral y el minimo de primera compra se miden a precio NORMAL (antes de ofertas y descuentos).
   let envio_gratis = false;
   let motivo_envio_gratis = "";
-  if (subtotal >= UMBRAL_ENVIO_GRATIS_GTQ) {
+  if (subtotal_regular >= UMBRAL_ENVIO_GRATIS_GTQ) {
     envio_gratis = true;
     motivo_envio_gratis = "umbral";
-  } else if (o.reglas.primeraCompra && o.esNuevo) {
+  } else if (o.reglas.primeraCompra && o.esNuevo && subtotal_regular >= (Number(o.reglas.primeraCompraMin) || 0)) {
     envio_gratis = true;
     motivo_envio_gratis = "primera_compra";
   }
@@ -677,14 +844,17 @@ function _calcularTotalesPedido(o) {
   const envio_por_validar = !envio_gratis && !(Number(o.costoEnvioZona) > 0);
 
   return {
-    subtotal_gtq:         subtotal,
-    descuento_codigo_gtq: descuento_codigo,
-    descuento_gtq:        Math.round(descuento_total * 100) / 100,
-    envio_gratis:         envio_gratis,
-    motivo_envio_gratis:  motivo_envio_gratis,
-    envio_por_validar:    envio_por_validar,
-    costo_envio_cobrado:  costo_envio_cobrado,
-    total_gtq:            Math.round((subtotal - descuento_total + costo_envio_cobrado) * 100) / 100
+    subtotal_gtq:          subtotal,
+    subtotal_regular_gtq:  subtotal_regular,
+    descuento_promo_gtq:   descuento_promo,
+    id_campania:           id_campania,
+    descuento_codigo_gtq:  descuento_codigo,
+    descuento_gtq:         Math.round(descuento_total * 100) / 100,
+    envio_gratis:          envio_gratis,
+    motivo_envio_gratis:   motivo_envio_gratis,
+    envio_por_validar:     envio_por_validar,
+    costo_envio_cobrado:   costo_envio_cobrado,
+    total_gtq:             Math.round((subtotal - descuento_total + costo_envio_cobrado) * 100) / 100
   };
 }
 
@@ -734,13 +904,28 @@ function _prepararPedido(marca, body) {
 
   // --- Lineas -> unidades ---
   const lineas       = body.lineas || [];
+  // Nov 2026: un pedido sin telefono, sin lineas o con un producto que no existe NO se cotiza ni se guarda (antes se guardaba
+  // con total 0). Esta puerta es publica; esto frena la basura, no al que mande un pedido bien formado (riesgo aceptado por el dueno, 16 nov 2026).
+  if (!String(body.telefono || "").replace(/\D/g, "")) throw new Error("telefono_requerido");
+  if (!Array.isArray(lineas) || lineas.length === 0) throw new Error("pedido_sin_lineas");
+  lineas.forEach(l => {
+    if (!l || !(precioMapGTQ[l.id_producto] > 0)) throw new Error("producto_no_encontrado: " + (l && l.id_producto));
+  });
   const unidades     = [];
   let   subtotal_cop = 0;   // referencia interna
+  // Nov 2026: el precio de oferta lo decide el SERVIDOR, a la hora de referencia (ahora, o la del mensaje de la
+  // clienta si el operador manda fecha_ref, con tope de 48 h atras).
+  const camps  = _cargarCampanias(marca, ss);
+  const ahora  = _ahoraMs();
+  const refMs  = _promoFechaRef(body.fecha_ref, ahora);
   lineas.forEach(l => {
     const cantidad = Math.min(100, Math.max(1, Math.floor(Number(l.cantidad) || 1)));
     subtotal_cop  += (precioMap[l.id_producto] || 0) * cantidad;
+    const regular = precioMapGTQ[l.id_producto] || 0;
+    const d       = dim_dict[l.id_producto] || {};
+    const promo   = _promoActivaPara(camps, { id_producto: l.id_producto, tipo_prenda: d.tipo_prenda, precio_gtq: regular }, refMs);
     for (let i = 0; i < cantidad; i++) {
-      unidades.push({ precio: precioMapGTQ[l.id_producto] || 0 });
+      unidades.push({ precio: promo ? promo.precio : regular, precio_regular: regular, promo_id: promo ? promo.id : "" });
     }
   });
   const descuento_cop = Number(body.descuento_cop) || 0;
@@ -769,6 +954,7 @@ function _prepararPedido(marca, body) {
     lineas: lineas, dim_dict: dim_dict, precioMap: precioMap,
     subtotal_cop: subtotal_cop, descuento_cop: descuento_cop,
     id_zona: zona.id_zona, costo_envio: zona.costo,
+    fecha_ref_ms: refMs,
     codigo: codigoInfo ? codigoInfo.codigo : codigoRaw,   // sin hoja de codigos: texto tal cual, como antes
     totales: totales
   };
@@ -787,6 +973,10 @@ function cotizarPedido(marca, body) {
     ok:                   true,
     es_nuevo:             c.es_nuevo,
     subtotal_gtq:         t.subtotal_gtq,
+    subtotal_regular_gtq: t.subtotal_regular_gtq,
+    descuento_promo_gtq:  t.descuento_promo_gtq,
+    id_campania:          t.id_campania,
+    fecha_ref_usada:      new Date(c.fecha_ref_ms).toISOString(),
     descuento_codigo_gtq: t.descuento_codigo_gtq,
     descuento_gtq:        t.descuento_gtq,
     costo_envio_gtq:      c.costo_envio,
@@ -871,7 +1061,9 @@ function registrarPedido(marca, body) {
   ];
   // Columna nueva al final, "Motivo_Envio_Gratis" (umbral | primera_compra | vacio),
   // solo en pedidos nuevos. Agregar ese encabezado en FACT_PEDIDOS de la marca antes de desplegar.
-  if (c.reglas.primeraCompra) fila.push(t.motivo_envio_gratis);
+  fila.push(c.reglas.primeraCompra ? t.motivo_envio_gratis : "");
+  // Nov 2026: columnas nuevas al final (32 y 33): descuento por oferta y campana aplicada. Descuento_GTQ queda solo para codigos.
+  fila.push(t.descuento_promo_gtq, t.id_campania);
   pedidosSheet.appendRow(fila);
 
   // --- 5. FACT_LINEAS_PEDIDO ---
@@ -897,8 +1089,15 @@ function registrarPedido(marca, body) {
 
   if (rowsLineas.length > 0) {
     const lastRow = lineasSheet.getLastRow() + 1;
+    // Nov 2026: la talla (columna D) se guarda como TEXTO. Si no, Sheets convierte "10" en numero y "6-8" en fecha, y las
+    // formulas de stock (que comparan con la talla en texto de FACT_ENTRADA_INVENTARIO) dejarian de descontar esa talla.
+    lineasSheet.getRange(lastRow, 4, rowsLineas.length, 1).setNumberFormat("@");
     lineasSheet.getRange(lastRow, 1, rowsLineas.length, 10).setValues(rowsLineas);
   }
+
+  // El stock cambia con este pedido: se borra la memoria del catalogo de esta marca para que la tienda lo vea de inmediato.
+  SpreadsheetApp.flush();
+  _invalidarCatalogo(marca);
 
   return {
     ok:                   true,
@@ -909,6 +1108,10 @@ function registrarPedido(marca, body) {
     descuento_cop:        c.descuento_cop,
     total_cop:            total_cop,
     subtotal_gtq:         t.subtotal_gtq,
+    subtotal_regular_gtq: t.subtotal_regular_gtq,
+    descuento_promo_gtq:  t.descuento_promo_gtq,
+    id_campania:          t.id_campania,
+    fecha_ref_usada:      new Date(c.fecha_ref_ms).toISOString(),
     descuento_gtq:        t.descuento_gtq,
     descuento_codigo_gtq: t.descuento_codigo_gtq,
     costo_envio_gtq:      c.costo_envio,      // precio estandar de la zona (siempre, aunque sea gratis)

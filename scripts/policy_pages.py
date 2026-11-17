@@ -11,6 +11,11 @@ No contiene costos, margenes ni datos internos: solo lo que se le dice a la clie
 import html as _html
 import urllib.parse
 
+# Bandera de Colombia (imagen dibujada, no emoji: en Windows el emoji se ve como "CO"). Colores oficiales: amarillo 50 %, azul 25 %, rojo 25 %.
+CO_FLAG = '<svg class="co-flag" viewBox="0 0 24 16" width="18" height="12" role="img" aria-label="Colombia"><rect width="24" height="8" fill="#FCD116"/><rect y="8" width="24" height="4" fill="#003893"/><rect y="12" width="24" height="4" fill="#CE1126"/></svg>'
+CO_STRIPE = '<div class="co-stripe" aria-hidden="true"></div>'
+CO_CSS = ".co-stripe{height:4px;background:linear-gradient(90deg,#FCD116 0 50%,#003893 50% 75%,#CE1126 75% 100%)}.co-flag{flex:none;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}@media (max-width:720px){.top-shipping{height:auto!important;min-height:32px;padding:5px 12px!important;line-height:1.25}}"   # dentro de f-strings se escribe con llaves dobles
+
 # (slug, nombre en el pie de pagina, titulo de la pagina)
 POLICY_PAGES = [
     ("cambios-y-devoluciones", "Cambios y devoluciones", "Cambios y devoluciones"),
@@ -236,6 +241,7 @@ _CSS = """
     .brand-logo{font-family:'__display__',Georgia,serif;font-size:28px;letter-spacing:.09em;font-weight:400}
     .brand-dot{display:inline-block;width:6px;height:6px;background:var(--terracota);border-radius:50%;margin-left:2px}
     .icon-btn{color:#fff;padding:6px;line-height:0;display:inline-flex}
+    __co_css__
     .top-shipping{min-height:40px;padding:8px 16px;background:#EFE8E0;color:var(--text);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;text-align:center}
     main{flex:1;width:100%;max-width:760px;margin:0 auto;padding:36px 20px 56px}
     h1{font-family:'__display__',Georgia,serif;font-weight:400;font-size:40px;line-height:1.05;margin:0 0 6px}
@@ -274,6 +280,7 @@ def render(marca, brand, slug, wa_number, pixel_id, zonas):
                  ("text", brand["text"]), ("mid", brand["mid"]), ("border", brand["border"]),
                  ("terracota", brand["terracota"]), ("display", brand["font_display"])):
         css = css.replace(f"__{k}__", v)
+    css = css.replace("__co_css__", CO_CSS)
     wa_generic = f"https://wa.me/{wa_number}?text={brand['wa_msg_generic']}"
     return f"""<!doctype html>
 <html lang="es">
@@ -314,6 +321,7 @@ def render(marca, brand, slug, wa_number, pixel_id, zonas):
   <style>{css}  </style>
 </head>
 <body>
+{CO_STRIPE}
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="/{marca}/" aria-label="Volver al catálogo">
@@ -323,7 +331,7 @@ def render(marca, brand, slug, wa_number, pixel_id, zonas):
       <a class="icon-btn" href="{wa_generic}" target="_blank" rel="noopener" aria-label="WhatsApp">{_WA_ICON}</a>
     </div>
   </header>
-  <div class="top-shipping"><span>{brand['ship_banner']}</span></div>
+  <div class="top-shipping">{CO_FLAG}<span>{brand['ship_banner']}</span></div>
   <main>
     <h1>{esc(titulo)}</h1>
     <p class="updated">Actualizado en {POLICY_FECHA}</p>

@@ -41,17 +41,21 @@ Uso: python3 scripts/generate_product_pages.py
 """
 import csv
 import json
+import os
 import re
 import time
 import unicodedata
 import urllib.parse
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import policy_pages
 
 AS_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec"
-WA_NUMBER = "50248304736"
+# WhatsApp por marca. Nudo ya tiene su numero propio (+502 8014 9766 = 50280149766) pero SE ACTIVA hasta que WhatsApp Business
+# este configurado y atendido en ese numero; mientras tanto Nudo sigue usando el de siempre. Para activarlo: cambiar el valor de "nudo".
+WA_NUMBERS = {"orkia": "50248304736", "nudo": "50248304736"}
 PIXEL_ID = "1778753106585555"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -70,7 +74,17 @@ COLOR_HEX = {
 #     "filas": [["6", "..", "..", ".."], ["8", "..", "..", ".."]],
 #     "nota": "Medidas del producto, en centímetros. Si dudas entre dos tallas, escríbenos por WhatsApp.",
 # }
-SIZE_GUIDES = {"orkia": {}, "nudo": {}}
+# Jean: tabla de Divina (guia de tallas del proveedor, recibida el 16 nov 2026). Son medidas del CUERPO, no de la prenda.
+# Cadera de la talla 14: el original dice "140-108" (error de imprenta); el dueno confirmo 104-108 el 16 nov.
+# Talla 16: NO esta en la tabla de Divina. El dueno pidio estimarla siguiendo el patron (+4 cm en cintura y cadera sobre la 14); va marcada con * en la tabla.
+SIZE_GUIDES = {"orkia": {"Jean": {
+    "titulo": "Guía de tallas — Jean",
+    "columnas": ["Talla", "Cintura (cm)", "Cadera (cm)"],
+    "filas": [["6", "62–68", "88–92"], ["8", "64–70", "92–96"], ["10", "68–72", "96–100"],
+              ["12", "72–76", "100–104"], ["14", "76–80", "104–108"], ["16 *", "80–84", "108–112"]],
+    "nota": "Son tus medidas, en centímetros. Cintura: rodea la cinta métrica alrededor de la cintura, sin holguras. Cadera: rodea la parte más ancha de la cadera. "
+            "Nuestros jeans son de denim stretch, por eso la tabla es una guía aproximada. * Medidas estimadas en proporción a las otras tallas. Si dudas entre dos tallas, escríbenos por WhatsApp y te asesoramos.",
+}}, "nudo": {}}
 
 # Tipos cuya foto de catalogo es alta (cuerpo entero, ~3:5). Su galeria usa una caja 3:5 para mostrarla
 # completa, sin recortar cabeza ni pies. El resto de la tienda sigue en 4:5.
@@ -86,7 +100,7 @@ BRANDS = {
         "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#C4714A",
         "wa_msg_generic": "Hola%20Orkia%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20sus%20prendas.",
         "low_stock_threshold": 2,
-        "ship_banner": "Tu primer envío va por nuestra cuenta",
+        "ship_banner": "Moda colombiana · Tu primer envío va por nuestra cuenta",
         "ship_meta": "Tu primer envío va por nuestra cuenta.",
         "first_ship": True,
         "trust_items": [
@@ -108,7 +122,7 @@ BRANDS = {
         "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#4A1F2C",
         "wa_msg_generic": "Hola%20Nudo%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20su%20ropa%20interior.",
         "low_stock_threshold": 0,
-        "ship_banner": "Tu primer envío va por nuestra cuenta",
+        "ship_banner": "Ropa interior colombiana · Tu primer envío va por nuestra cuenta",
         "ship_meta": "Tu primer envío va por nuestra cuenta.",
         "first_ship": True,
         "trust_items": [
@@ -124,13 +138,22 @@ BRANDS = {
 }
 
 
+_CAMPANIAS = {}   # marca -> lista de campanas que trae get_catalogo (vacia si el servidor aun no las envia)
+
+
 def fetch_catalogo(marca):
+    prueba = os.environ.get("CASA_CATALOGO_" + marca.upper())   # SOLO para pruebas locales: lee un JSON en vez de la tienda
+    if prueba:
+        data = json.load(open(prueba, encoding="utf-8"))
+        _CAMPANIAS[marca] = data.get("campanias") or []
+        return data["productos"]
     url = f"{AS_URL}?accion=get_catalogo&marca={marca}&_ts={time.time_ns()}"
     req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (generador-paginas-producto)"})
     with urllib.request.urlopen(req, timeout=30) as r:
         data = json.loads(r.read().decode("utf-8"))
     if not data.get("ok"):
         raise RuntimeError(f"get_catalogo respondio error para {marca}: {data}")
+    _CAMPANIAS[marca] = data.get("campanias") or []
     return data["productos"]
 
 
@@ -245,7 +268,7 @@ TRACK_TEMPLATE = """
       function isBot(){ return navigator.webdriver === true || /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit/i.test(navigator.userAgent || ''); }
       function px(evento){
         if(typeof fbq !== 'function') return;
-        fbq('track', evento, {content_ids:[PID], content_type:'product', content_name:NAME, currency:'GTQ', value:PRICE});
+        fbq('track', evento, {content_ids:[PID], content_type:'product', content_name:NAME, currency:'GTQ', value:(window.__PRECIO_EFECTIVO||PRICE)});
       }
       function sheetClick(accion){
         if(isBot()) return;
@@ -324,11 +347,11 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     wa_contact_msg = urllib.parse.quote(
         f"Hola {brand['label']} 👋 Tengo una pregunta sobre: {p['descripcion']} (#{pid})"
     )
-    wa_contact_link = f"https://wa.me/{WA_NUMBER}?text={wa_contact_msg}"
+    wa_contact_link = f"https://wa.me/{WA_NUMBERS[marca]}?text={wa_contact_msg}"
     wa_advice_msg = urllib.parse.quote(
         f"Hola {brand['label']} 👋 Quiero asesoría para saber cómo me quedaría: {p['descripcion']} (#{pid})"
     )
-    wa_advice_link = f"https://wa.me/{WA_NUMBER}?text={wa_advice_msg}"
+    wa_advice_link = f"https://wa.me/{WA_NUMBERS[marca]}?text={wa_advice_msg}"
 
     color_swatches = "".join(
         f"""<a class="color-btn {'active' if v['id_producto']==pid else ''} {'disabled' if v.get('agotado') else ''}"
@@ -408,6 +431,10 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
         for i, u in enumerate(imgs)
     )
     images_json = json.dumps(imgs)
+    _camps_marca = {c["id"]: c for c in _CAMPANIAS.get(marca, [])}
+    _ids = {x[0] for x in (p.get("promos") or [])}
+    promo_json = json.dumps({"p": p.get("promos") or [], "c": {k: v for k, v in _camps_marca.items() if k in _ids}}, ensure_ascii=False).replace("</", "<\\/")
+    regular_js = json.dumps(float(p.get("precio_gtq") or 0))
 
     ld_json = json.dumps({
         "@context": "https://schema.org/",
@@ -437,6 +464,8 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
         "tipo_prenda": p.get("tipo_prenda") or "",
         "color": p.get("color") or "",
         "precio_gtq": p.get("precio_gtq") or 0,
+        "precio_regular": p.get("precio_gtq") or 0,
+        "promos": p.get("promos") or [],
         "codigo": str(pid),
         "imagen": image,
     })
@@ -521,8 +550,19 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     .header-actions{{display:flex;align-items:center;gap:18px}}
     .icon-btn{{border:0;background:transparent;color:inherit;padding:6px;line-height:0;position:relative;display:inline-flex}}
     .bag-count{{position:absolute;top:-2px;right:-2px;background:var(--terracota);color:#fff;font-size:9px;font-weight:700;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center}}
+    {policy_pages.CO_CSS}
     .top-shipping{{height:52px;background:#EFE8E0;color:var(--text);display:flex;align-items:center;justify-content:center;gap:10px;font-size:16px;font-weight:500}}
     .top-shipping .q{{color:var(--terracota);font-weight:700}}
+    .price-wrap{{margin:0 0 20px}}
+    .price-wrap .price{{margin:0}}
+    .price-now{{font-size:26px;font-weight:700;color:var(--dark)}}
+    .price-was{{margin-left:10px;font-size:18px;color:#8A837B}}
+    .promo-badge{{display:inline-block;margin-left:10px;padding:3px 10px;border-radius:12px;background:var(--terracota);color:#fff;font-size:12px;font-weight:700;letter-spacing:.04em;vertical-align:middle}}
+    .price-regular{{display:block;margin-top:5px;font-size:14px;color:#6B645D}}
+    .promo-banner{{padding:10px 16px;text-align:center;font-size:14px;font-weight:600;letter-spacing:.03em;background:#EFE8E0;color:var(--dark)}}
+    .promo-banner.suave{{background:#F3ECE4;color:#4A3F37}}
+    .promo-banner.fuerte{{background:#1A1A1A;color:#fff;font-size:17px;font-weight:700;letter-spacing:.06em;padding:14px 16px;text-transform:uppercase}}
+    .promo-banner[hidden]{{display:none}}
     main{{max-width:1440px;margin:0 auto;padding:0;width:100%;flex:1 0 auto}}
     .layout{{display:flex;justify-content:center;align-items:stretch;gap:40px;max-width:1120px;margin:0 auto;flex-wrap:nowrap}}
     .gallery-col{{display:flex;flex-direction:column;min-width:0}}
@@ -629,6 +669,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
   </style>
 </head>
 <body>
+  {policy_pages.CO_STRIPE}
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="{catalog_url}" aria-label="Volver al catálogo">
@@ -640,13 +681,14 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
           <svg class="icon" viewBox="0 0 24 24"><path d="M6 8h12l-1 13H7L6 8Z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg>
           <span class="bag-count" id="bagCount">0</span>
         </a>
-        <a class="icon-btn" href="https://wa.me/{WA_NUMBER}?text={brand['wa_msg_generic']}" target="_blank" rel="noopener" aria-label="WhatsApp">
+        <a class="icon-btn" href="https://wa.me/{WA_NUMBERS[marca]}?text={brand['wa_msg_generic']}" target="_blank" rel="noopener" aria-label="WhatsApp">
           <svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/><path d="M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8c.3.1.4.3.4.6v.4c0 .4-.2.7-.6.9-.6.3-1.9.4-3.8-.6-2.6-1.3-4.3-4.1-4.4-5.5 0-.5.2-.9.4-1.3Z"/></svg>
         </a>
       </div>
     </div>
   </header>
-  <div class="top-shipping"><span>{brand['ship_banner']}</span></div>
+  <div class="top-shipping">{policy_pages.CO_FLAG}<span>{brand['ship_banner']}</span></div>
+  <div class="promo-banner" id="promoBanner" hidden></div>
   <main>
     <div class="layout">
       <div class="gallery-col">
@@ -664,7 +706,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
         </nav>
         <p class="eyebrow">{esc(p.get('tipo_prenda') or brand['label'])}{' <span class="badge-agotado">Agotado</span>' if is_agotado else ''}</p>
         <h1 class="serif">{esc(p['descripcion'])}</h1>
-        <p class="price">{money(p.get('precio_gtq'))}</p>{first_ship}
+        <div class="price-wrap" id="priceWrap"><p class="price" id="priceNow">{money(p.get('precio_gtq'))}</p></div>{first_ship}
         {f'<p class="low-stock"><span class="dot"></span>¡Solo quedan {int(stock_total)} unidades!</p>' if is_low_stock else ''}
         {f'<p class="detail-line">{esc(detail_line)}</p>' if detail_line else ''}
         <div class="color-title">Selecciona color</div>
@@ -702,6 +744,35 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     <div class="lightbox-zoom-hint">Doble tap o pellizca para ampliar</div>
   </div>
   <script>
+    // Promociones (Nov 2026): el servidor decide el precio que se cobra; aqui solo se MUESTRA la oferta vigente por hora.
+    const PROMO = {promo_json};
+    function promoActiva(){{
+      const now = Date.now(); let mejor = null;
+      (PROMO.p || []).forEach(x => {{
+        const c = (PROMO.c || {{}})[x[0]]; if(!c) return;
+        if(now < c.i*1000 || now >= c.f*1000) return;
+        if(!mejor || c.r > mejor.r || (c.r === mejor.r && c.d > mejor.d)) mejor = {{id:x[0], precio:Number(x[1]), etq:c.etq, d:c.d, t:c.t, r:c.r, b:c.b}};
+      }});
+      return mejor;
+    }}
+    function _q(v){{ return 'Q' + Math.round(Number(v)); }}
+    function renderPromo(){{
+      const wrap = document.getElementById('priceWrap'); if(!wrap) return;
+      const pe = promoActiva(); const reg = {regular_js};
+      const banner = document.getElementById('promoBanner');
+      if(!pe){{
+        wrap.innerHTML = '<p class="price" id="priceNow">' + _q(reg) + '</p>'; window.__PRECIO_EFECTIVO = null;
+        if(banner){{ banner.hidden = true; }}
+        return;
+      }}
+      window.__PRECIO_EFECTIVO = pe.precio;
+      const pct = '−' + String(pe.d).replace('.', ',') + ' %';
+      wrap.innerHTML = pe.t
+        ? '<p class="price"><span class="price-now">' + _q(pe.precio) + '</span><s class="price-was">' + _q(reg) + '</s><span class="promo-badge">' + pe.etq + ' ' + pct + '</span></p>'
+        : '<p class="price"><span class="price-now">' + _q(pe.precio) + '</span><span class="promo-badge">' + pe.etq + ' ' + pct + '</span></p><span class="price-regular">Precio regular ' + _q(reg) + '</span>';
+      if(banner && pe.b){{ banner.textContent = pe.b; banner.className = 'promo-banner ' + (pe.d >= 20 ? 'fuerte' : (pe.d <= 10 ? 'suave' : '')); banner.hidden = false; }}
+    }}
+    renderPromo(); setInterval(renderPromo, 30000); document.addEventListener('visibilitychange', renderPromo);
     const BAG_KEY = {json.dumps(bag_key)};
     const ITEM_BASE = {item_json};
     const IMAGES = {images_json};
@@ -726,6 +797,8 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     document.getElementById('addBtn').addEventListener('click', () => {{
       const items = readBag();
       const item = Object.assign({{}}, ITEM_BASE, {{ talla: isUnica(selectedTalla) ? 'Por confirmar' : selectedTalla, ts: Date.now() }});
+      const _pe = promoActiva();
+      if(_pe){{ item.precio_gtq = _pe.precio; item.promo_id = _pe.id; }}
       const key = bagKeyFor(item);
       const existing = items.find(x => bagKeyFor(x) === key);
       if(existing){{ existing.qty = (existing.qty || 1) + 1; }}
@@ -842,8 +915,40 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
 FEED_COLUMNS = [
     "id", "title", "description", "availability", "condition", "price", "link", "image_link",
     "additional_image_link", "brand", "color", "gender", "age_group", "item_group_id",
-    "google_product_category", "product_type",
+    "google_product_category", "product_type", "sale_price", "sale_price_effective_date",
 ]
+_GT = timezone(timedelta(hours=-6))   # Guatemala, sin horario de verano
+
+
+def _iso_gt(seg):
+    return datetime.fromtimestamp(seg, tz=_GT).strftime("%Y-%m-%dT%H:%M-0600")
+
+
+def oferta_feed(marca, p, ahora_ms):
+    """Oferta para el catalogo de Meta: (sale_price, 'inicio/fin') o ('', '').
+    Misma regla que la pagina: gana la campana vigente de mayor prioridad (empate: mayor %); si ninguna esta vigente,
+    la que empieza primero. Solo se publica si la campana muestra precio tachado (t=1): igual que en la tienda,
+    donde los jeans (t=0) llevan el precio rebajado sin tachar. El precio sale de p['promos'] (lo calcula el servidor)."""
+    camps = {c["id"]: c for c in _CAMPANIAS.get(marca, [])}
+    cand = []
+    for pid_c, precio in (p.get("promos") or []):
+        c = camps.get(pid_c)
+        if c and ahora_ms < c["f"] * 1000:
+            cand.append((c, float(precio)))
+    if not cand:
+        return "", ""
+    vigentes = [x for x in cand if ahora_ms >= x[0]["i"] * 1000]
+    if vigentes:
+        c, precio = max(vigentes, key=lambda x: (x[0]["r"], x[0]["d"]))
+    else:
+        c, precio = min(cand, key=lambda x: (x[0]["i"], -x[0]["r"], -x[0]["d"]))
+    if not c.get("t"):
+        return "", ""
+    if precio >= float(p.get("precio_gtq") or 0):
+        return "", ""
+    return f"{precio:.2f} GTQ", f"{_iso_gt(c['i'])}/{_iso_gt(c['f'])}"
+
+
 FEED_META = {
     "orkia": {"brand": "Orkia", "gender": "female", "category": "Apparel & Accessories > Clothing",
               "about": "Moda femenina colombiana"},
@@ -852,8 +957,10 @@ FEED_META = {
 }
 
 
-def feed_rows(marca, groups):
+def feed_rows(marca, groups, ahora_ms=None):
     meta = FEED_META[marca]
+    if ahora_ms is None:
+        ahora_ms = int(time.time() * 1000)
     rows = []
     for group in groups:
         key = normalize(group[0].get("ref_proveedor")) or f"producto-{group[0]['id_producto']}"
@@ -866,6 +973,7 @@ def feed_rows(marca, groups):
             detalle = f"{desc}." + (f" Color: {color}." if color else "") + (f" Tallas: {', '.join(tallas)}." if tallas and tallas != ["Unica"] else "")
             disponible = (not p.get("agotado")) and float(p.get("stock_total") or 0) > 0
             extras = [u for u in (p.get("url_imagen_2"), p.get("url_imagen_3")) if u]
+            sale, ventana = oferta_feed(marca, p, ahora_ms)
             rows.append({
                 "id": pid,
                 "title": title[:150],
@@ -883,6 +991,8 @@ def feed_rows(marca, groups):
                 "item_group_id": key,
                 "google_product_category": meta["category"],
                 "product_type": p.get("tipo_prenda") or "",
+                "sale_price": sale,
+                "sale_price_effective_date": ventana,
             })
     return rows
 
@@ -937,7 +1047,7 @@ def main():
             page_dir = REPO_ROOT / marca / slug
             page_dir.mkdir(parents=True, exist_ok=True)
             (page_dir / "index.html").write_text(
-                policy_pages.render(marca, brand, slug, WA_NUMBER, PIXEL_ID, zonas), encoding="utf-8")
+                policy_pages.render(marca, brand, slug, WA_NUMBERS[marca], PIXEL_ID, zonas), encoding="utf-8")
         policy_urls += policy_pages.policy_urls(marca)
         print(f"{marca}: {len(policy_pages.POLICY_PAGES)} paginas de ayuda generadas")
     write_sitemap(product_urls, policy_urls)

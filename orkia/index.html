@@ -110,6 +110,7 @@
     a{color:inherit;text-decoration:none}
     .serif{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;letter-spacing:-.025em}
     .top-shipping{position:relative;z-index:1;height:34px;background:#EFE8E0;color:var(--text);display:flex;align-items:center;justify-content:center;gap:9px;font-size:12px;letter-spacing:.01em;border-bottom:1px solid rgba(232,228,223,.7)}
+    .co-stripe{height:4px;background:linear-gradient(90deg,#FCD116 0 50%,#003893 50% 75%,#CE1126 75% 100%)}.co-flag{flex:none;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}@media (max-width:720px){.top-shipping{height:auto!important;min-height:32px;padding:5px 12px!important;line-height:1.25}}
     .top-shipping .q{color:var(--terracota);font-weight:600}
     .icon{width:18px;height:18px;stroke:currentColor;stroke-width:1.55;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
     .site-header{height:var(--header-h);background:linear-gradient(180deg,#161616,#111);color:white;display:flex;align-items:center;position:sticky;top:0;z-index:80;border-bottom:1px solid rgba(255,255,255,.07)}
@@ -122,6 +123,12 @@
     .filters-wrap{background:rgba(255,255,255,.94);backdrop-filter:blur(12px);position:sticky;top:var(--header-h);z-index:70;border-bottom:1px solid var(--border)}
     .filters-inner{max-width:none;margin:0 auto;padding:18px 42px;display:grid;grid-template-columns:190px 1fr auto;align-items:center;gap:22px}.filter-title{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase}.pills{display:flex;gap:13px;overflow-x:auto;scrollbar-width:none}.pills::-webkit-scrollbar{display:none}.pill{height:34px;border:1px solid var(--border);background:#fff;border-radius:999px;padding:0 22px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:#272727}.pill.active{background:var(--dark);border-color:var(--dark);color:white}.pill.sale{background:#F1E4DB;border-color:#F1E4DB;color:var(--terracota)}.pill.sale.active{background:var(--terracota);color:#fff}.filter-actions{display:flex;gap:28px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}.filter-action{display:flex;align-items:center;gap:8px;color:#34302D}.sort-wrap{position:relative}.sort-menu{position:absolute;right:0;top:calc(100% + 10px);min-width:190px;background:#fff;border:1px solid var(--border);box-shadow:0 16px 40px rgba(17,17,17,.12);padding:6px;z-index:95;display:none}.sort-menu.show{display:block}.sort-option{width:100%;height:36px;border:0;background:#fff;text-align:left;padding:0 12px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#34302D}.sort-option:hover,.sort-option.active{background:#F5F0EA;color:#111}.chev{width:8px;height:8px;border-right:1px solid currentColor;border-bottom:1px solid currentColor;transform:rotate(45deg) translateY(-2px)}
     main{max-width:none;margin:0 auto;padding:28px 42px 0}.section-head{display:flex;align-items:flex-end;justify-content:space-between;margin:4px 0 18px}.section-head h2{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;font-size:34px;line-height:1;margin:0;letter-spacing:-.02em;text-transform:uppercase}.section-head .view-all{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;gap:10px;color:var(--dark)}.arrow{color:var(--terracota);font-size:17px;line-height:1}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border)}.product-card{background:var(--surface);border:0;display:flex;flex-direction:column;min-width:0;text-align:left;position:relative;overflow:hidden}.product-card .imgbox{position:relative;background:#EAE2D9;aspect-ratio:3/4.15;overflow:hidden}.product-card img{width:100%;height:100%;object-fit:cover;object-position:center;transition:transform .35s ease,filter .2s ease}
+    .price-now{font-weight:700}.price-was{margin-left:8px;font-weight:400;color:#8A837B;font-size:.85em}.price-regular-inline{margin-left:8px;font-weight:400;color:#6B645D;font-size:.8em}
+    .product-card .promo-tag{position:absolute;left:8px;top:8px;background:var(--terracota);color:#fff;font-size:11px;font-weight:700;letter-spacing:.03em;padding:4px 9px;border-radius:12px;z-index:2}
+    .promo-banner{padding:9px 14px;text-align:center;font-size:13px;font-weight:600;background:#EFE8E0;color:var(--text)}
+    .promo-banner.suave{background:#F3ECE4;color:#4A3F37}
+    .promo-banner.fuerte{background:#1A1A1A;color:#fff;font-size:15px;font-weight:700;letter-spacing:.06em;padding:13px 14px;text-transform:uppercase}
+    @media (max-width:640px){ #promoBars .promo-banner:nth-child(n+2){display:none} }   /* en el celular, un solo aviso a la vez */
     .product-card.is-tall img{object-position:center 20%}.product-card .imgbox.is-image-missing::after,.gallery-slide.is-image-missing::after{content:'Foto pendiente';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8A837B;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;background:#EEE7DF}.product-card:hover img{transform:scale(1.015)}.product-card.is-soldout img{filter:saturate(.12) contrast(.92);opacity:.86}.badge{position:absolute;left:14px;top:14px;background:rgba(255,255,255,.92);color:#57514C;padding:7px 12px;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;z-index:2}.card-body{padding:15px 17px 16px;display:flex;flex-direction:column;gap:7px;flex:1}.type{font-size:10px;line-height:1;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--terracota)}.product-name{font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;line-height:1.02;letter-spacing:-.02em;color:var(--dark);margin:0;min-height:34px}.card-code{font-size:10px;color:#7A746E;letter-spacing:.08em;text-transform:uppercase;margin-top:-2px}.price{font-size:18px;font-weight:500;color:var(--dark);line-height:1}.card-btn{height:38px;margin-top:5px;width:100%;font-size:10px;letter-spacing:.16em}
     .shipping-note{margin-top:auto;display:flex;align-items:center;gap:7px;color:#5E5954;font-size:11px;line-height:1.2}.shipping-note .icon{width:16px;height:16px;color:var(--terracota)}.empty-state,.loading-state{grid-column:1/-1;background:#fff;padding:50px 22px;text-align:center;color:var(--mid);font-size:14px}.debug-source{color:var(--terracota);font-weight:600}.value-props{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:36px 0;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}.value-item{background:var(--bg);display:grid;grid-template-columns:42px 1fr;gap:18px;padding:22px 24px;align-items:start}.value-item .icon{width:34px;height:34px;color:var(--dark);stroke-width:1.2}.value-item h3{margin:0 0 7px;font-size:11px;letter-spacing:.16em;text-transform:uppercase}.value-item p{margin:0;color:#625B55;font-size:13px;line-height:1.55}.footer{background:var(--carbon);color:#fff;margin-top:0;padding:34px 28px 90px;text-align:center}.footer .brand-logo{font-size:34px}.footer p{margin:8px 0 0;color:rgba(255,255,255,.62);font-size:11px;letter-spacing:.14em;text-transform:uppercase}.bottom-nav{display:none}.debug-box{display:none;margin:0 42px 18px;padding:12px 14px;background:#fff;border:1px solid var(--border);font-size:12px;color:#625B55}.debug-box.show{display:block}.debug-box strong{color:#111}
     
@@ -276,6 +283,7 @@
   </style>
 </head>
 <body class="initial-loading">
+<div class="co-stripe" aria-hidden="true"></div>
   <div class="orkia-loader show" id="orkiaLoader" aria-live="polite" aria-label="Cargando catálogo Orkia">
     <div class="orkia-loader-card">
       <div class="orkia-loader-logo">ORKIA<span class="brand-dot"></span></div>
@@ -306,8 +314,9 @@
 
   <div class="top-shipping" role="note">
     <svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-    <span>Tu primer envío va por nuestra cuenta</span>
+    <svg class="co-flag" viewBox="0 0 24 16" width="18" height="12" role="img" aria-label="Colombia"><rect width="24" height="8" fill="#FCD116"/><rect y="8" width="24" height="4" fill="#003893"/><rect y="12" width="24" height="4" fill="#CE1126"/></svg><span>Moda colombiana · Tu primer envío va por nuestra cuenta</span>
   </div>
+  <div id="promoBars"></div>
 
   <section class="hero" aria-labelledby="hero-title">
     <div class="hero-inner">
@@ -491,6 +500,52 @@
 
     const $ = (sel, root=document) => root.querySelector(sel);
     const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+    // ===== Promociones (Nov 2026) =====
+    // El servidor manda 'campanias' y, por producto, 'promos' [[id_campania, precio_oferta]]. Aqui solo se MUESTRA la oferta
+    // vigente segun la hora; el precio que se cobra lo calcula el servidor (cotizar_pedido / nuevo_pedido).
+    let CAMPS = {};
+    let promoSig = '';
+    function setCampanias(list){ CAMPS = {}; (Array.isArray(list) ? list : []).forEach(c => { if(c && c.id) CAMPS[c.id] = c; }); }
+    function promoDe(p){
+      const now = Date.now(); let best = null;
+      ((p && p.promos) || []).forEach(x => {
+        const c = CAMPS[x[0]]; if(!c) return;
+        if(now < c.i*1000 || now >= c.f*1000) return;
+        if(!best || c.r > best.r || (c.r === best.r && c.d > best.d)) best = {id:x[0], precio:Number(x[1]), etq:c.etq, d:c.d, t:c.t, r:c.r};
+      });
+      return best;
+    }
+    function precioEfectivo(p){ const pr = promoDe(p); return pr ? pr.precio : (Number(p && p.precio_gtq) || 0); }
+    function mejorVariante(g){
+      let best = null, bp = Infinity;
+      (g.variants || []).forEach(v => { const pe = precioEfectivo(v); if(pe > 0 && pe < bp){ bp = pe; best = v; } });
+      return best || g.display || (g.variants || [])[0] || g;
+    }
+    function precioGrupo(g){ return precioEfectivo(mejorVariante(g)) || Number(g.precio_gtq) || 0; }
+    function pctTxt(d){ return '−' + String(d).replace('.', ',') + ' %'; }
+    function cardPriceHTML(g){
+      const v = mejorVariante(g), pr = promoDe(v), reg = Number(v.precio_gtq) || Number(g.precio_gtq) || 0;
+      if(!pr) return '<div class="price">' + money(reg) + '</div>';
+      return pr.t
+        ? '<div class="price"><span class="price-now">' + money(pr.precio) + '</span><s class="price-was">' + money(reg) + '</s></div>'
+        : '<div class="price"><span class="price-now">' + money(pr.precio) + '</span><span class="price-regular-inline">Regular ' + money(reg) + '</span></div>';
+    }
+    function promoTagHTML(g){ const pr = promoDe(mejorVariante(g)); return pr ? '<div class="promo-tag">' + safe(pr.etq) + ' ' + pctTxt(pr.d) + '</div>' : ''; }
+    function bagVariante(item){ return (allVariants || []).find(v => String(v.id_producto) === String(item.id_producto)); }
+    function bagPrecio(item){ const v = bagVariante(item); return v ? precioEfectivo(v) : (Number(item.precio_regular) || Number(item.precio_gtq) || 0); }
+    function bagPromoTxt(item){ const v = bagVariante(item), pr = v ? promoDe(v) : null; return pr ? ' (' + pr.etq + ' ' + pctTxt(pr.d) + ', precio normal ' + money(v.precio_gtq) + ')' : ''; }
+    function promoSignature(){ const now = Date.now(); return Object.values(CAMPS).filter(c => now >= c.i*1000 && now < c.f*1000).map(c => c.id).sort().join('+'); }
+    function renderPromoBars(){
+      const host = document.getElementById('promoBars'); if(!host) return; const now = Date.now();
+      const act = Object.values(CAMPS).filter(c => c.b && now >= c.i*1000 && now < c.f*1000).sort((a, b) => (a.r - b.r) || (b.d - a.d));   // primero el aviso general (menor prioridad); el de una prenda especifica va despues
+      host.innerHTML = act.map(c => '<div class="promo-banner ' + (c.d >= 20 ? 'fuerte' : (c.d <= 10 ? 'suave' : '')) + '">' + safe(c.b) + '</div>').join('');
+    }
+    function refreshPromos(){
+      const sig = promoSignature(); if(sig === promoSig) return; promoSig = sig; renderPromoBars();
+      if(typeof renderGrid === 'function' && allProducts && allProducts.length){ renderGrid(); if(typeof renderCategoryShowcase === 'function') renderCategoryShowcase(); updateBagUI(); }
+    }
+    setInterval(refreshPromos, 30000); document.addEventListener('visibilitychange', refreshPromos);
+
     const money = v => 'Q' + (Number(v) || 0).toLocaleString('es-GT', {maximumFractionDigits:0});
     const safe = v => String(v ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
     const encode = encodeURIComponent;
@@ -711,11 +766,13 @@
         const data = await withTimeout(fetchLiveCatalog(), INITIAL_CATALOG_TIMEOUT_MS);
         // v24: Apps Script ya devuelve únicamente productos con Foto_Publicada = TRUE.
         // No validamos imágenes una por una en el navegador para evitar una precarga pesada.
+        setCampanias(data.campanias);
         const rawProducts = (data.productos || []).filter(p => p && (p.foto_publicada === true || String(p.foto_publicada).toUpperCase() === 'TRUE'));
 
         // v23: no escribimos cache local en la carga inicial.
         // El catálogo visible debe venir del Apps Script en vivo para evitar inventario viejo.
         setCatalog(rawProducts, {source:'Apps Script en vivo · Foto_Publicada', total:Number(data.total || rawProducts.length || 0), keepLoader:true});
+        promoSig = promoSignature(); renderPromoBars();
       }catch(err){
         console.warn('[ORKIA] Carga inicial en vivo no disponible. No se muestran productos semilla para evitar inventario falso.', err);
         showCatalogLoadError();
@@ -892,7 +949,7 @@
       if(tipo) pool = pool.filter(v => normalize(v.tipo_prenda) === tipo);
       if(excludeField !== 'color' && stagedFilters.color) pool = pool.filter(v => colorFamily(v.color) === stagedFilters.color);
       if(excludeField !== 'patron' && stagedFilters.patron) pool = pool.filter(v => normalize(v.patron) === stagedFilters.patron);
-      if(excludeField !== 'precio' && stagedFilters.precio === 'menos250') pool = pool.filter(v => Number(v.precio_gtq) <= 250);
+      if(excludeField !== 'precio' && stagedFilters.precio === 'menos250') pool = pool.filter(v => precioEfectivo(v) <= 250);
       return pool;
     }
 
@@ -925,7 +982,7 @@
         const key = bagKeyFor(item);
         return `<article class="bag-item">
           <img src="${safe(item.imagen || '')}" alt="${safe(item.descripcion)}" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">
-          <div><h4>${safe(item.descripcion)}</h4><p>${safe(item.color)} · Talla: ${safe(item.talla)} · ${money(item.precio_gtq)}<br>Código #${safe(item.codigo)}${item.qty>1 ? ` · Cant. ${item.qty}` : ''}</p></div>
+          <div><h4>${safe(item.descripcion)}</h4><p>${safe(item.color)} · Talla: ${safe(item.talla)} · ${money(bagPrecio(item))}<br>Código #${safe(item.codigo)}${item.qty>1 ? ` · Cant. ${item.qty}` : ''}</p></div>
           <button class="bag-remove" type="button" data-remove="${safe(key)}" aria-label="Quitar prenda">×</button>
         </article>`;
       }).join('');
@@ -942,9 +999,9 @@
       const esUnica = t => String(t||'').toLowerCase().includes('confirmar') || String(t||'').toLowerCase().includes('unica') || String(t||'').toLowerCase().includes('única');
       const lines = bagItems.map((item,idx)=>{
         const tallaLinea = esUnica(item.talla) ? '' : `\n📏 Talla: ${item.talla}`;
-        return `*${idx+1}. ${item.descripcion}*\n🎨 Color: ${item.color}${tallaLinea}\n💰 Precio: ${money(item.precio_gtq)}\n🏷️ Código: #${item.codigo}${item.qty>1 ? `\n🔢 Cantidad: ${item.qty}` : ''}`;
+        return `*${idx+1}. ${item.descripcion}*\n🎨 Color: ${item.color}${tallaLinea}\n💰 Precio: ${money(bagPrecio(item))}${bagPromoTxt(item)}\n🏷️ Código: #${item.codigo}${item.qty>1 ? `\n🔢 Cantidad: ${item.qty}` : ''}`;
       }).join('\n\n———\n\n');
-      const total = bagItems.reduce((s,i)=>s+(Number(i.precio_gtq)||0)*(Number(i.qty)||1),0);
+      const total = bagItems.reduce((s,i)=>s+bagPrecio(i)*(Number(i.qty)||1),0);
       const msg = `Hola Orkia 👋 Quiero hacer este pedido (${bagItems.length} ${bagItems.length===1?'prenda':'prendas'}):\n\n${lines}\n\n———\n\n*Total estimado: ${money(total)}*\n\nSi es mi primera compra, ¿me confirmas mi envío gratis? 🚚\n¿Me ayudas a confirmar disponibilidad y coordinar el envío?`;
       bagItems.forEach(item=>registerClick({id_producto:item.id_producto, descripcion:item.descripcion}, 'ENVIAR_BOLSA_WA'));
       if(typeof fbq === 'function') fbq('track', 'InitiateCheckout', {
@@ -1131,13 +1188,16 @@
       $$('.sort-option').forEach(b=>b.classList.toggle('active', b.dataset.sort === currentSort));
     }
 
+    // Nov 2026: en el orden "destacados" los jeans van PRIMERO (decision del dueno). Si eligen otro orden (precio, A-Z) se respeta ese.
+    function esJeanGrupo(g){ return groupHasValue(g, 'tipo_prenda', 'Jean'); }
     function applySort(list){
       const sorted = list.slice();
       sorted.sort((a,b)=>{
         if(a.agotado && !b.agotado) return 1;
         if(!a.agotado && b.agotado) return -1;
-        if(currentSort === 'precio_asc') return Number(a.precio_gtq || 0) - Number(b.precio_gtq || 0);
-        if(currentSort === 'precio_desc') return Number(b.precio_gtq || 0) - Number(a.precio_gtq || 0);
+        if(currentSort === 'destacados'){ const ja = esJeanGrupo(a), jb = esJeanGrupo(b); if(ja && !jb) return -1; if(!ja && jb) return 1; }
+        if(currentSort === 'precio_asc') return precioGrupo(a) - precioGrupo(b);
+        if(currentSort === 'precio_desc') return precioGrupo(b) - precioGrupo(a);
         if(currentSort === 'az') return String(a.descripcion || '').localeCompare(String(b.descripcion || ''),'es');
         return Number(b.stock_total || 0) - Number(a.stock_total || 0);
       });
@@ -1160,7 +1220,7 @@
       // Los productos agotados con foto se mantienen visibles para medir demanda con “Avísame”.
       // Los productos sin foto ya se excluyen antes de agrupar.
       if(currentFilter === '__nuevo') list = list;
-      else if(currentFilter === '__menos250') list = list.filter(g=>Number(g.precio_gtq) <= 250);
+      else if(currentFilter === '__menos250') list = list.filter(g=>precioGrupo(g) <= 250);
       else if(currentFilter === '__plus') list = list.filter(g=>hasPlusSize(g));
       else if(currentFilter.includes('::')){
         const [kind, ...rest] = currentFilter.split('::'); const value = rest.join('::');
@@ -1169,7 +1229,7 @@
         if(advancedFilters.tipo) list = list.filter(g => groupHasValue(g, 'tipo_prenda', advancedFilters.tipo));
         if(advancedFilters.color) list = list.filter(g => groupHasColor(g, advancedFilters.color));
         if(advancedFilters.patron) list = list.filter(g => groupHasValue(g, 'patron', advancedFilters.patron));
-        if(advancedFilters.precio === 'menos250') list = list.filter(g => Number(g.precio_gtq) <= 250);
+        if(advancedFilters.precio === 'menos250') list = list.filter(g => precioGrupo(g) <= 250);
         if(advancedFilters.plus) list = list.filter(hasPlusSize);
       }
       if(searchTerm){
@@ -1248,7 +1308,7 @@
       const colorDots = dotVariants.map((v,idx)=>`<button type="button" class="card-color-dot ${idx===activeDotIdx?'active':''}" style="--dot:${safe(colorToHex(v.color))}" title="${safe(v.color||'Color')}${internalCode(v) ? ' · Código #' + internalCode(v) : ''}" data-img="${safe(v.url_imagen || '')}" data-img2="${safe(v.url_imagen_2 || '')}" data-img3="${safe(v.url_imagen_3 || '')}" data-code="${safe(internalCode(v))}" data-price="${safe(money(v.precio_gtq || g.precio_gtq))}" data-color="${safe(v.color||'')}"></button>`).join('') + (colors.length>4 ? `<span class="card-more-colors">+${colors.length-4}</span>` : '');
       return `<article class="product-card ${sold?'is-soldout':''} ${String(g.tipo_prenda||'').toLowerCase()==='jean'?'is-tall':''}" data-key="${safe(g.sku_key)}" tabindex="0" role="button" aria-label="Ver ${safe(g.descripcion)}">
         <div class="imgbox">
-          ${sold ? '<div class="badge">Agotado</div>' : ''}
+          ${sold ? '<div class="badge">Agotado</div>' : promoTagHTML(g)}
           <img src="${safe(display.url_imagen || g.url_imagen)}" alt="${safe(g.descripcion)}" loading="${i<4?'eager':'lazy'}" ${i<4?'fetchpriority="high"':''} decoding="async" data-fallbacks="${safe(buildCardFallbacks(g, display).join('|'))}" onerror="handleImgError(this)">
         </div>
         <div class="card-body">
@@ -1256,7 +1316,7 @@
           <h3 class="product-name">${safe(g.descripcion || 'Prenda Orkia')}</h3>
           <div class="card-code">Código #${safe(internalCode(display || g.display || g))}</div>
           ${colors.length>1 ? `<div class="card-colors" aria-label="Colores disponibles">${colorDots}</div>` : ''}
-          <div class="price">${money(g.precio_gtq)}</div>
+          ${cardPriceHTML(g)}
           ${sold ? `<button class="btn ghost card-btn" data-action="notice">Avísame</button>` : `<button class="btn card-btn">Ver opciones</button><div class="shipping-note">${iconTruck()} <span>Tu primer envío va por nuestra cuenta</span></div>`}
         </div>
       </article>`;
@@ -1280,7 +1340,7 @@
         const display = variantForDisplay(g) || g.display || g.variants[0];
         return `<button class="search-result" type="button" data-key="${safe(g.sku_key)}">
           <img src="${safe(display.url_imagen || g.url_imagen || '')}" alt="${safe(g.descripcion)}" loading="lazy" decoding="async" onerror="handleImgError(this)">
-          <span><span class="result-type">${safe(g.tipo_prenda || 'Prenda')}</span><span class="result-name">${safe(g.descripcion || 'Prenda Orkia')}</span><span class="result-meta">${money(g.precio_gtq)} · Código #${safe(internalCode(display || g.display || g))}${g.colors && g.colors.length ? ' · ' + safe(g.colors.slice(0,3).join(', ')) : ''}</span></span>
+          <span><span class="result-type">${safe(g.tipo_prenda || 'Prenda')}</span><span class="result-name">${safe(g.descripcion || 'Prenda Orkia')}</span><span class="result-meta">${money(precioGrupo(g))} · Código #${safe(internalCode(display || g.display || g))}${g.colors && g.colors.length ? ' · ' + safe(g.colors.slice(0,3).join(', ')) : ''}</span></span>
         </button>`;
       }).join('') : '<div class="empty-state">No encontramos prendas con esa búsqueda.</div>';
       $$('.search-result', $('#searchResults')).forEach(btn=>btn.addEventListener('click',()=>{
@@ -1336,7 +1396,7 @@
         content_type: 'product',
         content_name: p.descripcion || '',
         currency: 'GTQ',
-        value: Number(p.precio_gtq || 0)
+        value: precioEfectivo(p)
       };
       if(accion === 'ABRIR_MODAL') fbq('track', 'ViewContent', params);
       else if(accion === 'AGREGAR_BOLSA') fbq('track', 'AddToCart', params);

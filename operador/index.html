@@ -285,6 +285,8 @@ function NadiaApp() {
   const [talla, setTalla]     = useState("");
   const [cantidad, setCant]   = useState("1");
   const [cupon, setCupon]     = useState("");
+  // Hora del mensaje de la clienta (opcional): para cobrar el precio vigente cuando ella escribio, si la oferta ya cambio (maximo 48 h atras; lo valida el servidor).
+  const [fechaMsg, setFechaMsg] = useState("");
   // Prendas ya agregadas al pedido (prodId/talla/cantidad de arriba es la prenda en edición)
   const [lineas, setLineas]   = useState([]);
 
@@ -348,6 +350,8 @@ function NadiaApp() {
   const zonaSelObj = zonasList.find(z => z.nombre === zonaGT || z.id_zona === zonaGT) || null;
   const nseInf     = NSE_POR_ZONA[zonaGT] ?? null;
 
+  const fechaRefISO = (() => { if (!fechaMsg) return ""; const d = new Date(fechaMsg); return isNaN(d.getTime()) ? "" : d.toISOString(); })();
+
   // Cotización oficial (paso 3): se recalcula al cambiar prendas, zona, teléfono o cupón
   useEffect(() => {
     if (step !== 3 || !marca || lineasPayload.length === 0) return;
@@ -359,7 +363,7 @@ function NadiaApp() {
         const res  = await fetch(APPS_SCRIPT_URL, {
           method:"POST",
           headers:{"Content-Type":"text/plain"},
-          body: JSON.stringify({ accion:"cotizar_pedido", marca, telefono, zona_gt: zonaGT, codigo_descuento: cupon, lineas: lineasPayload })
+          body: JSON.stringify({ accion:"cotizar_pedido", marca, telefono, zona_gt: zonaGT, codigo_descuento: cupon, fecha_ref: fechaRefISO, lineas: lineasPayload })
         });
         const data = await res.json();
         if (cancelado) return;
@@ -372,7 +376,7 @@ function NadiaApp() {
       }
     }, 350);
     return () => { cancelado = true; clearTimeout(t); };
-  }, [step, marca, telefono, zonaGT, cupon, JSON.stringify(lineasPayload)]);
+  }, [step, marca, telefono, zonaGT, cupon, fechaRefISO, JSON.stringify(lineasPayload)]);
 
   // Opciones zona para Sel — dinámicas desde AS
   const zonasOpts = zonasList.map(z => ({
@@ -389,7 +393,7 @@ function NadiaApp() {
     setNombre(""); setTel(""); setCanal("");
     setCiudad(""); setZonaGT(""); setColonia(""); setDirec(""); setRefs("");
     setEdad(""); setCumple(""); setDec("");
-    setProdId(null); setTalla(""); setCant("1"); setCupon(""); setLineas([]);
+    setProdId(null); setTalla(""); setCant("1"); setCupon(""); setFechaMsg(""); setLineas([]);
     setCotiz(null); setCotizError(""); setCotizando(false);
     setPago(""); setBanco(""); setComp("");
   }
@@ -427,6 +431,7 @@ function NadiaApp() {
       perfil_decision: decision,
       lineas: lineasPayload,
       codigo_descuento: cupon,
+      fecha_ref:       fechaRefISO,
       metodo_pago:     pago,
       banco:           banco,
       comprobante:     comp,
@@ -616,6 +621,9 @@ function NadiaApp() {
             <Field label="Cupón de descuento" optional hint="Solo si el cliente lo tiene" T={T}>
               <input value={cupon} onChange={e=>setCupon(e.target.value.toUpperCase())} placeholder="Ej: BIENVENIDA10" style={S.inpSt(!!cupon)}/>
             </Field>
+            <Field label="Hora del mensaje de la clienta" optional hint="Solo si escribió antes de ahora y la oferta ya cambió (máximo 48 h atrás)" T={T}>
+              <input type="datetime-local" value={fechaMsg} onChange={e=>setFechaMsg(e.target.value)} style={S.inpSt(!!fechaMsg)}/>
+            </Field>
             {lineasTodas.length>0&&(
               <div style={{background:T.dark,borderRadius:14,padding:18,marginTop:8}}>
                 {lineasTodas.map((l,i)=>{
@@ -682,7 +690,14 @@ function NadiaApp() {
                 {!cotizError&&zonaSelObj&&!cotizando&&cotiz&&(
                   <>
                     {cotiz.es_nuevo&&<SummaryRow k={marca==="nudo"?"Cliente":"Clienta"} v="Nueva (primera compra)" T={T}/>}
-                    <SummaryRow k="Subtotal" v={fmtGTQ(cotiz.subtotal_gtq)} T={T}/>
+                    {cotiz.descuento_promo_gtq>0
+                      ? <>
+                          <SummaryRow k="Subtotal a precio normal" v={fmtGTQ(cotiz.subtotal_regular_gtq)} T={T}/>
+                          <SummaryRow k={`Oferta (${cotiz.id_campania})`} v={`−${fmtGTQ(cotiz.descuento_promo_gtq)}`} T={T}/>
+                        </>
+                      : <SummaryRow k="Subtotal" v={fmtGTQ(cotiz.subtotal_gtq)} T={T}/>}
+                    {fechaMsg&&cotiz.fecha_ref_usada&&<SummaryRow k="Precio vigente al" v={new Date(cotiz.fecha_ref_usada).toLocaleString("es-GT")} T={T}/>}
+                    {cupon&&cotiz.descuento_promo_gtq>0&&cotiz.descuento_codigo_gtq===0&&<p style={{margin:"6px 0 0",fontSize:12,color:"#C4A882"}}>El cupón no se suma a las prendas que ya tienen oferta.</p>}
                     {cotiz.descuento_codigo_gtq>0&&<SummaryRow k={`Cupón ${cupon}`} v={`−${fmtGTQ(cotiz.descuento_codigo_gtq)}`} T={T}/>}
                     <SummaryRow k="Envío" v={cotiz.envio_gratis?`Gratis${cotiz.motivo_envio_gratis==="primera_compra"?" (primera compra)":" (compra desde Q300)"}`:(cotiz.envio_por_validar?"Por validar (no incluido)":fmtGTQ(cotiz.costo_envio_gtq))} T={T}/>
                     {cotiz.envio_por_validar&&<p style={{margin:"8px 0 0",fontSize:12,color:"#FF9A8A"}}>Esta zona no tiene tarifa cargada: confirma el costo del envío con la clienta y cóbralo aparte.</p>}

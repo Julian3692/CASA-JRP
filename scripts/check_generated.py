@@ -41,6 +41,16 @@ def main():
                     break
             if not re.fullmatch(r"\d+\.\d{2} GTQ", f.get("price", "")):
                 errores.append(f"{marca}: el producto {f.get('id')} tiene precio raro: {f.get('price')}")
+            sp, sv = (f.get("sale_price") or "").strip(), (f.get("sale_price_effective_date") or "").strip()
+            if sp or sv:
+                m = re.fullmatch(r"(\d+\.\d{2}) GTQ", sp)
+                v = re.fullmatch(r"(\d{4}-\d\d-\d\dT\d\d:\d\d-0600)/(\d{4}-\d\d-\d\dT\d\d:\d\d-0600)", sv)
+                if not m or not v:
+                    errores.append(f"{marca}: el producto {f.get('id')} tiene oferta mal escrita: '{sp}' '{sv}'")
+                elif float(m.group(1)) >= float(f["price"].split()[0]):
+                    errores.append(f"{marca}: el producto {f.get('id')} tiene oferta ({sp}) que no es menor al precio ({f['price']})")
+                elif v.group(1) >= v.group(2):
+                    errores.append(f"{marca}: el producto {f.get('id')} tiene ventana de oferta invertida: {sv}")
         sin_pagina = [i for i in ids if not (root / marca / "producto" / i / "index.html").exists()]
         if sin_pagina:
             errores.append(f"{marca}: {len(sin_pagina)} productos del catalogo no tienen pagina (ej. {sin_pagina[:3]})")

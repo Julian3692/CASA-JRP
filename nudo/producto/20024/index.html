@@ -69,8 +69,19 @@
     .header-actions{display:flex;align-items:center;gap:18px}
     .icon-btn{border:0;background:transparent;color:inherit;padding:6px;line-height:0;position:relative;display:inline-flex}
     .bag-count{position:absolute;top:-2px;right:-2px;background:var(--terracota);color:#fff;font-size:9px;font-weight:700;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+    .co-stripe{height:4px;background:linear-gradient(90deg,#FCD116 0 50%,#003893 50% 75%,#CE1126 75% 100%)}.co-flag{flex:none;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}@media (max-width:720px){.top-shipping{height:auto!important;min-height:32px;padding:5px 12px!important;line-height:1.25}}
     .top-shipping{height:52px;background:#EFE8E0;color:var(--text);display:flex;align-items:center;justify-content:center;gap:10px;font-size:16px;font-weight:500}
     .top-shipping .q{color:var(--terracota);font-weight:700}
+    .price-wrap{margin:0 0 20px}
+    .price-wrap .price{margin:0}
+    .price-now{font-size:26px;font-weight:700;color:var(--dark)}
+    .price-was{margin-left:10px;font-size:18px;color:#8A837B}
+    .promo-badge{display:inline-block;margin-left:10px;padding:3px 10px;border-radius:12px;background:var(--terracota);color:#fff;font-size:12px;font-weight:700;letter-spacing:.04em;vertical-align:middle}
+    .price-regular{display:block;margin-top:5px;font-size:14px;color:#6B645D}
+    .promo-banner{padding:10px 16px;text-align:center;font-size:14px;font-weight:600;letter-spacing:.03em;background:#EFE8E0;color:var(--dark)}
+    .promo-banner.suave{background:#F3ECE4;color:#4A3F37}
+    .promo-banner.fuerte{background:#1A1A1A;color:#fff;font-size:17px;font-weight:700;letter-spacing:.06em;padding:14px 16px;text-transform:uppercase}
+    .promo-banner[hidden]{display:none}
     main{max-width:1440px;margin:0 auto;padding:0;width:100%;flex:1 0 auto}
     .layout{display:flex;justify-content:center;align-items:stretch;gap:40px;max-width:1120px;margin:0 auto;flex-wrap:nowrap}
     .gallery-col{display:flex;flex-direction:column;min-width:0}
@@ -179,6 +190,7 @@
   </style>
 </head>
 <body>
+  <div class="co-stripe" aria-hidden="true"></div>
   <header class="site-header">
     <div class="header-inner">
       <a class="brand" href="https://casajrp.com/nudo/" aria-label="Volver al catálogo">
@@ -196,7 +208,8 @@
       </div>
     </div>
   </header>
-  <div class="top-shipping"><span>Tu primer envío va por nuestra cuenta</span></div>
+  <div class="top-shipping"><svg class="co-flag" viewBox="0 0 24 16" width="18" height="12" role="img" aria-label="Colombia"><rect width="24" height="8" fill="#FCD116"/><rect y="8" width="24" height="4" fill="#003893"/><rect y="12" width="24" height="4" fill="#CE1126"/></svg><span>Ropa interior colombiana · Tu primer envío va por nuestra cuenta</span></div>
+  <div class="promo-banner" id="promoBanner" hidden></div>
   <main>
     <div class="layout">
       <div class="gallery-col">
@@ -214,7 +227,7 @@
         </nav>
         <p class="eyebrow">Brief Bikini</p>
         <h1 class="serif">Brief Bikini Estampado Manchas Negro y Morado</h1>
-        <p class="price">Q119</p>
+        <div class="price-wrap" id="priceWrap"><p class="price" id="priceNow">Q119</p></div>
         <p class="first-ship"><svg class="icon" viewBox="0 0 24 24"><path d="M3 7h11v10H3zM14 11h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg><strong>Tu primer envío va por nuestra cuenta</strong></p>
         
         <p class="detail-line">Estampado Manchas</p>
@@ -317,8 +330,37 @@
     <div class="lightbox-zoom-hint">Doble tap o pellizca para ampliar</div>
   </div>
   <script>
+    // Promociones (Nov 2026): el servidor decide el precio que se cobra; aqui solo se MUESTRA la oferta vigente por hora.
+    const PROMO = {"p": [], "c": {}};
+    function promoActiva(){
+      const now = Date.now(); let mejor = null;
+      (PROMO.p || []).forEach(x => {
+        const c = (PROMO.c || {})[x[0]]; if(!c) return;
+        if(now < c.i*1000 || now >= c.f*1000) return;
+        if(!mejor || c.r > mejor.r || (c.r === mejor.r && c.d > mejor.d)) mejor = {id:x[0], precio:Number(x[1]), etq:c.etq, d:c.d, t:c.t, r:c.r, b:c.b};
+      });
+      return mejor;
+    }
+    function _q(v){ return 'Q' + Math.round(Number(v)); }
+    function renderPromo(){
+      const wrap = document.getElementById('priceWrap'); if(!wrap) return;
+      const pe = promoActiva(); const reg = 119.0;
+      const banner = document.getElementById('promoBanner');
+      if(!pe){
+        wrap.innerHTML = '<p class="price" id="priceNow">' + _q(reg) + '</p>'; window.__PRECIO_EFECTIVO = null;
+        if(banner){ banner.hidden = true; }
+        return;
+      }
+      window.__PRECIO_EFECTIVO = pe.precio;
+      const pct = '−' + String(pe.d).replace('.', ',') + ' %';
+      wrap.innerHTML = pe.t
+        ? '<p class="price"><span class="price-now">' + _q(pe.precio) + '</span><s class="price-was">' + _q(reg) + '</s><span class="promo-badge">' + pe.etq + ' ' + pct + '</span></p>'
+        : '<p class="price"><span class="price-now">' + _q(pe.precio) + '</span><span class="promo-badge">' + pe.etq + ' ' + pct + '</span></p><span class="price-regular">Precio regular ' + _q(reg) + '</span>';
+      if(banner && pe.b){ banner.textContent = pe.b; banner.className = 'promo-banner ' + (pe.d >= 20 ? 'fuerte' : (pe.d <= 10 ? 'suave' : '')); banner.hidden = false; }
+    }
+    renderPromo(); setInterval(renderPromo, 30000); document.addEventListener('visibilitychange', renderPromo);
     const BAG_KEY = "nudo_seleccion_whatsapp_v1";
-    const ITEM_BASE = {"id_producto": 20024, "sku_key": "3", "ref_proveedor": 3, "descripcion": "Brief Bikini Estampado Manchas Negro y Morado", "tipo_prenda": "Brief Bikini", "color": "Negro y Morado", "precio_gtq": 119, "codigo": "20024", "imagen": "https://img.casajrp.com/nudo/20024_frente.webp"};
+    const ITEM_BASE = {"id_producto": 20024, "sku_key": "3", "ref_proveedor": 3, "descripcion": "Brief Bikini Estampado Manchas Negro y Morado", "tipo_prenda": "Brief Bikini", "color": "Negro y Morado", "precio_gtq": 119, "precio_regular": 119, "promos": [], "codigo": "20024", "imagen": "https://img.casajrp.com/nudo/20024_frente.webp"};
     const IMAGES = ["https://img.casajrp.com/nudo/20024_frente.webp", "https://img.casajrp.com/nudo/20024_atras.webp"];
 
     function readBag(){ try{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }catch(e){ return []; } }
@@ -341,6 +383,8 @@
     document.getElementById('addBtn').addEventListener('click', () => {
       const items = readBag();
       const item = Object.assign({}, ITEM_BASE, { talla: isUnica(selectedTalla) ? 'Por confirmar' : selectedTalla, ts: Date.now() });
+      const _pe = promoActiva();
+      if(_pe){ item.precio_gtq = _pe.precio; item.promo_id = _pe.id; }
       const key = bagKeyFor(item);
       const existing = items.find(x => bagKeyFor(x) === key);
       if(existing){ existing.qty = (existing.qty || 1) + 1; }
@@ -456,7 +500,7 @@
       function isBot(){ return navigator.webdriver === true || /bot|crawl|spider|slurp|headless|lighthouse|preview|facebookexternalhit/i.test(navigator.userAgent || ''); }
       function px(evento){
         if(typeof fbq !== 'function') return;
-        fbq('track', evento, {content_ids:[PID], content_type:'product', content_name:NAME, currency:'GTQ', value:PRICE});
+        fbq('track', evento, {content_ids:[PID], content_type:'product', content_name:NAME, currency:'GTQ', value:(window.__PRECIO_EFECTIVO||PRICE)});
       }
       function sheetClick(accion){
         if(isBot()) return;
