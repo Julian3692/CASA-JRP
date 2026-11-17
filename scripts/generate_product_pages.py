@@ -534,7 +534,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     }}
     *{{box-sizing:border-box}}
     html{{scroll-behavior:smooth}}
-    html,body{{height:100%}}
+    html{{height:100%}}   /* body sin height:100%: con eso el encabezado fijo (sticky) solo duraba la primera pantalla */
     body{{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}}
     a{{color:inherit;text-decoration:none}}
     img{{display:block;max-width:100%}}
@@ -674,7 +674,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     <div class="header-inner">
       <a class="brand" href="{catalog_url}" aria-label="Volver al catálogo">
         <span class="icon back">&larr;</span>
-        <div class="brand-logo">{brand['label']}<span class="brand-dot"></span></div>
+        <div class="brand-logo">{brand['label']}<span class="brand-dot"></span>{policy_pages.CO_FLAG_HDR}</div>
       </a>
       <div class="header-actions">
         <a class="icon-btn" href="/{marca}/?abrirSeleccion=1" aria-label="Selección">

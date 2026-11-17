@@ -14,7 +14,8 @@ import urllib.parse
 # Bandera de Colombia (imagen dibujada, no emoji: en Windows el emoji se ve como "CO"). Colores oficiales: amarillo 50 %, azul 25 %, rojo 25 %.
 CO_FLAG = '<svg class="co-flag" viewBox="0 0 24 16" width="18" height="12" role="img" aria-label="Colombia"><rect width="24" height="8" fill="#FCD116"/><rect y="8" width="24" height="4" fill="#003893"/><rect y="12" width="24" height="4" fill="#CE1126"/></svg>'
 CO_STRIPE = '<div class="co-stripe" aria-hidden="true"></div>'
-CO_CSS = ".co-stripe{height:4px;background:linear-gradient(90deg,#FCD116 0 50%,#003893 50% 75%,#CE1126 75% 100%)}.co-flag{flex:none;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}@media (max-width:720px){.top-shipping{height:auto!important;min-height:32px;padding:5px 12px!important;line-height:1.25}}"   # dentro de f-strings se escribe con llaves dobles
+CO_FLAG_HDR = CO_FLAG.replace('class="co-flag" viewBox="0 0 24 16" width="18" height="12"', 'class="co-flag co-flag-h" viewBox="0 0 24 16" width="26" height="17"')   # la misma bandera, mas grande, junto al logo (el encabezado queda fijo al hacer scroll)
+CO_CSS = ".co-stripe{position:fixed;top:0;left:0;right:0;height:5px;z-index:99999;pointer-events:none;background:linear-gradient(90deg,#FCD116 0 50%,#003893 50% 75%,#CE1126 75% 100%)}.co-flag-h{display:inline-block;margin-left:9px;vertical-align:middle;position:relative;top:-2px}.co-flag{flex:none;border-radius:2px;box-shadow:0 0 0 1px rgba(0,0,0,.12)}@media (max-width:720px){.top-shipping{height:auto!important;min-height:32px;padding:5px 12px!important;line-height:1.25}}"   # dentro de f-strings se escribe con llaves dobles
 
 # (slug, nombre en el pie de pagina, titulo de la pagina)
 POLICY_PAGES = [
@@ -326,7 +327,7 @@ def render(marca, brand, slug, wa_number, pixel_id, zonas):
     <div class="header-inner">
       <a class="brand" href="/{marca}/" aria-label="Volver al catálogo">
         <span class="icon back">&larr;</span>
-        <div class="brand-logo">{brand['label']}<span class="brand-dot"></span></div>
+        <div class="brand-logo">{brand['label']}<span class="brand-dot"></span>{CO_FLAG_HDR}</div>
       </a>
       <a class="icon-btn" href="{wa_generic}" target="_blank" rel="noopener" aria-label="WhatsApp">{_WA_ICON}</a>
     </div>
