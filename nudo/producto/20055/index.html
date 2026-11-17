@@ -305,7 +305,7 @@
   </div>
   <script>
     // Promociones (Nov 2026): el servidor decide el precio que se cobra; aqui solo se MUESTRA la oferta vigente por hora.
-    const PROMO = {"p": [], "c": {}};
+    const PROMO = {"p": [["EA-NU", 170]], "c": {"EA-NU": {"id": "EA-NU", "etq": "Oferta anticipada", "i": 1795154400, "f": 1795759200, "d": 10, "r": 10, "t": 1, "b": "PRE BLACK FRIDAY · 10 % en toda la tienda · hasta el 26 de noviembre"}}};
     function promoActiva(){
       const now = Date.now(); let mejor = null;
       (PROMO.p || []).forEach(x => {
@@ -334,7 +334,7 @@
     }
     renderPromo(); setInterval(renderPromo, 30000); document.addEventListener('visibilitychange', renderPromo);
     const BAG_KEY = "nudo_seleccion_whatsapp_v1";
-    const ITEM_BASE = {"id_producto": 20055, "sku_key": "8", "ref_proveedor": 8, "descripcion": "Suspensorio Tanga Negro", "tipo_prenda": "Suspensorio Tanga", "color": "Negro", "precio_gtq": 189, "precio_regular": 189, "promos": [], "codigo": "20055", "imagen": "https://img.casajrp.com/nudo/20055_frente.webp"};
+    const ITEM_BASE = {"id_producto": 20055, "sku_key": "8", "ref_proveedor": 8, "descripcion": "Suspensorio Tanga Negro", "tipo_prenda": "Suspensorio Tanga", "color": "Negro", "precio_gtq": 189, "precio_regular": 189, "promos": [["EA-NU", 170]], "codigo": "20055", "imagen": "https://img.casajrp.com/nudo/20055_frente.webp"};
     const IMAGES = ["https://img.casajrp.com/nudo/20055_frente.webp", "https://img.casajrp.com/nudo/20055_atras.webp"];
 
     function readBag(){ try{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }catch(e){ return []; } }

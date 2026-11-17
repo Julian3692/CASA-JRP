@@ -303,7 +303,7 @@
   </div>
   <script>
     // Promociones (Nov 2026): el servidor decide el precio que se cobra; aqui solo se MUESTRA la oferta vigente por hora.
-    const PROMO = {"p": [], "c": {}};
+    const PROMO = {"p": [["EA-OR", 386], ["JE-OR", 365]], "c": {"EA-OR": {"id": "EA-OR", "etq": "Oferta anticipada", "i": 1795154400, "f": 1795759200, "d": 10, "r": 10, "t": 1, "b": "PRE BLACK FRIDAY · 10 % en prendas seleccionadas · hasta el 26 de noviembre"}, "JE-OR": {"id": "JE-OR", "etq": "Oferta jeans", "i": 1794808800, "f": 1796104800, "d": 15, "r": 30, "t": 1, "b": "JEANS COLOMBIANOS · 15 % de descuento · hasta el Cyber Monday (30 nov)"}}};
     function promoActiva(){
       const now = Date.now(); let mejor = null;
       (PROMO.p || []).forEach(x => {
@@ -332,7 +332,7 @@
     }
     renderPromo(); setInterval(renderPromo, 30000); document.addEventListener('visibilitychange', renderPromo);
     const BAG_KEY = "orkia_seleccion_whatsapp_v1";
-    const ITEM_BASE = {"id_producto": 11063, "sku_key": "2877", "ref_proveedor": "2877", "descripcion": "Jean skinny tiro alto azul oscuro con costuras cobre, incluye correa", "tipo_prenda": "Jean", "color": "Azul", "precio_gtq": 429, "precio_regular": 429, "promos": [], "codigo": "11063", "imagen": "https://img.casajrp.com/orkia/11063_frente.webp"};
+    const ITEM_BASE = {"id_producto": 11063, "sku_key": "2877", "ref_proveedor": "2877", "descripcion": "Jean skinny tiro alto azul oscuro con costuras cobre, incluye correa", "tipo_prenda": "Jean", "color": "Azul", "precio_gtq": 429, "precio_regular": 429, "promos": [["EA-OR", 386], ["JE-OR", 365]], "codigo": "11063", "imagen": "https://img.casajrp.com/orkia/11063_frente.webp"};
     const IMAGES = ["https://img.casajrp.com/orkia/11063_frente.webp", "https://img.casajrp.com/orkia/11063_lado.webp", "https://img.casajrp.com/orkia/11063_detalle.webp"];
 
     function readBag(){ try{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }catch(e){ return []; } }

@@ -299,7 +299,7 @@
   </div>
   <script>
     // Promociones (Nov 2026): el servidor decide el precio que se cobra; aqui solo se MUESTRA la oferta vigente por hora.
-    const PROMO = {"p": [], "c": {}};
+    const PROMO = {"p": [["EA-OR", 242]], "c": {"EA-OR": {"id": "EA-OR", "etq": "Oferta anticipada", "i": 1795154400, "f": 1795759200, "d": 10, "r": 10, "t": 1, "b": "PRE BLACK FRIDAY · 10 % en prendas seleccionadas · hasta el 26 de noviembre"}}};
     function promoActiva(){
       const now = Date.now(); let mejor = null;
       (PROMO.p || []).forEach(x => {
@@ -328,7 +328,7 @@
     }
     renderPromo(); setInterval(renderPromo, 30000); document.addEventListener('visibilitychange', renderPromo);
     const BAG_KEY = "orkia_seleccion_whatsapp_v1";
-    const ITEM_BASE = {"id_producto": 11048, "sku_key": "15", "ref_proveedor": "15", "descripcion": "Pantalon palazzo con franja lateral", "tipo_prenda": "Pantalon", "color": "Verde oscuro", "precio_gtq": 269, "precio_regular": 269, "promos": [], "codigo": "11048", "imagen": "https://img.casajrp.com/orkia/11048_frente.webp"};
+    const ITEM_BASE = {"id_producto": 11048, "sku_key": "15", "ref_proveedor": "15", "descripcion": "Pantalon palazzo con franja lateral", "tipo_prenda": "Pantalon", "color": "Verde oscuro", "precio_gtq": 269, "precio_regular": 269, "promos": [["EA-OR", 242]], "codigo": "11048", "imagen": "https://img.casajrp.com/orkia/11048_frente.webp"};
     const IMAGES = ["https://img.casajrp.com/orkia/11048_frente.webp", "https://img.casajrp.com/orkia/11048_lado.webp", "https://img.casajrp.com/orkia/11048_detalle.webp"];
 
     function readBag(){ try{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }catch(e){ return []; } }
@@ -339,7 +339,7 @@
       document.getElementById('bagCount').textContent = total;
     }
     function isUnica(t){ return /unica|confirmar/.test(String(t||'').toLowerCase()); }
-    let selectedTalla = "2025-08-06 00:00:00";
+    let selectedTalla = "6-8";
     document.querySelectorAll('.size-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));

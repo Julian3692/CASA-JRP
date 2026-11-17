@@ -305,7 +305,7 @@
   </div>
   <script>
     // Promociones (Nov 2026): el servidor decide el precio que se cobra; aqui solo se MUESTRA la oferta vigente por hora.
-    const PROMO = {"p": [], "c": {}};
+    const PROMO = {"p": [["BA-NU", 98]], "c": {"BA-NU": {"id": "BA-NU", "etq": "Oferta", "i": 1795154400, "f": 1795845600, "d": 10, "r": 10, "t": 1, "b": ""}}};
     function promoActiva(){
       const now = Date.now(); let mejor = null;
       (PROMO.p || []).forEach(x => {
@@ -334,7 +334,7 @@
     }
     renderPromo(); setInterval(renderPromo, 30000); document.addEventListener('visibilitychange', renderPromo);
     const BAG_KEY = "nudo_seleccion_whatsapp_v1";
-    const ITEM_BASE = {"id_producto": 20070, "sku_key": "10", "ref_proveedor": 10, "descripcion": "Tanga Amarrar Corinto", "tipo_prenda": "Tanga Amarrar", "color": "Corinto", "precio_gtq": 109, "precio_regular": 109, "promos": [], "codigo": "20070", "imagen": "https://img.casajrp.com/nudo/20070_frente.webp"};
+    const ITEM_BASE = {"id_producto": 20070, "sku_key": "10", "ref_proveedor": 10, "descripcion": "Tanga Amarrar Corinto", "tipo_prenda": "Tanga Amarrar", "color": "Corinto", "precio_gtq": 109, "precio_regular": 109, "promos": [["BA-NU", 98]], "codigo": "20070", "imagen": "https://img.casajrp.com/nudo/20070_frente.webp"};
     const IMAGES = ["https://img.casajrp.com/nudo/20070_frente.webp", "https://img.casajrp.com/nudo/20070_atras.webp"];
 
     function readBag(){ try{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }catch(e){ return []; } }
