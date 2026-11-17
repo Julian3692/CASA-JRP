@@ -667,6 +667,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
       .zoom-hint .desktop-only{{display:none}}
     }}
   </style>
+{policy_pages.CO_JS}
 </head>
 <body>
   {policy_pages.CO_STRIPE}
