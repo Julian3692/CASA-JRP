@@ -46,6 +46,8 @@ CAMPOS_FEED = ["id", "title", "description", "availability", "condition", "price
                "brand", "item_group_id", "google_product_category"]
 PROHIBIDO_EN_PAGINAS = ["precio_cop", "Precio_COP", "id_proveedor", "nombre_foto"]   # costos / datos de proveedor: FALLO
 # ref_proveedor viaja en el codigo de las fichas (agrupa colores y carrito). Decision pendiente del dueno: se lista como AVISO fijo.
+# Proteccion del Pixel: solo se activa en casajrp.com (y subdominios); en localhost, 127.0.0.1, vistas previas, etc. queda como funcion vacia.
+GUARD_PIXEL = "var __h = location.hostname; if(!(__h === 'casajrp.com' || __h.endsWith('.casajrp.com'))){ window.fbq = function(){}; }"
 TELEFONO_PRUEBA = "50255550000"   # numero inexistente: la cotizacion es de solo lectura y no guarda nada
 
 LOCAL = False
@@ -259,6 +261,8 @@ def auditar_marca(marca):
             f.append("noindex")
         if re.findall(r"fbq\('init', *'(\d+)'\)", h) != [G.PIXEL_ID]:
             f.append("Pixel: init distinto de 1 vez con el ID correcto")
+        if GUARD_PIXEL not in h:
+            f.append("Pixel: falta (o cambio) la proteccion que lo limita a casajrp.com")
         if h.count("fbq('track', 'PageView'") != 1:
             f.append("Pixel: PageView debe dispararse exactamente 1 vez")
         # ViewContent se dispara desde px() con el precio VIGENTE (oferta incluida); nunca con un valor escrito fijo en el <head>
@@ -357,6 +361,8 @@ def auditar_marca(marca):
             malas.append(f"{pth}: sin title")
         if re.findall(r"fbq\('init', *'(\d+)'\)", h) != [G.PIXEL_ID]:
             malas.append(f"{pth}: Pixel init != 1 vez con el ID correcto")
+        if GUARD_PIXEL not in h:
+            malas.append(f"{pth}: falta (o cambio) la proteccion que limita el Pixel a casajrp.com")
         if pth == f"{marca}/index.html" and "UX lote 1" not in h:
             malas.append(f"{pth}: falta el bloque de estilos UX lote 1 (letra, contraste, areas tactiles)")
         if pth == f"{marca}/index.html":

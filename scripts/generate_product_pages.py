@@ -515,6 +515,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family={brand['font_google']}&display=swap" rel="stylesheet">
   <!-- Facebook Pixel Code -->
   <script>
+  /*solo-produccion*/ var __h = location.hostname; if(!(__h === 'casajrp.com' || __h.endsWith('.casajrp.com'))){{ window.fbq = function(){{}}; }}
   !function(f,b,e,v,n,t,s)
   {{if(f.fbq)return;n=f.fbq=function(){{n.callMethod?
   n.callMethod.apply(n,arguments):n.queue.push(arguments)}};
