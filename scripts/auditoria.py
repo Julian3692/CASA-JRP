@@ -259,10 +259,15 @@ def auditar_marca(marca):
             f.append("noindex")
         if re.findall(r"fbq\('init', *'(\d+)'\)", h) != [G.PIXEL_ID]:
             f.append("Pixel: init distinto de 1 vez con el ID correcto")
-        if "fbq('track', 'PageView'" not in h or "fbq('track', 'ViewContent'" not in h:
-            f.append("falta PageView/ViewContent")
-        if f"content_ids: ['{i}']" not in h:
-            f.append("content_ids no coincide con el id")
+        if h.count("fbq('track', 'PageView'") != 1:
+            f.append("Pixel: PageView debe dispararse exactamente 1 vez")
+        # ViewContent se dispara desde px() con el precio VIGENTE (oferta incluida); nunca con un valor escrito fijo en el <head>
+        if "fbq('track', 'ViewContent'" in h:
+            f.append("Pixel: ViewContent con valor fijo en el <head> (debe usar el precio vigente via px)")
+        if h.count("px('ViewContent')") != 1:
+            f.append(f"Pixel: ViewContent debe dispararse exactamente 1 vez desde px() (hay {h.count(chr(112) + 'x(' + chr(39) + 'ViewContent' + chr(39) + ')')})")
+        if f'PID = "{i}"' not in h or "content_ids:[PID]" not in h:
+            f.append("Pixel: content_ids no coincide con el id del producto")
         m = re.search(r"PRICE = ([\d.]+)", h)
         if not m or abs(float(m.group(1)) - float(r["price"].split()[0])) > 0.001:
             f.append(f"precio de la ficha {m.group(1) if m else '?'} != feed {r['price']}")
@@ -356,7 +361,7 @@ def auditar_marca(marca):
             malas.append(f"{pth}: falta el bloque de estilos UX lote 1 (letra, contraste, areas tactiles)")
         if pth == f"{marca}/index.html":
             for marcador, que in (("data-qty", "botones de cantidad (- / +) en la seleccion"), ("bag-total", "total estimado en la seleccion"),
-                                  ("unidadesPedido", "el mensaje de WhatsApp cuenta unidades"), ("function tallaTxt", "regla de talla unica/por confirmar")):
+                                  ("unidadesPedido", "el mensaje de WhatsApp cuenta unidades"), ("num_items: unidadesPedido", "InitiateCheckout cuenta unidades"), ("function tallaTxt", "regla de talla unica/por confirmar")):
                 if marcador not in h:
                     malas.append(f"{pth}: falta {que}")
     agrupar(A, f"Home y paginas de ayuda ({len(paginas)}): cargan, tienen titulo, el Pixel correcto y los estilos UX", malas)

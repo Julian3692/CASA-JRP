@@ -1050,7 +1050,7 @@
       if(typeof fbq === 'function') fbq('track', 'InitiateCheckout', {
         content_ids: bagItems.map(i=>String(i.id_producto||'')),
         content_type: 'product',
-        num_items: bagItems.length,
+        num_items: unidadesPedido,
         currency: 'GTQ',
         value: total
       });

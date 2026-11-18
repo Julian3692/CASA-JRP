@@ -33,13 +33,7 @@
   'https://connect.facebook.net/en_US/fbevents.js');
   fbq('init', '1778753106585555');
   fbq('track', 'PageView');
-  fbq('track', 'ViewContent', {
-    content_ids: ['10007'],
-    content_type: 'product',
-    content_name: "Top asimetrico acanalado",
-    currency: 'GTQ',
-    value: 179
-  });
+  // ViewContent se dispara al final de la pagina (script de px), con el precio VIGENTE (oferta incluida), igual que AddToCart.
   </script>
   <noscript>
   <img height="1" width="1" style="display:none"
@@ -579,6 +573,7 @@
       document.querySelectorAll('a[href^="https://wa.me/"]').forEach(function(a){
         a.addEventListener('click', function(){ sheetClick('WHATSAPP_PDP'); px('Contact'); });
       });
+      px('ViewContent');   // una sola vez por carga, con el precio vigente
     })();
   </script>
 </body>

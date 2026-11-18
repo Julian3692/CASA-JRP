@@ -295,6 +295,7 @@ TRACK_TEMPLATE = """
       document.querySelectorAll('a[href^="https://wa.me/"]').forEach(function(a){
         a.addEventListener('click', function(){ sheetClick('WHATSAPP_PDP'); px('Contact'); });
       });
+      px('ViewContent');   // una sola vez por carga, con el precio vigente
     })();
   </script>
 """
@@ -524,13 +525,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
   'https://connect.facebook.net/en_US/fbevents.js');
   fbq('init', '{PIXEL_ID}');
   fbq('track', 'PageView');
-  fbq('track', 'ViewContent', {{
-    content_ids: ['{pid}'],
-    content_type: 'product',
-    content_name: {json.dumps(p['descripcion'])},
-    currency: 'GTQ',
-    value: {p.get('precio_gtq') or 0}
-  }});
+  // ViewContent se dispara al final de la pagina (script de px), con el precio VIGENTE (oferta incluida), igual que AddToCart.
   </script>
   <noscript>
   <img height="1" width="1" style="display:none"
