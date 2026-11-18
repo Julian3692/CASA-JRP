@@ -204,7 +204,7 @@ def group_by_ref_proveedor(productos):
 
 
 TOP_TYPES = {"blusa", "top", "body"}
-BOTTOM_TYPES = {"falda", "pantalon"}
+BOTTOM_TYPES = {"falda", "pantalon", "jean"}   # UX nov 2026: el jean faltaba; sin esto no tenia regla de recomendados
 RELATED_COUNT = 4
 
 
@@ -212,7 +212,8 @@ def pick_related(marca, all_groups, current_group, count=RELATED_COUNT):
     current_ref = normalize(current_group[0].get("ref_proveedor"))
     current_tipo = strip_accents(normalize(current_group[0].get("tipo_prenda"))).lower()
 
-    pool_primary = []
+    pool_same = []      # mismo tipo de prenda (alternativas: otros jeans, otras faldas...)
+    pool_primary = []   # complementos (arriba <-> abajo)
     pool_general = []
     for g in all_groups:
         if normalize(g[0].get("ref_proveedor")) == current_ref:
@@ -222,16 +223,22 @@ def pick_related(marca, all_groups, current_group, count=RELATED_COUNT):
             continue
         v = available[0]
         tipo = strip_accents(normalize(v.get("tipo_prenda"))).lower()
-        if marca == "orkia" and current_tipo in TOP_TYPES and tipo in BOTTOM_TYPES:
+        if marca == "orkia" and current_tipo in BOTTOM_TYPES and tipo == current_tipo:
+            pool_same.append(v)
+        elif marca == "orkia" and current_tipo in TOP_TYPES and tipo in BOTTOM_TYPES:
             pool_primary.append(v)
         elif marca == "orkia" and current_tipo in BOTTOM_TYPES and tipo in TOP_TYPES:
             pool_primary.append(v)
         else:
             pool_general.append(v)
 
-    chosen = pool_primary[:count]
+    # Prenda de abajo (jean, pantalon, falda): 2 alternativas parecidas + 2 complementos; se completa con lo que haya.
+    alts = pool_same[:2]
+    comps = pool_primary[: max(count - len(alts), 0)] if alts else pool_primary[:count]
+    chosen = alts + comps
     if len(chosen) < count:
-        chosen += pool_general[: count - len(chosen)]
+        resto = [v for v in pool_same[len(alts):] + pool_primary[len(comps):] + pool_general if v not in chosen]
+        chosen += resto[: count - len(chosen)]
     return chosen[:count]
 
 
@@ -697,6 +704,14 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     .zoom-hint{{right:auto;left:10px}}
     .breadcrumb a{{padding:14px 6px;margin:-14px -6px}}
     .wa-advice a{{display:inline-block;padding:10px 0}}
+    .buybar{{position:fixed;left:0;right:0;bottom:0;z-index:70;background:#fff;border-top:1px solid var(--border);padding:10px 16px calc(10px + env(safe-area-inset-bottom));transform:translateY(110%);transition:transform .25s ease;box-shadow:0 -6px 20px rgba(0,0,0,.08)}}
+    .buybar.show{{transform:translateY(0)}}
+    .buybar-in{{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:14px}}
+    .buybar-price{{font-size:22px;font-weight:700;color:var(--dark);white-space:nowrap;line-height:1.1}}
+    .buybar-price s{{display:block;font-size:12px;font-weight:400;color:#6B645E}}
+    .buybar .btn{{flex:1;height:48px;width:auto}}
+    body.has-buybar{{padding-bottom:76px}}
+    body.has-buybar .wa-float{{bottom:calc(86px + env(safe-area-inset-bottom))}}
     .wa-float{{transition:transform .25s ease,opacity .25s ease}}
     .wa-float.wa-hide{{transform:translateY(90px);opacity:0;pointer-events:none}}
   </style>
@@ -770,6 +785,7 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     {policy_pages.footer_links_html(marca)}
     <p>Guatemala &middot; Manufactura colombiana &middot; &copy; 2026</p>
   </footer>
+  {'' if is_agotado else '<div class="buybar" id="buyBar" aria-hidden="true"><div class="buybar-in"><div class="buybar-price" id="buyBarPrice"></div><button type="button" class="btn btn-primary" id="buyBarBtn">Agregar a selección</button></div></div>'}
   <a class="wa-float" href="{wa_contact_link}" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
     <svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/><path d="M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8c.3.1.4.3.4.6v.4c0 .4-.2.7-.6.9-.6.3-1.9.4-3.8-.6-2.6-1.3-4.3-4.1-4.4-5.5 0-.5.2-.9.4-1.3Z"/></svg>
   </a>
@@ -875,6 +891,27 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
         else if(y < last - 8 || y <= 200) w.classList.remove('wa-hide');
         last = y;
       }}, {{passive:true}});
+    }})();
+
+    // Barra de compra fija: aparece cuando el boton principal sale de pantalla, para que precio y boton siempre esten a la vista.
+    (function(){{
+      var bar = document.getElementById('buyBar'), add = document.getElementById('addBtn'), bb = document.getElementById('buyBarBtn'), bp = document.getElementById('buyBarPrice'), pw = document.getElementById('priceWrap');
+      if(!bar || !add || !bb || !bp || !pw || !('IntersectionObserver' in window)) return;
+      function precio(){{
+        var w = pw.querySelector('.price'); if(!w) return;
+        var now = w.querySelector('.price-now'), was = w.querySelector('.price-was');
+        bp.innerHTML = (now ? now.textContent : w.textContent) + (was ? '<s>' + was.textContent + '</s>' : '');
+      }}
+      precio(); new MutationObserver(precio).observe(pw, {{childList:true, subtree:true}});
+      new IntersectionObserver(function(es){{
+        var visible = es[0].isIntersecting;
+        bar.classList.toggle('show', !visible); bar.setAttribute('aria-hidden', visible ? 'true' : 'false');
+        document.body.classList.toggle('has-buybar', !visible);
+      }}, {{threshold:0.01}}).observe(add);
+      bb.addEventListener('click', function(){{
+        add.click();   // reutiliza el boton principal: misma validacion de talla, mismo anti doble clic, un solo AddToCart
+        if(add.dataset.added === '1'){{ var t0 = bb.textContent; bb.textContent = '\u2713 Agregado'; setTimeout(function(){{ bb.textContent = t0; }}, 1800); }}
+      }});
     }})();
 
     // Galeria: miniaturas + flechas cambian la foto principal sin recargar.

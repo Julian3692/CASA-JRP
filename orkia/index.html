@@ -305,6 +305,14 @@
 :root{--terracota-texto:#8F4E31;--terracota-fuerte:#A75F3F}
 .type,.pill.sale,.bottom-nav a.active,.eyebrow{color:var(--terracota-texto)}
 .pill.sale.active,.product-card .promo-tag,.promo-badge,.bag-count{background:var(--terracota-fuerte);color:#fff}
+.bag-qty{display:inline-flex;align-items:center;margin-top:8px;border:1px solid var(--border);background:#fff}
+.bag-qty button{width:44px;height:44px;border:0;background:transparent;font-size:20px;line-height:1;color:var(--dark)}
+.bag-qty span{min-width:34px;text-align:center;font-size:15px;font-weight:600}
+.bag-remove{min-width:44px;min-height:44px}
+.bag-total{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 4px}
+.bag-total span{font-size:14px;color:#3F3A36}
+.bag-total strong{font-size:24px;font-weight:700}
+.bag-total-note{font-size:12px;line-height:1.4;color:#625B55;margin:0 0 12px}
 </style>
 <script>(function(){try{var c=document.createElement('canvas');c.width=c.height=32;var x=c.getContext('2d');x.textBaseline='top';x.font='26px sans-serif';x.fillText('\uD83C\uDDE8\uD83C\uDDF4',0,0);var d=x.getImageData(0,0,32,32).data,n=0;for(var i=0;i<d.length;i+=4){if(d[i+3]>200&&d[i]>200&&d[i+1]>170&&d[i+2]<110)n++;}if(n>25)document.documentElement.classList.add('flag-emoji');}catch(e){}})();</script>
 </head>
@@ -1001,21 +1009,34 @@
         el.classList.toggle('show', total > 0);
       });
     }
+    // UX lote 2 (nov 2026): talla que no se muestra si es unica/por confirmar (igual que Nudo), y cantidad editable en la seleccion.
+    function tallaSinDefinir(t){ t = String(t||'').toLowerCase(); return t.includes('confirmar') || t.includes('unica') || t.includes('única'); }
+    function tallaTxt(item){ return tallaSinDefinir(item.talla) ? '' : ' · Talla: ' + safe(item.talla); }
+    function changeQty(key, delta){
+      const it = bagItems.find(x => bagKeyFor(x) === key); if(!it) return;
+      const q = (Number(it.qty) || 1) + delta;
+      if(q < 1){ removeFromBag(key); return; }
+      it.qty = Math.min(q, 10);
+      writeBag();
+      openBagSheet();
+    }
     function openBagSheet(){
+      const totalGtq = bagItems.reduce((s,i)=>s+bagPrecio(i)*(Number(i.qty)||1),0);
       const total = bagItems.reduce((s,i)=>s+(Number(i.qty)||1),0);
       const list = bagItems.map(item=>{
         const key = bagKeyFor(item);
         return `<article class="bag-item">
           <img src="${safe(item.imagen || '')}" alt="${safe(item.descripcion)}" loading="lazy" decoding="async" onerror="this.style.visibility='hidden'">
-          <div><h4>${safe(item.descripcion)}</h4><p>${safe(item.color)} · Talla: ${safe(item.talla)} · ${money(bagPrecio(item))}<br>Código #${safe(item.codigo)}${item.qty>1 ? ` · Cant. ${item.qty}` : ''}</p></div>
+          <div><h4>${safe(item.descripcion)}</h4><p>${safe(item.color)}${tallaTxt(item)} · ${money(bagPrecio(item))}<br>Código #${safe(item.codigo)}</p><div class="bag-qty" role="group" aria-label="Cantidad de ${safe(item.descripcion)}"><button type="button" data-qty="-1" data-key="${safe(key)}" aria-label="Quitar una unidad">&minus;</button><span aria-live="polite">${Number(item.qty)||1}</span><button type="button" data-qty="1" data-key="${safe(key)}" aria-label="Agregar una unidad">+</button></div></div>
           <button class="bag-remove" type="button" data-remove="${safe(key)}" aria-label="Quitar prenda">×</button>
         </article>`;
       }).join('');
       $('#bagContent').innerHTML = `<h3 class="bag-title">Tu selección</h3>
         <p class="bag-sub">Agrega varias prendas, sigue explorando y envía tu selección completa por WhatsApp cuando estés lista.</p>
-        ${total ? `<div class="bag-list">${list}</div><p class="bag-ship">${iconTruck()} <span><strong>Tu primer envío va por nuestra cuenta.</strong> Si ya compraste antes, gratis desde Q300.</span></p><p class="bag-links"><a href="/orkia/cambios-y-devoluciones/">Cambios y devoluciones</a> · <a href="/orkia/envios/">Envíos y entregas</a></p><div class="bag-actions"><button class="btn" id="sendBagWa">Enviar selección por WhatsApp</button><button class="secondary-link" id="continueShopping" type="button">Seguir comprando</button></div>` : `<div class="bag-empty">Tu selección está vacía. Explora el catálogo y toca <strong>Ver opciones</strong> para agregar prendas.<br><br><button class="btn" id="continueShopping" type="button">Seguir comprando</button></div>`}`;
+        ${total ? `<div class="bag-list">${list}</div><p class="bag-ship">${iconTruck()} <span><strong>Tu primer envío va por nuestra cuenta.</strong> Si ya compraste antes, gratis desde Q300.</span></p><p class="bag-links"><a href="/orkia/cambios-y-devoluciones/">Cambios y devoluciones</a> · <a href="/orkia/envios/">Envíos y entregas</a></p><div class="bag-actions"><div class="bag-total"><span>Total estimado</span><strong>${money(totalGtq)}</strong></div><p class="bag-total-note">Te confirmamos disponibilidad y envío por WhatsApp.</p><button class="btn" id="sendBagWa">Enviar selección por WhatsApp</button><button class="secondary-link" id="continueShopping" type="button">Seguir comprando</button></div>` : `<div class="bag-empty">Tu selección está vacía. Explora el catálogo y toca <strong>Ver opciones</strong> para agregar prendas.<br><br><button class="btn" id="continueShopping" type="button">Seguir comprando</button></div>`}`;
       showSheet($('#bagSheet'));
       $$('#bagContent [data-remove]').forEach(btn=>btn.addEventListener('click',()=>removeFromBag(btn.dataset.remove)));
+      $$('#bagContent [data-qty]').forEach(btn=>btn.addEventListener('click',()=>changeQty(btn.dataset.key, Number(btn.dataset.qty))));
       const cont = $('#continueShopping'); if(cont) cont.addEventListener('click',()=>closeSheets());
       const send = $('#sendBagWa'); if(send) send.addEventListener('click', sendBagToWhatsApp);
     }
@@ -1027,7 +1048,8 @@
         return `*${idx+1}. ${item.descripcion}*\n🎨 Color: ${item.color}${tallaLinea}\n💰 Precio: ${money(bagPrecio(item))}${bagPromoTxt(item)}\n🏷️ Código: #${item.codigo}${item.qty>1 ? `\n🔢 Cantidad: ${item.qty}` : ''}`;
       }).join('\n\n———\n\n');
       const total = bagItems.reduce((s,i)=>s+bagPrecio(i)*(Number(i.qty)||1),0);
-      const msg = `Hola Orkia 👋 Quiero hacer este pedido (${bagItems.length} ${bagItems.length===1?'prenda':'prendas'}):\n\n${lines}\n\n———\n\n*Total estimado: ${money(total)}*\n\nSi es mi primera compra, ¿me confirmas mi envío gratis? 🚚\n¿Me ayudas a confirmar disponibilidad y coordinar el envío?`;
+      const unidadesPedido = bagItems.reduce((s,i)=>s+(Number(i.qty)||1),0);
+      const msg = `Hola Orkia 👋 Quiero hacer este pedido (${unidadesPedido} ${unidadesPedido===1?'prenda':'prendas'}):\n\n${lines}\n\n———\n\n*Total estimado: ${money(total)}*\n\nSi es mi primera compra, ¿me confirmas mi envío gratis? 🚚\n¿Me ayudas a confirmar disponibilidad y coordinar el envío?`;
       bagItems.forEach(item=>registerClick({id_producto:item.id_producto, descripcion:item.descripcion}, 'ENVIAR_BOLSA_WA'));
       if(typeof fbq === 'function') fbq('track', 'InitiateCheckout', {
         content_ids: bagItems.map(i=>String(i.id_producto||'')),

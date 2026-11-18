@@ -309,6 +309,16 @@ def auditar_marca(marca):
             f.append("UX: codigo interno visible dentro del chip de color")
         if "UX lote 1" not in h:
             f.append("UX: falta el bloque de estilos de legibilidad/contraste/areas tactiles")
+        if r["availability"] == "in stock" and ('id="buyBar"' not in h or 'id="buyBarBtn"' not in h):
+            f.append("UX: falta la barra de compra fija (precio y boton siempre visibles)")
+        # Prendas de abajo: los recomendados deben incluir alternativas del mismo tipo (si existen)
+        tipo = (r.get("product_type") or "").strip()
+        if marca == "orkia" and tipo.lower() in ("jean", "pantalon", "falda"):
+            rel = re.findall(r'class="related-card" href="/' + marca + r'/producto/(\d+)/"', h)
+            alt = {x["item_group_id"] for x in filas if x["product_type"] == tipo and x["item_group_id"] != r["item_group_id"] and x["availability"] == "in stock"}
+            mismos = [x for x in rel if x in F and F[x]["product_type"] == tipo]
+            if len(mismos) < min(2, len(alt)):
+                f.append(f"UX: los recomendados no incluyen alternativas del mismo tipo ({tipo}); hay {len(alt)} disponibles y salen {len(mismos)}")
         return i, f
 
     with ThreadPoolExecutor(10) as ex:
@@ -338,6 +348,11 @@ def auditar_marca(marca):
             malas.append(f"{pth}: Pixel init != 1 vez con el ID correcto")
         if pth == f"{marca}/index.html" and "UX lote 1" not in h:
             malas.append(f"{pth}: falta el bloque de estilos UX lote 1 (letra, contraste, areas tactiles)")
+        if pth == f"{marca}/index.html":
+            for marcador, que in (("data-qty", "botones de cantidad (- / +) en la seleccion"), ("bag-total", "total estimado en la seleccion"),
+                                  ("unidadesPedido", "el mensaje de WhatsApp cuenta unidades"), ("function tallaTxt", "regla de talla unica/por confirmar")):
+                if marcador not in h:
+                    malas.append(f"{pth}: falta {que}")
     agrupar(A, f"Home y paginas de ayuda ({len(paginas)}): cargan, tienen titulo, el Pixel correcto y los estilos UX", malas)
     # contraste de los colores de marca para texto pequeno (WCAG AA: 4,5:1)
     br = G.BRANDS[marca]
@@ -426,7 +441,7 @@ LISTA_MANUAL = [
     "Operacion: prueba real de pedido con Nadia (app y WhatsApp); filas de prueba borradas del Sheet.",
     "Operacion: WhatsApp Business de Nudo activo y atendido antes de cambiar el numero.",
     "UX (medir en el navegador, en formato celular): CLS de la home < 0,1; LCP < 2,5 s; letra minima 11 px; areas tactiles >= 44 px; ninguna foto con texto/referencia del proveedor.",
-    "UX: precio y boton de compra visibles en la primera pantalla de la ficha (pendiente, lote 2).",
+    "UX: en celular, precio y boton de compra a la vista en la primera pantalla de una ficha (barra fija) y en escritorio (portatil 1366x768).",
 ]
 
 
