@@ -10,6 +10,11 @@ on:
   schedule:
     - cron: "17 */3 * * *"
   workflow_dispatch:
+    inputs:
+      saltar_compuerta:
+        description: "Saltar la compuerta de calidad (SOLO emergencias)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -34,6 +39,14 @@ jobs:
 
       - name: Revision de seguridad
         run: python3 scripts/check_generated.py
+
+      # COMPUERTA DE CALIDAD (nov 2026): revisa los archivos recien generados (Pixel, precios, WhatsApp, boton de compra,
+      # talla, confirmacion, estilos UX, sitemap, feed...). Si falla, el trabajo termina en ROJO y NO se publica nada.
+      # No usa internet, asi que una caida pasajera de la red no la frena. Solo para emergencias: al correrla a mano
+      # (Run workflow) se puede marcar "saltar_compuerta".
+      - name: Compuerta de calidad (si falla, NO se publica)
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.saltar_compuerta) }}
+        run: python3 scripts/auditoria.py --solo-archivos
 
       - name: Publicar solo si hubo cambios
         run: |

@@ -49,6 +49,7 @@ PROHIBIDO_EN_PAGINAS = ["precio_cop", "Precio_COP", "id_proveedor", "nombre_foto
 TELEFONO_PRUEBA = "50255550000"   # numero inexistente: la cotizacion es de solo lectura y no guarda nada
 
 LOCAL = False
+RED = True   # False = modo compuerta (--solo-archivos): no pide nada a internet
 R = {"FALLO": [], "AVISO": [], "OK": []}
 
 
@@ -122,12 +123,16 @@ def auditar_marca(marca):
     faltan_cols = [c for c in CAMPOS_FEED + ["sale_price", "sale_price_effective_date", "additional_image_link"] if filas and c not in filas[0]]
     agrupar(A, "Feed: columnas requeridas presentes", faltan_cols)
 
-    s, _, b = http(f"{G.AS_URL}?accion=get_catalogo&marca={marca}&_ts={time.time_ns()}", timeout=60)
+    s, b = 0, b""
+    if RED:
+        s, _, b = http(f"{G.AS_URL}?accion=get_catalogo&marca={marca}&_ts={time.time_ns()}", timeout=60)
     try:
         d = json.loads(b.decode("utf-8"))
     except Exception:
         d = {}
-    if not d.get("ok"):
+    if not RED:
+        vivo = {}
+    elif not d.get("ok"):
         reg("FALLO", A, f"backend: get_catalogo no responde bien (HTTP {s})")
         vivo = {}
     else:
@@ -213,27 +218,28 @@ def auditar_marca(marca):
     agrupar(A, "Feed: sin ofertas ya vencidas", vencidas, nivel="AVISO")
 
     # ---- fotos
-    principales = {r["image_link"]: i for i, r in F.items()}
-    extras = {}
-    for i, r in F.items():
-        for u in (r.get("additional_image_link") or "").split(","):
-            if u.strip():
-                extras[u.strip()] = i
-    en_vivo_no_feed = {}
-    for i, p in vivo.items():
-        for k in ("url_imagen_2", "url_imagen_3"):
-            u = p.get(k)
-            if u and u not in extras:
-                en_vivo_no_feed[u] = i
-    todas = {**principales, **extras, **en_vivo_no_feed}
-    with ThreadPoolExecutor(12) as ex:
-        res = dict(zip(todas, ex.map(es_imagen, list(todas))))
-    f_princ = [f"{todas[u]} ({res[u][0]})" for u in principales if res[u][0] != 200 or (res[u][1] and "image" not in res[u][1])]
-    f_extra = [f"{todas[u]} {u.rsplit('/', 1)[-1]} ({res[u][0]})" for u in extras if res[u][0] != 200 or (res[u][1] and "image" not in res[u][1])]
-    f_vivo = [f"{todas[u]} {u.rsplit('/', 1)[-1]} ({res[u][0]})" for u in en_vivo_no_feed if res[u][0] != 200]
-    agrupar(A, f"Fotos principales ({len(principales)}): todas existen y son imagen", f_princ)
-    agrupar(A, f"Fotos extra del feed ({len(extras)}): todas existen", f_extra)
-    agrupar(A, "Fotos que el catalogo vivo lista pero faltan en el almacenamiento (el generador ya las omite en feed y fichas)", f_vivo, nivel="AVISO")
+    if RED:
+        principales = {r["image_link"]: i for i, r in F.items()}
+        extras = {}
+        for i, r in F.items():
+            for u in (r.get("additional_image_link") or "").split(","):
+                if u.strip():
+                    extras[u.strip()] = i
+        en_vivo_no_feed = {}
+        for i, p in vivo.items():
+            for k in ("url_imagen_2", "url_imagen_3"):
+                u = p.get(k)
+                if u and u not in extras:
+                    en_vivo_no_feed[u] = i
+        todas = {**principales, **extras, **en_vivo_no_feed}
+        with ThreadPoolExecutor(12) as ex:
+            res = dict(zip(todas, ex.map(es_imagen, list(todas))))
+        f_princ = [f"{todas[u]} ({res[u][0]})" for u in principales if res[u][0] != 200 or (res[u][1] and "image" not in res[u][1])]
+        f_extra = [f"{todas[u]} {u.rsplit('/', 1)[-1]} ({res[u][0]})" for u in extras if res[u][0] != 200 or (res[u][1] and "image" not in res[u][1])]
+        f_vivo = [f"{todas[u]} {u.rsplit('/', 1)[-1]} ({res[u][0]})" for u in en_vivo_no_feed if res[u][0] != 200]
+        agrupar(A, f"Fotos principales ({len(principales)}): todas existen y son imagen", f_princ)
+        agrupar(A, f"Fotos extra del feed ({len(extras)}): todas existen", f_extra)
+        agrupar(A, "Fotos que el catalogo vivo lista pero faltan en el almacenamiento (el generador ya las omite en feed y fichas)", f_vivo, nivel="AVISO")
 
     # ---- fichas de producto
     numero = G.WA_NUMBERS[marca]
@@ -371,35 +377,36 @@ def auditar_marca(marca):
     agrupar(A, "Colores de marca: contraste >= 4,5:1 para texto pequeno de acento y texto blanco sobre acento", cmal)
 
     # ---- cotizacion de solo lectura: el precio que se cobra = el del feed
-    cand = [r for r in filas if r["availability"] == "in stock"]
-    con_of = [r for r in cand if r.get("sale_price")]
-    sin_of = [r for r in cand if not r.get("sale_price")]
-    muestra = (con_of[:1] + sin_of[:1]) or cand[:1]
-    cot_mal = []
-    for r in muestra:
-        body = json.dumps({"accion": "cotizar_pedido", "marca": marca, "telefono": TELEFONO_PRUEBA,
-                           "lineas": [{"id_producto": int(r["id"]), "cantidad": 1}]}).encode("utf-8")
-        s, _, b = http(G.AS_URL, "POST", body, {"Content-Type": "text/plain;charset=utf-8"}, timeout=60)
-        try:
-            q = json.loads(b.decode("utf-8"))
-        except Exception:
-            q = {}
-        if not q.get("ok"):
-            cot_mal.append(f"{r['id']}: cotizacion fallo (HTTP {s}) {str(q)[:80]}")
-            continue
-        reg_p = float(r["price"].split()[0])
-        if abs(float(q["subtotal_regular_gtq"]) - reg_p) > 0.001:
-            cot_mal.append(f"{r['id']}: regular cotizado {q['subtotal_regular_gtq']} != feed {reg_p}")
-        m = pat_ven.match(r.get("sale_price_effective_date", ""))
-        if r.get("sale_price") and m:
-            a = datetime.strptime(m.group(1), "%Y-%m-%dT%H:%M%z")
-            z = datetime.strptime(m.group(2), "%Y-%m-%dT%H:%M%z")
-            esperado = float(r["sale_price"].split()[0]) if a <= ahora < z else reg_p
-            if abs(float(q["subtotal_gtq"]) - esperado) > 0.001:
-                cot_mal.append(f"{r['id']}: cobra {q['subtotal_gtq']} pero el feed implica {esperado}")
-        elif abs(float(q["subtotal_gtq"]) - reg_p) > 0.001:
-            cot_mal.append(f"{r['id']}: cobra {q['subtotal_gtq']} pero el precio es {reg_p}")
-    agrupar(A, f"Backend: cotizacion de solo lectura coincide con el feed ({len(muestra)} producto(s) de muestra)", cot_mal)
+    if RED:
+        cand = [r for r in filas if r["availability"] == "in stock"]
+        con_of = [r for r in cand if r.get("sale_price")]
+        sin_of = [r for r in cand if not r.get("sale_price")]
+        muestra = (con_of[:1] + sin_of[:1]) or cand[:1]
+        cot_mal = []
+        for r in muestra:
+            body = json.dumps({"accion": "cotizar_pedido", "marca": marca, "telefono": TELEFONO_PRUEBA,
+                               "lineas": [{"id_producto": int(r["id"]), "cantidad": 1}]}).encode("utf-8")
+            s, _, b = http(G.AS_URL, "POST", body, {"Content-Type": "text/plain;charset=utf-8"}, timeout=60)
+            try:
+                q = json.loads(b.decode("utf-8"))
+            except Exception:
+                q = {}
+            if not q.get("ok"):
+                cot_mal.append(f"{r['id']}: cotizacion fallo (HTTP {s}) {str(q)[:80]}")
+                continue
+            reg_p = float(r["price"].split()[0])
+            if abs(float(q["subtotal_regular_gtq"]) - reg_p) > 0.001:
+                cot_mal.append(f"{r['id']}: regular cotizado {q['subtotal_regular_gtq']} != feed {reg_p}")
+            m = pat_ven.match(r.get("sale_price_effective_date", ""))
+            if r.get("sale_price") and m:
+                a = datetime.strptime(m.group(1), "%Y-%m-%dT%H:%M%z")
+                z = datetime.strptime(m.group(2), "%Y-%m-%dT%H:%M%z")
+                esperado = float(r["sale_price"].split()[0]) if a <= ahora < z else reg_p
+                if abs(float(q["subtotal_gtq"]) - esperado) > 0.001:
+                    cot_mal.append(f"{r['id']}: cobra {q['subtotal_gtq']} pero el feed implica {esperado}")
+            elif abs(float(q["subtotal_gtq"]) - reg_p) > 0.001:
+                cot_mal.append(f"{r['id']}: cobra {q['subtotal_gtq']} pero el precio es {reg_p}")
+        agrupar(A, f"Backend: cotizacion de solo lectura coincide con el feed ({len(muestra)} producto(s) de muestra)", cot_mal)
     return set(F)
 
 
@@ -446,13 +453,16 @@ LISTA_MANUAL = [
 
 
 def main():
-    global LOCAL
+    global LOCAL, RED
     ap = argparse.ArgumentParser(description="Auditoria completa de CASA JRP")
     ap.add_argument("--local", action="store_true", help="leer paginas/feeds/sitemap del repo en vez del sitio publicado")
+    ap.add_argument("--solo-archivos", action="store_true",
+                    help="modo COMPUERTA: revisa solo los archivos del repo, sin pedir nada a internet (fotos, catalogo vivo, cotizaciones)")
     args = ap.parse_args()
-    LOCAL = args.local
+    LOCAL = args.local or args.solo_archivos
+    RED = not args.solo_archivos
     t0 = time.time()
-    print(f"AUDITORIA CASA JRP  |  fuente: {'archivos del repo' if LOCAL else BASE}  |  {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print(f"AUDITORIA CASA JRP  |  fuente: {('archivos del repo (sin red)' if not RED else 'archivos del repo') if LOCAL else BASE}  |  {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     ids = {}
     for m in MARCAS:
         ids[m] = auditar_marca(m)
