@@ -45,6 +45,7 @@ import os
 import re
 import time
 import unicodedata
+import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -1022,11 +1023,54 @@ def write_sitemap(product_urls, extra_urls=()):
     print(f"sitemap.xml: {len(urls)} URLs")
 
 
+MAX_FOTOS_FALTANTES = 3   # si faltan mas que esto en una corrida, algo anda mal (p. ej. el almacenamiento caido): no se toca nada
+
+
+def _estado_foto(url):
+    """200 = existe; 404 = no existe; cualquier otra cosa (error, tiempo agotado, 5xx) = None (desconocido, NO se quita)."""
+    for _ in range(2):
+        try:
+            req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "Mozilla/5.0 (generador-paginas-producto)"})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                return r.status
+        except urllib.error.HTTPError as e:
+            if e.code == 404:
+                return 404
+        except Exception:
+            pass
+        time.sleep(1)
+    return None
+
+
+def filtrar_fotos_inexistentes(marca, productos):
+    """Quita las fotos SECUNDARIAS (url_imagen_2 / url_imagen_3) que dan 404 explicito, para que no salgan rotas en la
+    pagina ni en el feed. Nunca quita la foto principal. Si hay mas de MAX_FOTOS_FALTANTES, no cambia nada y avisa."""
+    if os.environ.get("CASA_CATALOGO_" + marca.upper()):
+        return productos   # pruebas locales con JSON: sin red
+    from concurrent.futures import ThreadPoolExecutor
+    urls = sorted({p.get(c) for p in productos for c in ("url_imagen_2", "url_imagen_3") if p.get(c)})
+    with ThreadPoolExecutor(10) as ex:
+        estados = dict(zip(urls, ex.map(_estado_foto, urls)))
+    faltan = {u for u, s in estados.items() if s == 404}
+    desconocidas = [u for u, s in estados.items() if s not in (200, 404)]
+    if desconocidas:
+        print(f"AVISO {marca}: {len(desconocidas)} foto(s) sin respuesta clara (se dejan como estan): {desconocidas[:5]}")
+    if len(faltan) > MAX_FOTOS_FALTANTES:
+        print(f"AVISO {marca}: {len(faltan)} fotos dan 404 (mas de {MAX_FOTOS_FALTANTES}); NO se quita ninguna por seguridad. Revisar el almacenamiento.")
+        return productos
+    for p in productos:
+        for c in ("url_imagen_2", "url_imagen_3"):
+            if p.get(c) in faltan:
+                print(f"{marca}: foto inexistente omitida ({p.get(c)})")
+                p[c] = ""
+    return productos
+
+
 def main():
     product_urls = []
     policy_urls = []
     for marca, brand in BRANDS.items():
-        productos = fetch_catalogo(marca)
+        productos = filtrar_fotos_inexistentes(marca, fetch_catalogo(marca))
         groups = group_by_ref_proveedor(productos)
         out_dir = REPO_ROOT / marca / "producto"
         count = 0
