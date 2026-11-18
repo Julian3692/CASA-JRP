@@ -138,8 +138,13 @@
     .btn-primary:disabled:hover{background:#C9C2BB}
     .btn-ghost{background:transparent;color:var(--dark);border:1px solid #B8B2AC}
     .btn-ghost:hover{background:#fff}
-    .confirm{font-size:12px;color:#2D6A4F;margin:-4px 0 0;display:none}
+    .confirm{display:none;margin:16px 0 0;padding:16px 18px;border:1px solid #2D6A4F;background:#EEF6F1;color:#1F4D38;max-width:340px;box-sizing:border-box}
     .confirm.show{display:block}
+    .confirm strong{display:block;font-size:16px;font-weight:600;margin-bottom:4px}
+    .confirm span{display:block;font-size:14px;line-height:1.45}
+    .confirm .btn{margin-top:14px;height:46px;text-decoration:none}
+    .bag-count.pulse{animation:bagpulse .6s ease}
+    @keyframes bagpulse{0%{transform:scale(1)}40%{transform:scale(1.5)}100%{transform:scale(1)}}
     .meta{font-size:11px;color:var(--mid);letter-spacing:.06em;margin-top:22px}
     .breadcrumb{font-size:11px;color:var(--mid);margin:0 0 16px;display:flex;flex-wrap:wrap;gap:6px}
     .breadcrumb a{color:var(--mid)}
@@ -255,7 +260,11 @@
           <button class="btn btn-primary" id="addBtn" type="button">Agregar a selección</button>
           <a class="btn btn-ghost" href="https://casajrp.com/orkia/">Ver catálogo completo</a>
         </div>
-        <p class="confirm" id="confirmMsg">Agregado a tu selección. Ya está en tu carrito, revísalo cuando quieras.</p>
+        <div class="confirm" id="confirmMsg" role="status" aria-live="polite">
+          <strong>&#10003; Agregado a tu selección</strong>
+          <span>Puedes seguir viendo prendas o revisar tu selección cuando quieras.</span>
+          <a class="btn btn-primary" href="/orkia/?abrirSeleccion=1">Ver mi selección</a>
+        </div>
         <p class="wa-advice">
           <svg class="icon" viewBox="0 0 24 24"><path d="M12 21a9 9 0 0 0 7.7-13.7A9 9 0 0 0 5.2 18.6L4 22l3.5-1.1A9 9 0 0 0 12 21Z"/><path d="M9.2 8.8c.2-.5.4-.5.7-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.3 0 .5-.1.7l-.4.5c.6 1 1.4 1.8 2.5 2.4l.6-.5c.2-.1.4-.2.7-.1l1.7.8c.3.1.4.3.4.6v.4c0 .4-.2.7-.6.9-.6.3-1.9.4-3.8-.6-2.6-1.3-4.3-4.1-4.4-5.5 0-.5.2-.9.4-1.3Z"/></svg>
           <span>¿Quieres asesoría para saber cómo te quedaría? <a href="https://wa.me/50248304736?text=Hola%20ORKIA%20%F0%9F%91%8B%20Quiero%20asesor%C3%ADa%20para%20saber%20c%C3%B3mo%20me%20quedar%C3%ADa%3A%20Blusa%20cruzada%20con%20escote%20profundo%20y%20manga%203/4%20%28%2310054%29" target="_blank" rel="noopener">Escríbenos por WhatsApp</a></span>
@@ -354,7 +363,11 @@
       });
     });
 
-    document.getElementById('addBtn').addEventListener('click', () => {
+    document.getElementById('addBtn').addEventListener('click', function(){
+      const btn = this;
+      // Anti doble clic: durante 1.8 s un segundo clic no agrega nada ni dispara eventos al Pixel.
+      if(btn.dataset.lock === '1'){ btn.dataset.added = '0'; return; }
+      btn.dataset.lock = '1'; btn.dataset.added = '1';
       const items = readBag();
       const item = Object.assign({}, ITEM_BASE, { talla: isUnica(selectedTalla) ? 'Por confirmar' : selectedTalla, ts: Date.now() });
       const _pe = promoActiva();
@@ -365,6 +378,11 @@
       else { item.qty = 1; items.push(item); }
       writeBag(items);
       document.getElementById('confirmMsg').classList.add('show');
+      const label = btn.textContent;
+      btn.textContent = '✓ Agregado';
+      const bc = document.getElementById('bagCount');
+      if(bc){ bc.classList.remove('pulse'); void bc.offsetWidth; bc.classList.add('pulse'); }
+      setTimeout(function(){ btn.textContent = label; btn.dataset.lock = '0'; }, 1800);
     });
 
     updateBagCount(readBag());
@@ -488,7 +506,7 @@
         if(Date.now() - last > 30*60*1000){ sessionStorage.setItem(k, String(Date.now())); sheetClick('ABRIR_MODAL'); }
       }catch(e){ sheetClick('ABRIR_MODAL'); }
       var add = document.getElementById('addBtn');
-      if(add) add.addEventListener('click', function(){ if(add.disabled) return; sheetClick('AGREGAR_BOLSA'); px('AddToCart'); });
+      if(add) add.addEventListener('click', function(){ if(add.disabled || add.dataset.added !== '1') return; sheetClick('AGREGAR_BOLSA'); px('AddToCart'); });
       document.querySelectorAll('a[href^="https://wa.me/"]').forEach(function(a){
         a.addEventListener('click', function(){ sheetClick('WHATSAPP_PDP'); px('Contact'); });
       });
