@@ -1,0 +1,35 @@
+name: Auditoria del sitio
+
+# Revisa el sitio PUBLICADO de punta a punta con scripts/auditoria.py:
+# feed de Meta vs catalogo del Sheet, todas las fotos, todas las fichas (Pixel, precio, boton, confirmacion),
+# paginas de ayuda, sitemap, verificacion de dominio y cotizacion de solo lectura del backend.
+# - Automatico: dos veces al dia (6:40 am y 5:40 pm hora de Guatemala).
+# - Manual: pestana Actions > "Auditoria del sitio" > Run workflow (tambien desde la app de GitHub en el celular).
+# Si hay algun FALLO, la ejecucion queda en ROJO y GitHub avisa. Los AVISOS se listan pero no la ponen en rojo.
+# Este workflow solo LEE: no cambia nada del sitio.
+
+on:
+  schedule:
+    - cron: "40 12,23 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auditoria
+  cancel-in-progress: true
+
+jobs:
+  auditar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Auditoria completa del sitio publicado
+        run: python3 scripts/auditoria.py
