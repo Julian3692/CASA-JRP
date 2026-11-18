@@ -280,7 +280,32 @@
     /* ORKIA v24: el scroll interno de un sheet no encadena al fondo de la página. */
     .bag-sheet,.filter-sheet-content,.search-sheet-content,.notice-sheet{overscroll-behavior:contain}
 
-  </style>
+  
+/* ===== UX lote 1 (nov 2026): letra legible, contraste y areas tactiles. Bloque independiente: borrarlo revierte todo. ===== */
+.type{font-size:11px}
+.card-code{font-size:11px}
+.card-btn{height:44px;font-size:11px}
+.pill{height:44px;font-size:12px;padding:0 20px}
+.filter-actions{font-size:12px}
+.filter-action{font-size:12px;min-height:44px}
+.section-head .view-all{font-size:12px;min-height:44px}
+.hero .btn{height:44px;font-size:11px;padding:0 20px}
+.hero-meta{font-size:12px}
+.card-more-colors{font-size:11px}
+.icon-btn{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+.brand{min-height:44px;display:flex;align-items:center}
+.bottom-nav a{font-size:11px}
+.card-color-dot{position:relative}
+.card-color-dot::after{content:'';position:absolute;inset:-7px}
+.price-was{color:#6B645E}
+.category-overlay em{font-size:11px}
+.footer-links a{display:inline-block;padding:12px 4px}
+.story-kicker{color:var(--terracota-texto)}
+.about-section .story-kicker{color:var(--terracota)}
+:root{--terracota-texto:#8F4E31;--terracota-fuerte:#A75F3F}
+.type,.pill.sale,.bottom-nav a.active,.eyebrow{color:var(--terracota-texto)}
+.pill.sale.active,.product-card .promo-tag,.promo-badge,.bag-count{background:var(--terracota-fuerte);color:#fff}
+</style>
 <script>(function(){try{var c=document.createElement('canvas');c.width=c.height=32;var x=c.getContext('2d');x.textBaseline='top';x.font='26px sans-serif';x.fillText('\uD83C\uDDE8\uD83C\uDDF4',0,0);var d=x.getImageData(0,0,32,32).data,n=0;for(var i=0;i<d.length;i+=4){if(d[i+3]>200&&d[i]>200&&d[i+1]>170&&d[i+2]<110)n++;}if(n>25)document.documentElement.classList.add('flag-emoji');}catch(e){}})();</script>
 </head>
 <body class="initial-loading">

@@ -297,6 +297,18 @@ def auditar_marca(marca):
             f.append("enlace http (sin cifrar)")
         if "ref_proveedor" in h:
             f.append("@AVISO ref_proveedor visible en el codigo de la ficha (decision pendiente del dueno)")
+        # --- UX (auditoria UX/UI 18-nov-2026, lote 1)
+        if 'class="size-btn' in h:
+            if "const NEEDS_SIZE = true" not in h or 'id="sizeError"' not in h:
+                f.append("UX: hay tallas pero falta la obligacion de elegir talla / su aviso")
+            if re.search(r'class="size-btn[^"]*\bactive\b', h):
+                f.append("UX: una talla viene preseleccionada (debe elegirla la clienta)")
+        if '<p class="desc">' in h:
+            f.append("UX: descripcion repetida bajo el titulo")
+        if 'class="color-code"' in h:
+            f.append("UX: codigo interno visible dentro del chip de color")
+        if "UX lote 1" not in h:
+            f.append("UX: falta el bloque de estilos de legibilidad/contraste/areas tactiles")
         return i, f
 
     with ThreadPoolExecutor(10) as ex:
@@ -324,7 +336,24 @@ def auditar_marca(marca):
             malas.append(f"{pth}: sin title")
         if re.findall(r"fbq\('init', *'(\d+)'\)", h) != [G.PIXEL_ID]:
             malas.append(f"{pth}: Pixel init != 1 vez con el ID correcto")
-    agrupar(A, f"Home y paginas de ayuda ({len(paginas)}): cargan, tienen titulo y el Pixel correcto", malas)
+        if pth == f"{marca}/index.html" and "UX lote 1" not in h:
+            malas.append(f"{pth}: falta el bloque de estilos UX lote 1 (letra, contraste, areas tactiles)")
+    agrupar(A, f"Home y paginas de ayuda ({len(paginas)}): cargan, tienen titulo, el Pixel correcto y los estilos UX", malas)
+    # contraste de los colores de marca para texto pequeno (WCAG AA: 4,5:1)
+    br = G.BRANDS[marca]
+    def _lum(hx):
+        c = [int(hx[i:i + 2], 16) / 255 for i in (1, 3, 5)]
+        c = [v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4 for v in c]
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+    def _ratio(a, b):
+        la, lb = _lum(a), _lum(b)
+        return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+    cmal = []
+    texto = br.get("terracota_texto", br["terracota"]); fuerte = br.get("terracota_fuerte", br["terracota"])
+    if _ratio(texto, "#FFFFFF") < 4.5: cmal.append(f"texto de acento {texto} sobre blanco {_ratio(texto, '#FFFFFF'):.2f}:1")
+    if _ratio(texto, br["bg"]) < 4.5: cmal.append(f"texto de acento {texto} sobre fondo {br['bg']} {_ratio(texto, br['bg']):.2f}:1")
+    if _ratio(fuerte, "#FFFFFF") < 4.5: cmal.append(f"blanco sobre {fuerte} {_ratio(fuerte, '#FFFFFF'):.2f}:1")
+    agrupar(A, "Colores de marca: contraste >= 4,5:1 para texto pequeno de acento y texto blanco sobre acento", cmal)
 
     # ---- cotizacion de solo lectura: el precio que se cobra = el del feed
     cand = [r for r in filas if r["availability"] == "in stock"]
@@ -396,6 +425,8 @@ LISTA_MANUAL = [
     "Meta: cuenta publicitaria con metodo de pago y moneda confirmados; conjuntos de anuncios existentes sin gasto no deseado.",
     "Operacion: prueba real de pedido con Nadia (app y WhatsApp); filas de prueba borradas del Sheet.",
     "Operacion: WhatsApp Business de Nudo activo y atendido antes de cambiar el numero.",
+    "UX (medir en el navegador, en formato celular): CLS de la home < 0,1; LCP < 2,5 s; letra minima 11 px; areas tactiles >= 44 px; ninguna foto con texto/referencia del proveedor.",
+    "UX: precio y boton de compra visibles en la primera pantalla de la ficha (pendiente, lote 2).",
 ]
 
 

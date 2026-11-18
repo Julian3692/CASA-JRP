@@ -99,6 +99,7 @@ BRANDS = {
         "font_google": "Cormorant+Garamond:wght@400;500",
         "bg": "#F5F0EA", "surface": "#FFFFFF", "dark": "#111111", "carbon": "#1A1A1A",
         "text": "#1E1E1E", "mid": "#77736F", "border": "#E8E4DF", "terracota": "#C4714A",
+        "terracota_texto": "#8F4E31", "terracota_fuerte": "#A75F3F",   # versiones con contraste >= 4,5:1 para texto pequeno / texto blanco encima
         "wa_msg_generic": "Hola%20Orkia%20%F0%9F%91%8B%20Quisiera%20informaci%C3%B3n%20sobre%20sus%20prendas.",
         "low_stock_threshold": 2,
         "ship_banner": "Moda colombiana · Tu primer envío va por nuestra cuenta",
@@ -356,9 +357,8 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
 
     color_swatches = "".join(
         f"""<a class="color-btn {'active' if v['id_producto']==pid else ''} {'disabled' if v.get('agotado') else ''}"
-             href="/{marca}/producto/{v['id_producto']}/">
-             <span class="color-dot" style="--dot:{color_hex(v.get('color'))}"></span>{esc(v.get('color') or 'Color')}
-             <span class="color-code">#{v['id_producto']}</span></a>"""
+             href="/{marca}/producto/{v['id_producto']}/" aria-label="Color {esc(v.get('color') or '')}">
+             <span class="color-dot" style="--dot:{color_hex(v.get('color'))}"></span>{esc(v.get('color') or 'Color')}</a>"""
         for v in group
     )
 
@@ -397,12 +397,14 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     if len(tallas_disponibles) <= 1:
         talla_block = ""
     else:
+        # UX (nov 2026): NINGUNA talla viene preseleccionada; hay que elegirla (si no, devoluciones por talla equivocada).
         size_buttons = "".join(
-            f'<button type="button" class="size-btn {"active" if t==default_talla else ""} {"disabled" if normalize(t).lower() in tallas_agotadas else ""}" '
+            f'<button type="button" class="size-btn {"disabled" if normalize(t).lower() in tallas_agotadas else ""}" '
             f'data-talla="{esc(t)}" {"disabled" if normalize(t).lower() in tallas_agotadas else ""}>{esc(t)}</button>'
             for t in tallas_disponibles
         )
-        talla_block = f'<div class="size-title">Selecciona tu talla{guide_link}</div><div class="sizes" id="sizes">{size_buttons}</div>'
+        talla_block = (f'<div class="size-title">Selecciona tu talla{guide_link}</div><div class="sizes" id="sizes">{size_buttons}</div>'
+                       '<p class="size-error" id="sizeError" role="alert">Elige tu talla para agregar a tu selección.</p>')
 
     trust_bar = "".join(
         f'''<div class="trust-item"><svg class="icon" viewBox="0 0 24 24">{"".join(f'<path d="{d}"/>' for d in paths.split("|"))}</svg>
@@ -672,6 +674,31 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
       .zoom-hint .mobile-only{{display:inline}}
       .zoom-hint .desktop-only{{display:none}}
     }}
+    /* ===== UX lote 1 (nov 2026): letra legible, contraste, areas tactiles, talla obligatoria, boton de WhatsApp ===== */
+    .size-error{{display:none;color:#B3261E;font-size:13px;font-weight:600;margin:-14px 0 20px}}
+    .size-error.show{{display:block}}
+    .sizes.shake{{animation:sizeshake .4s}}
+    @keyframes sizeshake{{0%,100%{{transform:translateX(0)}}25%{{transform:translateX(-6px)}}75%{{transform:translateX(6px)}}}}
+    .sizes{{gap:6px}}
+    .size-btn{{flex:1 0 44px;max-width:56px;min-height:44px;width:auto}}
+    .eyebrow{{font-size:11px}}
+    .zoom-hint{{font-size:11px}}
+    .trust-item h3{{font-size:11.5px}}
+    .footer p{{font-size:11px}}
+    .footer-links a{{display:inline-block;padding:12px 4px}}
+    .brand{{min-height:44px}}
+    .icon-btn{{min-width:44px;min-height:44px;align-items:center;justify-content:center}}
+    .gallery-nav{{width:44px;height:44px}}
+    .color-btn{{min-height:44px}}
+    .size-title .size-guide-link{{padding:14px 4px;margin-left:6px;font-size:12px}}
+    :root{{--terracota-texto:{brand.get('terracota_texto', brand['terracota'])};--terracota-fuerte:{brand.get('terracota_fuerte', brand['terracota'])}}}
+    .eyebrow,.top-shipping .q{{color:var(--terracota-texto)}}
+    .promo-badge,.bag-count{{background:var(--terracota-fuerte)}}
+    .zoom-hint{{right:auto;left:10px}}
+    .breadcrumb a{{padding:14px 6px;margin:-14px -6px}}
+    .wa-advice a{{display:inline-block;padding:10px 0}}
+    .wa-float{{transition:transform .25s ease,opacity .25s ease}}
+    .wa-float.wa-hide{{transform:translateY(90px);opacity:0;pointer-events:none}}
   </style>
 {policy_pages.CO_JS}
 </head>
@@ -719,7 +746,6 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
         <div class="color-title">Selecciona color</div>
         <div class="color-options">{color_swatches}</div>
         {talla_block}
-        <p class="desc">{esc(p['descripcion'])}</p>
         <div class="actions">
           {f'<button class="btn btn-primary" id="addBtn" type="button" disabled>Agotado</button>' if is_agotado else '<button class="btn btn-primary" id="addBtn" type="button">Agregar a selección</button>'}
           <a class="btn btn-ghost" href="{catalog_url}">Ver catálogo completo</a>
@@ -796,17 +822,27 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
       document.getElementById('bagCount').textContent = total;
     }}
     function isUnica(t){{ return /unica|confirmar/.test(String(t||'').toLowerCase()); }}
-    let selectedTalla = {json.dumps(default_talla)};
+    const NEEDS_SIZE = {json.dumps(len(tallas_disponibles) > 1)};
+    let selectedTalla = NEEDS_SIZE ? null : {json.dumps(default_talla)};   // con varias tallas, ninguna viene elegida
     document.querySelectorAll('.size-btn').forEach(btn => {{
       btn.addEventListener('click', () => {{
         document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         selectedTalla = btn.dataset.talla;
+        const er = document.getElementById('sizeError'); if(er) er.classList.remove('show');
       }});
     }});
 
     document.getElementById('addBtn').addEventListener('click', function(){{
       const btn = this;
+      // Sin talla elegida: no agrega, no dispara eventos al Pixel y le muestra a la clienta que le falta elegirla.
+      if(NEEDS_SIZE && !selectedTalla){{
+        btn.dataset.added = '0';
+        const er = document.getElementById('sizeError'); if(er) er.classList.add('show');
+        const sz = document.getElementById('sizes');
+        if(sz){{ sz.classList.remove('shake'); void sz.offsetWidth; sz.classList.add('shake'); sz.scrollIntoView({{behavior:'smooth', block:'center'}}); }}
+        return;
+      }}
       // Anti doble clic: durante 1.8 s un segundo clic no agrega nada ni dispara eventos al Pixel.
       if(btn.dataset.lock === '1'){{ btn.dataset.added = '0'; return; }}
       btn.dataset.lock = '1'; btn.dataset.added = '1';
@@ -828,6 +864,18 @@ def page_html(marca, brand, group, p, canonical_url, all_groups):
     }});
 
     updateBagCount(readBag());
+
+    // El boton flotante de WhatsApp se esconde al bajar (para no tapar texto) y vuelve al subir.
+    (function(){{
+      var w = document.querySelector('.wa-float'); if(!w) return;
+      var last = window.scrollY;
+      window.addEventListener('scroll', function(){{
+        var y = window.scrollY;
+        if(y > last + 8 && y > 200) w.classList.add('wa-hide');
+        else if(y < last - 8 || y <= 200) w.classList.remove('wa-hide');
+        last = y;
+      }}, {{passive:true}});
+    }})();
 
     // Galeria: miniaturas + flechas cambian la foto principal sin recargar.
     let currentIdx = 0;

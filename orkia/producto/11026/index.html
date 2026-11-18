@@ -192,6 +192,31 @@
       .zoom-hint .mobile-only{display:inline}
       .zoom-hint .desktop-only{display:none}
     }
+    /* ===== UX lote 1 (nov 2026): letra legible, contraste, areas tactiles, talla obligatoria, boton de WhatsApp ===== */
+    .size-error{display:none;color:#B3261E;font-size:13px;font-weight:600;margin:-14px 0 20px}
+    .size-error.show{display:block}
+    .sizes.shake{animation:sizeshake .4s}
+    @keyframes sizeshake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+    .sizes{gap:6px}
+    .size-btn{flex:1 0 44px;max-width:56px;min-height:44px;width:auto}
+    .eyebrow{font-size:11px}
+    .zoom-hint{font-size:11px}
+    .trust-item h3{font-size:11.5px}
+    .footer p{font-size:11px}
+    .footer-links a{display:inline-block;padding:12px 4px}
+    .brand{min-height:44px}
+    .icon-btn{min-width:44px;min-height:44px;align-items:center;justify-content:center}
+    .gallery-nav{width:44px;height:44px}
+    .color-btn{min-height:44px}
+    .size-title .size-guide-link{padding:14px 4px;margin-left:6px;font-size:12px}
+    :root{--terracota-texto:#8F4E31;--terracota-fuerte:#A75F3F}
+    .eyebrow,.top-shipping .q{color:var(--terracota-texto)}
+    .promo-badge,.bag-count{background:var(--terracota-fuerte)}
+    .zoom-hint{right:auto;left:10px}
+    .breadcrumb a{padding:14px 6px;margin:-14px -6px}
+    .wa-advice a{display:inline-block;padding:10px 0}
+    .wa-float{transition:transform .25s ease,opacity .25s ease}
+    .wa-float.wa-hide{transform:translateY(90px);opacity:0;pointer-events:none}
   </style>
 <script>(function(){try{var c=document.createElement('canvas');c.width=c.height=32;var x=c.getContext('2d');x.textBaseline='top';x.font='26px sans-serif';x.fillText('\uD83C\uDDE8\uD83C\uDDF4',0,0);var d=x.getImageData(0,0,32,32).data,n=0;for(var i=0;i<d.length;i+=4){if(d[i+3]>200&&d[i]>200&&d[i+1]>170&&d[i+2]<110)n++;}if(n>25)document.documentElement.classList.add('flag-emoji');}catch(e){}})();</script>
 </head>
@@ -239,20 +264,15 @@
         <p class="detail-line">Manga corta</p>
         <div class="color-title">Selecciona color</div>
         <div class="color-options"><a class="color-btn  "
-             href="/orkia/producto/11009/">
-             <span class="color-dot" style="--dot:#7A5236"></span>Cafe
-             <span class="color-code">#11009</span></a><a class="color-btn  "
-             href="/orkia/producto/11010/">
-             <span class="color-dot" style="--dot:#FFFFFF"></span>Blanco
-             <span class="color-code">#11010</span></a><a class="color-btn  "
-             href="/orkia/producto/11011/">
-             <span class="color-dot" style="--dot:#111111"></span>Negro
-             <span class="color-code">#11011</span></a><a class="color-btn active "
-             href="/orkia/producto/11026/">
-             <span class="color-dot" style="--dot:#D8A6A6"></span>Rosa
-             <span class="color-code">#11026</span></a></div>
+             href="/orkia/producto/11009/" aria-label="Color Cafe">
+             <span class="color-dot" style="--dot:#7A5236"></span>Cafe</a><a class="color-btn  "
+             href="/orkia/producto/11010/" aria-label="Color Blanco">
+             <span class="color-dot" style="--dot:#FFFFFF"></span>Blanco</a><a class="color-btn  "
+             href="/orkia/producto/11011/" aria-label="Color Negro">
+             <span class="color-dot" style="--dot:#111111"></span>Negro</a><a class="color-btn active "
+             href="/orkia/producto/11026/" aria-label="Color Rosa">
+             <span class="color-dot" style="--dot:#D8A6A6"></span>Rosa</a></div>
         
-        <p class="desc">Blusa manga corta un hombro</p>
         <div class="actions">
           <button class="btn btn-primary" id="addBtn" type="button">Agregar a selección</button>
           <a class="btn btn-ghost" href="https://casajrp.com/orkia/">Ver catálogo completo</a>
@@ -351,17 +371,27 @@
       document.getElementById('bagCount').textContent = total;
     }
     function isUnica(t){ return /unica|confirmar/.test(String(t||'').toLowerCase()); }
-    let selectedTalla = "Plus";
+    const NEEDS_SIZE = false;
+    let selectedTalla = NEEDS_SIZE ? null : "Plus";   // con varias tallas, ninguna viene elegida
     document.querySelectorAll('.size-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active'));
         btn.classList.add('active');
         selectedTalla = btn.dataset.talla;
+        const er = document.getElementById('sizeError'); if(er) er.classList.remove('show');
       });
     });
 
     document.getElementById('addBtn').addEventListener('click', function(){
       const btn = this;
+      // Sin talla elegida: no agrega, no dispara eventos al Pixel y le muestra a la clienta que le falta elegirla.
+      if(NEEDS_SIZE && !selectedTalla){
+        btn.dataset.added = '0';
+        const er = document.getElementById('sizeError'); if(er) er.classList.add('show');
+        const sz = document.getElementById('sizes');
+        if(sz){ sz.classList.remove('shake'); void sz.offsetWidth; sz.classList.add('shake'); sz.scrollIntoView({behavior:'smooth', block:'center'}); }
+        return;
+      }
       // Anti doble clic: durante 1.8 s un segundo clic no agrega nada ni dispara eventos al Pixel.
       if(btn.dataset.lock === '1'){ btn.dataset.added = '0'; return; }
       btn.dataset.lock = '1'; btn.dataset.added = '1';
@@ -383,6 +413,18 @@
     });
 
     updateBagCount(readBag());
+
+    // El boton flotante de WhatsApp se esconde al bajar (para no tapar texto) y vuelve al subir.
+    (function(){
+      var w = document.querySelector('.wa-float'); if(!w) return;
+      var last = window.scrollY;
+      window.addEventListener('scroll', function(){
+        var y = window.scrollY;
+        if(y > last + 8 && y > 200) w.classList.add('wa-hide');
+        else if(y < last - 8 || y <= 200) w.classList.remove('wa-hide');
+        last = y;
+      }, {passive:true});
+    })();
 
     // Galeria: miniaturas + flechas cambian la foto principal sin recargar.
     let currentIdx = 0;
