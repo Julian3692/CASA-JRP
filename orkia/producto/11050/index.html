@@ -331,7 +331,7 @@
   </div>
   <script>
     // Promociones (Nov 2026): el servidor decide el precio que se cobra; aqui solo se MUESTRA la oferta vigente por hora.
-    const PROMO = {"p": [["EA-OR", 242]], "c": {"EA-OR": {"id": "EA-OR", "etq": "Oferta anticipada", "i": 1795154400, "f": 1795759200, "d": 10, "r": 10, "t": 1, "b": "PRE BLACK FRIDAY · 10 % en prendas seleccionadas · hasta el 26 de noviembre"}}};
+    const PROMO = {"p": [["EA-OR", 242], ["BF-OR", 215]], "c": {"EA-OR": {"id": "EA-OR", "etq": "Oferta anticipada", "i": 1795154400, "f": 1795759200, "d": 10, "r": 10, "t": 1, "b": "PRE BLACK FRIDAY · 10 % en prendas seleccionadas · hasta el 26 de noviembre"}, "BF-OR": {"id": "BF-OR", "etq": "Black Friday", "i": 1795759200, "f": 1795845600, "d": 20, "r": 20, "t": 1, "b": "BLACK FRIDAY · 20 % en prendas seleccionadas · SOLO HOY"}}};
     function promoActiva(){
       const now = Date.now(); let mejor = null;
       (PROMO.p || []).forEach(x => {
@@ -360,7 +360,7 @@
     }
     renderPromo(); setInterval(renderPromo, 30000); document.addEventListener('visibilitychange', renderPromo);
     const BAG_KEY = "orkia_seleccion_whatsapp_v1";
-    const ITEM_BASE = {"id_producto": 11050, "sku_key": "28", "ref_proveedor": "28", "descripcion": "Pantalon palazzo con pretina ancha", "tipo_prenda": "Pantalon", "color": "Verde claro", "precio_gtq": 269, "precio_regular": 269, "promos": [["EA-OR", 242]], "codigo": "11050", "imagen": "https://img.casajrp.com/orkia/11050_frente.webp"};
+    const ITEM_BASE = {"id_producto": 11050, "sku_key": "28", "ref_proveedor": "28", "descripcion": "Pantalon palazzo con pretina ancha", "tipo_prenda": "Pantalon", "color": "Verde claro", "precio_gtq": 269, "precio_regular": 269, "promos": [["EA-OR", 242], ["BF-OR", 215]], "codigo": "11050", "imagen": "https://img.casajrp.com/orkia/11050_frente.webp"};
     const IMAGES = ["https://img.casajrp.com/orkia/11050_frente.webp", "https://img.casajrp.com/orkia/11050_lado.webp", "https://img.casajrp.com/orkia/11050_detalle.webp"];
 
     function readBag(){ try{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }catch(e){ return []; } }
