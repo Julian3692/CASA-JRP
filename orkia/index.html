@@ -506,6 +506,16 @@
     const QS0 = new URLSearchParams(window.location.search);
     const UTM = (QS0.get('utm') || (QS0.get('utm_source') ? QS0.get('utm_source') + (QS0.get('utm_campaign') ? '_' + QS0.get('utm_campaign') : '') : (QS0.get('fbclid') ? 'meta' : 'directo'))).replace(/[^A-Za-z0-9_.-]/g, '').slice(0, 60) || 'directo';
     const SKU_PARAM = new URLSearchParams(window.location.search).get('sku') || '';
+    // Nov 2026: enlaces por categoria para WhatsApp (saludo, ausencia, respuestas rapidas).
+    // casajrp.com/orkia/?tipo=blusas abre el catalogo ya filtrado. Los grupos juntan tipos
+    // con poco inventario para que ningun enlace abra una pagina casi vacia.
+    const GRUPOS_TIPO = {
+      blusas:     {label:'Blusas y tops',     tipos:['Blusa','Top']},
+      conjuntos:  {label:'Conjuntos',         tipos:['Set']},
+      pantalones: {label:'Pantalones y jeans', tipos:['Pantalon','Jean']},
+      faldas:     {label:'Faldas y vestidos', tipos:['Falda','Vestido','Body']}
+    };
+    const TIPO_PARAM = String(new URLSearchParams(window.location.search).get('tipo') || '').toLowerCase().trim();
     const BAG_KEY = 'orkia_seleccion_whatsapp_v1';
     const BAG_KEY_LEGACY = 'orkia_bolsa_whatsapp_v1';
     // v24: El catálogo visible sale únicamente de Apps Script en vivo.
@@ -676,6 +686,8 @@
         const btn = e.target.closest('.pill'); if(!btn) return;
         currentFilter = btn.dataset.filter;
         searchTerm = '';
+        // Si se entro con ?tipo=, el titulo decia la categoria; al cambiar de filtro vuelve al titulo normal.
+        if(TIPO_PARAM){ const t = document.getElementById('nuevo-title'); if(t) t.textContent = currentFilter.startsWith('grupo::') ? (GRUPOS_TIPO[currentFilter.slice(7)]||{}).label || 'Nuevo' : 'Nuevo'; }
         advancedFilters = {tipo:'', color:'', patron:'', precio:'', plus:false};
         $$('.pill').forEach(p=>p.classList.toggle('active', p===btn));
         safeRenderGrid();
@@ -807,6 +819,17 @@
         // El catálogo visible debe venir del Apps Script en vivo para evitar inventario viejo.
         setCatalog(rawProducts, {source:'Apps Script en vivo · Foto_Publicada', total:Number(data.total || rawProducts.length || 0), keepLoader:true});
         promoSig = promoSignature(); renderPromoBars();
+        if(applyTipoParam()){
+          const g = GRUPOS_TIPO[currentFilter.replace('grupo::','')];
+          const title = document.getElementById('nuevo-title');
+          if(title) title.textContent = g ? g.label : currentFilter.replace('tipo::','');
+          // Baja hasta los filtros dejando libre la cabecera fija, para que la clienta vea de una vez el filtro activo y las prendas.
+          setTimeout(()=>{
+            const el = document.getElementById('ropa'); if(!el) return;
+            const head = document.querySelector('.site-header')?.offsetHeight || 0;
+            window.scrollTo({top: el.getBoundingClientRect().top + window.scrollY - head - 4});
+          }, 400);
+        }
       }catch(err){
         console.warn('[ORKIA] Carga inicial en vivo no disponible. No se muestran productos semilla para evitar inventario falso.', err);
         showCatalogLoadError();
@@ -940,6 +963,11 @@
         '<button class="pill sale" data-filter="__menos250">Menos de Q250</button>',
         ...quickTypes.map(t => `<button class="pill" data-filter="tipo::${safe(t)}">${safe(t)}</button>`)
       ];
+      // Si se entro con ?tipo=grupo, el grupo aparece como primer filtro (activo) para que la clienta vea que esta filtrado.
+      if(currentFilter.startsWith('grupo::')){
+        const key = currentFilter.slice('grupo::'.length);
+        if(GRUPOS_TIPO[key]) quick.unshift(`<button class="pill" data-filter="grupo::${safe(key)}">${safe(GRUPOS_TIPO[key].label)}</button>`);
+      }
       pills.innerHTML = quick.join('');
       $$('.pill', pills).forEach(p=>p.classList.toggle('active', p.dataset.filter === currentFilter));
     }
@@ -958,6 +986,32 @@
     function tiposRapidos(){
       const base = ['Blusa','Vestido','Top','Falda','Set'];
       return allProducts.some(g => groupHasValue(g, 'tipo_prenda', 'Jean')) ? ['Jean', ...base] : base;
+    }
+    function groupInTipoGroup(g, key){
+      const tipos = (GRUPOS_TIPO[key] || {tipos:[]}).tipos.map(tipoKey);
+      return visibleVariantsFor(g).some(v => tipos.includes(tipoKey(v.tipo_prenda)));
+    }
+    // Comparacion sin mayusculas ni tildes ("Pantalón" = "pantalon").
+    function tipoKey(v){ return normalize(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+    // Aplica ?tipo= de la URL. Acepta un grupo (blusas, conjuntos, pantalones, faldas) o un tipo suelto
+    // (vestido, jean, top...). Si el enlace no coincide o el grupo no tiene prendas, deja el catalogo completo.
+    function applyTipoParam(){
+      if(!TIPO_PARAM) return false;
+      const sing = TIPO_PARAM.replace(/es$|s$/, '');
+      let filter = '';
+      if(GRUPOS_TIPO[TIPO_PARAM]) filter = `grupo::${TIPO_PARAM}`;
+      else {
+        const tipo = [...new Set(allVariants.map(v => v.tipo_prenda).filter(Boolean))]
+          .find(t => [tipoKey(TIPO_PARAM), tipoKey(sing)].includes(tipoKey(t)));
+        if(tipo) filter = `tipo::${normalize(tipo)}`;
+      }
+      if(!filter) return false;
+      const prev = currentFilter;
+      currentFilter = filter;
+      if(!getFiltered().length){ currentFilter = prev; return false; }
+      buildDynamicFilters();
+      renderGrid();
+      return true;
     }
     function groupHasColor(g, value){ return visibleVariantsFor(g).some(v => colorFamily(v.color) === value); }
     // v27: helpers para el sheet de filtros dinámicos.
@@ -1273,6 +1327,7 @@
       else if(currentFilter.includes('::')){
         const [kind, ...rest] = currentFilter.split('::'); const value = rest.join('::');
         if(kind === 'tipo') list = list.filter(g => groupHasValue(g, 'tipo_prenda', value));
+        else if(kind === 'grupo' && GRUPOS_TIPO[value]) list = list.filter(g => groupInTipoGroup(g, value));
       } else if(currentFilter === '__advanced'){
         if(advancedFilters.tipo) list = list.filter(g => groupHasValue(g, 'tipo_prenda', advancedFilters.tipo));
         if(advancedFilters.color) list = list.filter(g => groupHasColor(g, advancedFilters.color));
