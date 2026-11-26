@@ -54,9 +54,8 @@ from pathlib import Path
 import policy_pages
 
 AS_URL = "https://script.google.com/macros/s/AKfycby4BrDKh66iyznFEFv7VH6H2adZaE-t-J_0kOHUQW_TY80-K5kb4Sw1eHv7eIaRBsQ/exec"
-# WhatsApp por marca. Nudo ya tiene su numero propio (+502 8014 9766 = 50280149766) pero SE ACTIVA hasta que WhatsApp Business
-# este configurado y atendido en ese numero; mientras tanto Nudo sigue usando el de siempre. Para activarlo: cambiar el valor de "nudo".
-WA_NUMBERS = {"orkia": "50248304736", "nudo": "50248304736"}
+# WhatsApp por marca. Nudo usa su numero propio (+502 8014 9766) desde el 25 nov 2026 (WhatsApp Business activo y verificado).
+WA_NUMBERS = {"orkia": "50248304736", "nudo": "50280149766"}
 PIXEL_ID = "1778753106585555"
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
