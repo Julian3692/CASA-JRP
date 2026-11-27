@@ -335,7 +335,7 @@
   </div>
   <script>
     // Promociones (Nov 2026): el servidor decide el precio que se cobra; aqui solo se MUESTRA la oferta vigente por hora.
-    const PROMO = {"p": [["EA-OR", 359], ["BF-OR", 319]], "c": {"EA-OR": {"id": "EA-OR", "etq": "Oferta anticipada", "i": 1795154400, "f": 1795759200, "d": 10, "r": 10, "t": 1, "b": "PRE BLACK FRIDAY · 10 % en prendas seleccionadas · hasta el 26 de noviembre"}, "BF-OR": {"id": "BF-OR", "etq": "Black Friday", "i": 1795759200, "f": 1795845600, "d": 20, "r": 20, "t": 1, "b": "BLACK FRIDAY · 20 % en prendas seleccionadas · SOLO HOY"}}};
+    const PROMO = {"p": [["BF-OR", 319]], "c": {"BF-OR": {"id": "BF-OR", "etq": "Black Friday", "i": 1795759200, "f": 1795845600, "d": 20, "r": 20, "t": 1, "b": "BLACK FRIDAY · 20 % en prendas seleccionadas · SOLO HOY"}}};
     function promoActiva(){
       const now = Date.now(); let mejor = null;
       (PROMO.p || []).forEach(x => {
@@ -364,7 +364,7 @@
     }
     renderPromo(); setInterval(renderPromo, 30000); document.addEventListener('visibilitychange', renderPromo);
     const BAG_KEY = "orkia_seleccion_whatsapp_v1";
-    const ITEM_BASE = {"id_producto": 10277, "sku_key": "2502", "ref_proveedor": "2502", "descripcion": "Falda larga de tres niveles", "tipo_prenda": "Falda", "color": "Cafe", "precio_gtq": 399, "precio_regular": 399, "promos": [["EA-OR", 359], ["BF-OR", 319]], "codigo": "10277", "imagen": "https://img.casajrp.com/orkia/10277_frente.webp"};
+    const ITEM_BASE = {"id_producto": 10277, "sku_key": "2502", "ref_proveedor": "2502", "descripcion": "Falda larga de tres niveles", "tipo_prenda": "Falda", "color": "Cafe", "precio_gtq": 399, "precio_regular": 399, "promos": [["BF-OR", 319]], "codigo": "10277", "imagen": "https://img.casajrp.com/orkia/10277_frente.webp"};
     const IMAGES = ["https://img.casajrp.com/orkia/10277_frente.webp", "https://img.casajrp.com/orkia/10277_lado.webp", "https://img.casajrp.com/orkia/10277_detalle.webp"];
 
     function readBag(){ try{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }catch(e){ return []; } }

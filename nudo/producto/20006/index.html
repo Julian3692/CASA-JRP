@@ -337,7 +337,7 @@
   </div>
   <script>
     // Promociones (Nov 2026): el servidor decide el precio que se cobra; aqui solo se MUESTRA la oferta vigente por hora.
-    const PROMO = {"p": [["EA-NU", 314], ["BF-NU", 279]], "c": {"EA-NU": {"id": "EA-NU", "etq": "Oferta anticipada", "i": 1795154400, "f": 1795759200, "d": 10, "r": 10, "t": 1, "b": "PRE BLACK FRIDAY · 10 % en toda la tienda · hasta el 26 de noviembre"}, "BF-NU": {"id": "BF-NU", "etq": "Black Friday", "i": 1795759200, "f": 1795845600, "d": 20, "r": 20, "t": 1, "b": "BLACK FRIDAY · hasta 20 % en toda la tienda · SOLO HOY"}}};
+    const PROMO = {"p": [["BF-NU", 279]], "c": {"BF-NU": {"id": "BF-NU", "etq": "Black Friday", "i": 1795759200, "f": 1795845600, "d": 20, "r": 20, "t": 1, "b": "BLACK FRIDAY · hasta 20 % en toda la tienda · SOLO HOY"}}};
     function promoActiva(){
       const now = Date.now(); let mejor = null;
       (PROMO.p || []).forEach(x => {
@@ -366,7 +366,7 @@
     }
     renderPromo(); setInterval(renderPromo, 30000); document.addEventListener('visibilitychange', renderPromo);
     const BAG_KEY = "nudo_seleccion_whatsapp_v1";
-    const ITEM_BASE = {"id_producto": 20006, "sku_key": "2", "ref_proveedor": 2, "descripcion": "Body Brillante Negro", "tipo_prenda": "Body", "color": "Negro", "precio_gtq": 349, "precio_regular": 349, "promos": [["EA-NU", 314], ["BF-NU", 279]], "codigo": "20006", "imagen": "https://img.casajrp.com/nudo/20006_frente.webp"};
+    const ITEM_BASE = {"id_producto": 20006, "sku_key": "2", "ref_proveedor": 2, "descripcion": "Body Brillante Negro", "tipo_prenda": "Body", "color": "Negro", "precio_gtq": 349, "precio_regular": 349, "promos": [["BF-NU", 279]], "codigo": "20006", "imagen": "https://img.casajrp.com/nudo/20006_frente.webp"};
     const IMAGES = ["https://img.casajrp.com/nudo/20006_frente.webp"];
 
     function readBag(){ try{ return JSON.parse(localStorage.getItem(BAG_KEY) || '[]') || []; }catch(e){ return []; } }
